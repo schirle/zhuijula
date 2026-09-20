@@ -290,26 +290,6 @@
             } catch (_) { /* 接口异常时保留默认展示 */ }
         }
 
-        /* ══════════ 继续观看 ══════════ */
-        const makeContinueCard = it => {
-            const href = playHref(it.id || '', it.form || 'xg');
-            const badge = (it.ep != null && it.ep > 0) ? `第${it.ep + 1}集` : '继续观看';
-            return makeCard({ pic: it.pic, title: it.name, badge, href, newTab: false });
-        };
-        const loadContinueWatching = () => {
-            const wrap = document.getElementById('rail-continue'), scroll = document.getElementById('rail-continue-scroll');
-            if (!wrap || !scroll) return;
-            let list = [];
-            try { list = lsGetJson(CONTINUE_KEY) || []; } catch (_) {}
-            if (!Array.isArray(list) || !list.length) { wrap.style.display = 'none'; return; }
-            scroll.innerHTML = '';
-            const frag = document.createDocumentFragment();
-            for (const it of list.slice(0, RAIL_LIMIT)) frag.appendChild(makeContinueCard(it));
-            scroll.appendChild(frag);
-            observeImages(scroll);
-            wrap.style.display = '';
-        };
-
         /* ══════════ 友情链接 ══════════ */
         const renderFriendLinks = (list, max) => {
             const section = document.getElementById('friend-links');
@@ -373,18 +353,8 @@
             wireHomeSearch();
             loadCarousel();
             loadPromoAd();
-            loadContinueWatching();
             loadFriendLinks();
 
-            $$('.rail-arrow').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const wrap = btn.closest('.rail-wrap');
-                    const scroll = wrap?.querySelector('.rail-scroll');
-                    if (!scroll) return;
-                    const dir = btn.dataset.dir === 'next' ? 1 : -1;
-                    scroll.scrollBy({ left: dir * scroll.clientWidth * 0.8, behavior: 'smooth' });
-                });
-            });
         };
 
         document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();

@@ -243,7 +243,9 @@ const renderNav = async () => {
       (cfg.title ? '<span class="nav-page-title"' + (cfg.titleId ? ' id="' + cfg.titleId + '"' : '') + '>' + esc(cfg.title) + '</span>' : '') +
     '</a>';
 
-  let actions = '<button id="theme-toggle" class="nav-btn" type="button" title="切换深色 / 浅色"><i class="fas fa-moon"></i></button>';
+  let actions = '';
+  if (page === 'home') actions += '<button id="nav-history" class="nav-btn" type="button" title="观看历史"><i class="fas fa-clock-rotate-left"></i></button>';
+  actions += '<button id="theme-toggle" class="nav-btn" type="button" title="切换深色 / 浅色"><i class="fas fa-moon"></i></button>';
   if (cfg.back) {
     actions += '<button class="nav-btn" id="nav-back" type="button" title="返回"><i class="fas fa-arrow-left"></i><span>返回</span></button>';
   }
@@ -254,6 +256,7 @@ const renderNav = async () => {
     if (history.length > 1) history.back(); else location.href = '/';
   });
   initThemeToggle();
+  if (page === 'home') initHistoryPanel();
 
   const links = Array.isArray(data.nav_links) ? data.nav_links : [];
   const navActions = root.querySelector('.nav-actions');
@@ -300,6 +303,76 @@ const initThemeToggle = () => {
     try { localStorage.setItem('ftv_theme', c); } catch (e) {}
     apply(c);
   });
+};
+
+// ── 首页观看历史面板（顶部导航「历史」按钮 → 页面右上角下拉表）──
+const CONTINUE_KEY = 'ftv_continue';
+
+const initHistoryPanel = () => {
+  const btn = document.getElementById('nav-history');
+  if (!btn) return;
+  let panel = document.getElementById('nav-history-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'nav-history-panel';
+    panel.className = 'nav-history-panel';
+    panel.innerHTML =
+      '<div class="nhp-head"><span class="nhp-title">观看历史</span>' +
+      '<span class="nhp-count">0 条</span>' +
+      '<button class="nhp-clear" type="button" title="清空全部"><i class="fas fa-trash-can"></i> 清空</button></div>' +
+      '<div class="nhp-list"></div>';
+    document.body.appendChild(panel);
+  }
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    renderHistoryPanel();
+    panel.classList.toggle('show');
+  });
+  document.addEventListener('click', (e) => {
+    if (!panel.classList.contains('show')) return;
+    if (panel.contains(e.target) || btn.contains(e.target)) return;
+    panel.classList.remove('show');
+  });
+  panel.querySelector('.nhp-clear').addEventListener('click', () => {
+    lsSetJson(CONTINUE_KEY, []);
+    showToast('已清空观看历史');
+    renderHistoryPanel();
+    document.getElementById('rail-continue')?.style.setProperty('display', 'none');
+  });
+  panel.querySelector('.nhp-list').addEventListener('click', (e) => {
+    const del = e.target.closest('.nhp-del');
+    if (del) {
+      e.stopPropagation();
+      const idx = parseInt(del.dataset.idx, 10);
+      const list = lsGetJson(CONTINUE_KEY) || [];
+      if (Array.isArray(list) && list[idx]) { list.splice(idx, 1); lsSetJson(CONTINUE_KEY, list); renderHistoryPanel(); }
+      return;
+    }
+    const row = e.target.closest('.nhp-item');
+    if (row && row.dataset.href) location.href = row.dataset.href;
+  });
+};
+
+const renderHistoryPanel = () => {
+  const panel = document.getElementById('nav-history-panel');
+  if (!panel) return;
+  let list = [];
+  try { list = lsGetJson(CONTINUE_KEY) || []; } catch (_) {}
+  if (!Array.isArray(list)) list = [];
+  const listEl = panel.querySelector('.nhp-list');
+  panel.querySelector('.nhp-count').textContent = list.length + ' 条';
+  if (!list.length) { listEl.innerHTML = '<div class="nhp-empty"><i class="fas fa-clock-rotate-left"></i>暂无观看记录</div>'; return; }
+  listEl.innerHTML = list.map((it, i) => {
+    const href = '/play.html?id=' + encodeURIComponent(it.id || '') + '&form=' + encodeURIComponent(it.form || 'xg');
+    const ep = (it.ep != null && it.ep > 0) ? '第' + (it.ep + 1) + '集' : '继续观看';
+    const pic = it.pic
+      ? '<img src="' + esc(it.pic) + '" alt="" loading="lazy" onerror="window.imgFallback(this)">'
+      : '<i class="fas fa-film nhp-noimg"></i>';
+    return '<div class="nhp-item" data-href="' + esc(href) + '">' + pic +
+      '<div class="nhp-info"><div class="nhp-name">' + esc(it.name || '未命名') + '</div>' +
+      '<div class="nhp-ep">' + esc(ep) + '</div></div>' +
+      '<button class="nhp-del" type="button" title="删除" data-idx="' + i + '"><i class="fas fa-xmark"></i></button></div>';
+  }).join('');
 };
 
 // 首次打开弹窗：后台「基础设置 → 首次弹窗」配置，访客首次访问（或内容变更后）弹出一次
