@@ -261,11 +261,11 @@ async function fetchWithRetry(url, { timeout = 12000, retries = 1, headers = BRO
   return { _error: true, _msg: lastErr?.message || 'fetch failed' };
 }
 
-// ── IP 限流 ──
+// ── IP 限流 ──（scope 用于隔离不同接口的计数桶，避免互相挤占额度）
 const rateBuckets = new Map();
-export function checkRateLimit(ip, limit = CFG.SEARCH_RATE_LIMIT) {
+export function checkRateLimit(ip, limit = CFG.SEARCH_RATE_LIMIT, scope = 'search') {
   const now = Date.now();
-  const key = ip + ':' + Math.floor(now / (CFG.RATE_WINDOW_SEC * 1000));
+  const key = scope + '|' + ip + ':' + Math.floor(now / (CFG.RATE_WINDOW_SEC * 1000));
   const count = (rateBuckets.get(key) || 0) + 1;
   rateBuckets.set(key, count);
   if (rateBuckets.size > 5000) {
@@ -346,6 +346,7 @@ function syncApiSources(data) {
   }
   if (Object.keys(src).length) API_SOURCES = src;
 }
+const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
 
 async function loadZhuiju(env) {
   const now = Date.now();
@@ -354,6 +355,14 @@ async function loadZhuiju(env) {
   // 0) 后台自定义数据（KV site_config.zhuiju_data）优先：完全不依赖上游，保存即生效
   if (env) {
     const cfg = env._siteCfg || await loadSiteConfig(env);
+    // 后台「播放源」结构化配置：直接注入搜索源（独立于上游，上游挂了也能用）
+    if (Array.isArray(cfg?.play_sources) && cfg.play_sources.length) {
+      syncApiSources({ 'jiekou-list': cfg.play_sources.map(s => ({
+        alias: String(s.alias || '').trim() || slugify(String(s.name || '')),
+        name: String(s.name || ''),
+        url: String(s.url || ''),
+      })) });
+    }
     const override = (cfg && cfg.zhuiju_data && typeof cfg.zhuiju_data === 'object' && !Array.isArray(cfg.zhuiju_data))
       ? cfg.zhuiju_data : null;
     if (override) {
@@ -733,7 +742,7 @@ export async function handleImgProxy(request, url) {
   // 先查缓存再限流：命中缓存不消耗额度（否则一个首页几十张图会打满 120/分钟 导致整页图片 429 空白）
   const cacheKey = new Request(url.origin + '/__imgproxy__?u=' + encodeURIComponent(target.href));
   const hit = await cacheGet(cacheKey); if (hit) return hit;
-  if (!checkRateLimit(getClientIP(request), 600)) return jsonErr('请求过于频繁，请稍后再试', 429);
+  if (!checkRateLimit(getClientIP(request), 600, 'img')) return jsonErr('请求过于频繁，请稍后再试', 429);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 9000);
   try {
@@ -804,9 +813,24 @@ export async function handleFuli(request, url, context) {
 
 // ── 追剧全数据 ──
 export async function handleZhuiju(request, url, context) {
-  const data = await loadZhuiju(await resolveEnv(context));
-  if (!data) return jsonErr('数据加载失败，请稍后刷新重试', 502);
-  const res = json(data);
+  const env = await resolveEnv(context);
+  const data = await loadZhuiju(env);
+  const cfg = env._siteCfg || await loadSiteConfig(env);
+  let out = (data && typeof data === 'object') ? data : {};
+  if (cfg && typeof cfg === 'object') {
+    // 后台「首页轮播」结构化配置优先于上游 carousel-list
+    if (Array.isArray(cfg.carousels) && cfg.carousels.length) {
+      out = { ...out, 'carousel-list': cfg.carousels.map(c => ({
+        pic: String(c.pic || ''),
+        link: String(c.link || ''),
+        mode: c.mode === 'external' ? 'external' : 'search',
+      })) };
+    }
+    if (cfg.site_name) out.site_name = cfg.site_name;
+    if (cfg.site_desc) out.site_desc = cfg.site_desc;
+  }
+  if (!out || !Object.keys(out).length) return jsonErr('数据加载失败，请稍后刷新重试', 502);
+  const res = json(out);
   res.headers.set('Cache-Control', 'public, s-maxage=60, max-age=30, stale-while-revalidate=600');
   return res;
 }

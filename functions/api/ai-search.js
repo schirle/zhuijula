@@ -7,7 +7,7 @@ export const onRequest = makeRoute(handleAiSearch);
 // 未配置 AI 时降级为「增强版关键词搜索」（去停用词 + 识别类型/地区），保证功能不中断
 async function handleAiSearch(request, url, context) {
   const ip = getClientIP(request);
-  if (!checkRateLimit(ip)) return jsonErr('请求过于频繁，请稍后再试', 429);
+  if (!checkRateLimit(ip, undefined, 'ai')) return jsonErr('请求过于频繁，请稍后再试', 429);
 
   const q = (url.searchParams.get('q') || '').trim();
   if (!q) return jsonErr('请输入搜索内容', 400);

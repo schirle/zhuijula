@@ -16,7 +16,7 @@ async function handleAdminLogin(request, _url, context) {
   const pass = (env.ADMIN_PASS || '').toString();
   if (!user || !pass) return json({ code: 0, msg: '服务端未配置 ADMIN_USER / ADMIN_PASS 环境变量' }, 500);
   // 登录爆破防护：每 IP 每分钟 5 次
-  if (!checkRateLimit(getClientIP(request), 5)) return json({ code: 0, msg: '尝试过于频繁，请稍后再试' }, 429);
+  if (!checkRateLimit(getClientIP(request), 5, 'adminlogin')) return json({ code: 0, msg: '尝试过于频繁，请稍后再试' }, 429);
 
   let body = {};
   try { body = await request.json(); } catch (_) {}

@@ -7,7 +7,7 @@ export const onRequest = makeRoute(handleAiRelate);
 // 未配置 AI 时返回基于片名的通用建议
 async function handleAiRelate(request, url, context) {
   const ip = getClientIP(request);
-  if (!checkRateLimit(ip)) return jsonErr('请求过于频繁，请稍后再试', 429);
+  if (!checkRateLimit(ip, undefined, 'ai')) return jsonErr('请求过于频繁，请稍后再试', 429);
 
   const title = (url.searchParams.get('title') || '').trim();
   if (!title) return jsonErr('缺少片名', 400);

@@ -1,213 +1,251 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>后台管理 - 免费追剧</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <style>
-:root {
-  --bg: #0b1017; --bg-card: #131a24; --bg-card-hover: #1a2330; --bg-input: #0f1620;
-  --border: #232d3b; --border-light: #2e3a4a;
-  --text: #e8eef5; --text2: #9fb0c0; --muted: #64748b;
-  --primary: #3b82f6; --primary2: #2563eb; --glow: rgba(59,130,246,.25);
-  --ok: #22c55e; --err: #ef4444; --warn: #f59e0b;
-  --radius: 12px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  min-height: 100vh; background:
-    radial-gradient(900px 480px at 50% -10%, rgba(59,130,246,.12), transparent 60%),
-    var(--bg);
-  color: var(--text); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 14px; line-height: 1.6;
-}
-.wrap { max-width: 860px; margin: 0 auto; padding: 32px 18px 60px; }
-h1 { font-size: 20px; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-h1::before { content: ''; width: 5px; height: 20px; border-radius: 3px; background: linear-gradient(135deg, var(--primary), #06b6d4); }
-.sub { color: var(--muted); font-size: 12.5px; margin-bottom: 22px; }
-
-.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: 0 12px 36px rgba(0,0,0,.4); }
-.login-card { max-width: 380px; margin: 8vh auto 0; }
-.login-card h2 { font-size: 17px; margin-bottom: 4px; }
-.login-card .hint { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
-
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-.tab-btn { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text2); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
-.tab-btn:hover { border-color: var(--primary); color: var(--text); }
-.tab-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; border-color: transparent; box-shadow: 0 4px 14px var(--glow); }
-
-.pane { display: none; }
-.pane.active { display: block; animation: fadeUp .25s ease; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-.field { margin-bottom: 16px; }
-.field label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.field .desc { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-.env-badge { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(34,197,94,.12); color: var(--ok); border: 1px solid rgba(34,197,94,.3); }
-.kv-badge { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(59,130,246,.12); color: #7cb0ff; border: 1px solid rgba(59,130,246,.35); }
-input[type=text], input[type=password], textarea {
-  width: 100%; background: var(--bg-input); border: 1.5px solid var(--border-light); border-radius: var(--radius);
-  color: var(--text); font-size: 13.5px; padding: 10px 13px; outline: none; transition: border-color .15s, box-shadow .15s;
-  font-family: inherit;
-}
-textarea { resize: vertical; min-height: 88px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.55; }
-textarea.code { min-height: 320px; }
-input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-@media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
-
-.btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 999px; border: none; cursor: pointer; font-size: 13.5px; font-weight: 700; transition: all .15s; }
-.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; box-shadow: 0 4px 14px var(--glow); }
-.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.btn-ghost { background: transparent; border: 1px solid var(--border-light); color: var(--text2); }
-.btn-ghost:hover { border-color: var(--primary); color: var(--text); }
-.btn-danger { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: var(--err); }
-.btn-danger:hover { background: rgba(239,68,68,.2); }
-.btn:active { transform: scale(.97); }
-.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
-.save-bar { position: sticky; bottom: 0; margin-top: 22px; padding: 14px 0 4px; background: linear-gradient(to top, var(--bg) 60%, transparent); display: flex; gap: 10px; align-items: center; }
-
-.toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); padding: 11px 22px; border-radius: 999px; font-size: 13.5px; font-weight: 600; opacity: 0; pointer-events: none; transition: all .25s; z-index: 99; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.ok { background: rgba(34,197,94,.15); color: var(--ok); border: 1px solid rgba(34,197,94,.4); }
-.toast.err { background: rgba(239,68,68,.15); color: var(--err); border: 1px solid rgba(239,68,68,.4); }
-
-.note { background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.25); border-radius: var(--radius); padding: 10px 14px; font-size: 12.5px; color: var(--text2); margin-bottom: 16px; }
-.note b { color: #7cb0ff; }
-
-.rank-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
-.rank-no { flex: 0 0 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--bg-card-hover); color: var(--muted); }
-.rank-no.top { color: #fff; background: linear-gradient(135deg, #f59e0b, #ef4444); }
-.rank-word { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rank-count { color: var(--muted); font-size: 12px; flex-shrink: 0; }
-.rank-del { flex-shrink: 0; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(239,68,68,.4); background: transparent; color: var(--err); font-size: 12px; cursor: pointer; }
-.rank-del:hover { background: rgba(239,68,68,.15); }
-.empty { text-align: center; color: var(--muted); padding: 30px 0; font-size: 13px; }
-
-.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.logout-btn { padding: 7px 16px; border-radius: 999px; border: 1px solid var(--border-light); background: transparent; color: var(--text2); font-size: 12.5px; cursor: pointer; }
-.logout-btn:hover { border-color: var(--err); color: var(--err); }
-.status-line { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
-.status-line b { color: var(--text2); }
+  :root{
+    --bg:#f4f6f9; --sidebar:#ffffff; --sidebar-active:#eef4ff; --text:#1f2d3d; --muted:#7a8aa0;
+    --card:#ffffff; --border:#e6ebf2; --primary:#3b82f6; --primary-d:#2563eb; --ok:#16a34a; --err:#ef4444; --warn:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;margin:0}
+  .admin{display:flex;min-height:100vh}
+  /* 侧边栏 */
+  .sidebar{width:248px;background:var(--sidebar);border-right:1px solid var(--border);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;z-index:20}
+  .brand{padding:20px 22px;font-weight:800;font-size:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+  .brand i{color:var(--primary);font-size:20px}
+  .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+  .nav{flex:1;overflow-y:auto;padding:12px 12px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;margin-bottom:4px;cursor:pointer}
+  .nav a i{font-size:17px;color:var(--muted);width:20px;text-align:center}
+  .nav a:hover{background:#f3f6fb}
+  .nav a.active{background:var(--sidebar-active);color:var(--primary-d)}
+  .nav a.active i{color:var(--primary)}
+  .side-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  /* 主区 */
+  .main{margin-left:248px;flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{height:62px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:10}
+  .topbar h2{font-size:16px;margin:0;font-weight:700}
+  .topbar .kv{font-size:12px;color:var(--muted);margin-left:12px}
+  .content{padding:24px;max-width:980px;width:100%}
+  .section{display:none}
+  .section.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .card-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
+  .card-box h3{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+  .card-box h3 i{color:var(--primary)}
+  .card-box .tip{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+  .save-bar{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:14px 0 4px;display:flex;gap:10px;align-items:center}
+  .btn-save{background:var(--primary);border:none;color:#fff;font-weight:700;padding:10px 26px;border-radius:10px}
+  .btn-save:hover{background:var(--primary-d)}
+  .btn-add{background:#eef4ff;color:var(--primary-d);border:1px solid #d6e4ff;font-weight:600;padding:8px 16px;border-radius:10px}
+  .btn-add:hover{background:#e2edff}
+  .row-editor{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .row-editor .ri{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:inherit}
+  .row-editor .ri:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.13)}
+  .row-editor select.ri{flex:0 0 130px;cursor:pointer}
+  .row-editor .re-w15{flex:0 0 15%}.row-editor .re-w20{flex:0 0 20%}.row-editor .re-w25{flex:0 0 25%}.row-editor .re-w40{flex:0 0 40%}
+  .ri-del{flex:0 0 auto;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--err);border-radius:9px;padding:8px 14px;cursor:pointer;font-size:13px}
+  .ri-del:hover{background:rgba(239,68,68,.18)}
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:380px;max-width:100%;box-shadow:0 10px 30px rgba(16,24,40,.08)}
+  .login-card h2{font-size:18px;margin:0 0 4px}
+  .kv-badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:#eaf6ee;color:var(--ok);border:1px solid #bfe6cb}
+  .env-badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:#eaf1ff;color:var(--primary-d);border:1px solid #cfe0ff}
+  .rank-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f7f9fc;border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+  .rank-no{flex:0 0 26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:800;background:#e9eef6;color:var(--muted);font-size:12px}
+  .rank-no.top{color:#fff;background:linear-gradient(135deg,#f59e0b,#ef4444)}
+  .rank-word{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rank-count{color:var(--muted);font-size:12px}
+  .empty{text-align:center;color:var(--muted);padding:26px 0}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);padding:11px 22px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .toast.ok{background:#eaf6ee;color:var(--ok);border:1px solid #bfe6cb}
+  .toast.err{background:#fdeaea;color:var(--err);border:1px solid #f4c2c2}
+  @media(max-width:760px){.sidebar{width:64px}.sidebar .brand small,.nav a span.txt{display:none}.main{margin-left:64px}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <!-- 登录 -->
-  <div id="login-view" class="card login-card" style="display:none">
-    <h2>🔐 后台管理</h2>
-    <div class="hint">账号密码来自 Cloudflare Pages 环境变量 ADMIN_USER / ADMIN_PASS</div>
-    <div class="field"><label>账号</label><input type="text" id="login-user" autocomplete="username"></div>
-    <div class="field"><label>密码</label><input type="password" id="login-pass" autocomplete="current-password"></div>
-    <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center">登 录</button>
+<!-- 登录 -->
+<div id="login-view" class="login-wrap" style="display:none">
+  <div class="login-card">
+    <h2><i class="bi bi-shield-lock" style="color:var(--primary)"></i> 后台管理</h2>
+    <p class="text-muted small">账号密码来自 Cloudflare Pages 环境变量 ADMIN_USER / ADMIN_PASS</p>
+    <div class="mb-3"><label class="form-label small fw-semibold">账号</label><input type="text" id="login-user" class="form-control" autocomplete="username"></div>
+    <div class="mb-3"><label class="form-label small fw-semibold">密码</label><input type="password" id="login-pass" class="form-control" autocomplete="current-password"></div>
+    <button class="btn btn-save w-100" id="login-btn">登 录</button>
   </div>
+</div>
 
-  <!-- 主面板 -->
-  <div id="main-view" style="display:none">
+<!-- 主面板 -->
+<div id="main-view" class="admin" style="display:none">
+  <aside class="sidebar">
+    <div class="brand"><i class="bi bi-play-btn-fill"></i><div>免费追剧<small>站点后台管理</small></div></div>
+    <nav class="nav" id="side-nav">
+      <a class="active" data-section="theme"><i class="bi bi-palette"></i><span class="txt">网站主题设置</span></a>
+      <a data-section="sources"><i class="bi bi-hdd-network"></i><span class="txt">播放源设置</span></a>
+      <a data-section="carousel"><i class="bi bi-images"></i><span class="txt">首页轮播设置</span></a>
+      <a data-section="app"><i class="bi bi-phone"></i><span class="txt">APP页设置</span></a>
+      <a data-section="play"><i class="bi bi-collection-play"></i><span class="txt">播放页设置</span></a>
+      <a data-section="welfare"><i class="bi bi-gift"></i><span class="txt">福利页设置</span></a>
+      <a data-section="other"><i class="bi bi-gear"></i><span class="txt">其他设置</span></a>
+    </nav>
+    <div class="side-foot">数据存于 KV，保存即时生效</div>
+  </aside>
+
+  <div class="main">
     <div class="topbar">
-      <div>
-        <h1>站点后台</h1>
-        <div class="sub" id="kv-status">检查 KV 状态…</div>
+      <h2 id="sec-title">网站主题设置</h2>
+      <div class="d-flex align-items-center gap-3">
+        <span class="kv" id="kv-status">检查 KV…</span>
+        <button class="btn btn-sm btn-outline-secondary" id="logout-btn">退出</button>
       </div>
-      <button class="logout-btn" id="logout-btn">退出登录</button>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="basic">基础配置</button>
-      <button class="tab-btn" data-tab="netdisk">网盘转存</button>
-      <button class="tab-btn" data-tab="zhuiju">追剧数据</button>
-      <button class="tab-btn" data-tab="rank">搜索排行榜</button>
-    </div>
+    <div class="content">
 
-    <div class="card">
-      <div class="note">留空的项会自动回退使用 CF Pages 环境变量（若有）；<b>KV 里保存的值始终优先</b>。保存后即时生效（个别接口有 ≤60s 缓存）。</div>
+      <!-- 1. 网站主题设置 -->
+      <section class="section active" id="sec-theme">
+        <div class="card-box">
+          <h3><i class="bi bi-type"></i>站点基础信息</h3>
+          <div class="tip">名称与描述用于浏览器标题、首页品牌与 meta 信息。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">网站名称</label><input type="text" id="f-site_name" class="form-control" placeholder="免费追剧"></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">网站描述</label><input type="text" id="f-site_desc" class="form-control" placeholder="无广告，免会员，全网影视免费在线观看"></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-brush"></i>外观</h3>
+          <div class="tip">自定义主题色、Logo、页脚文案（前端接入后生效）。</div>
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">主题色</label><input type="text" id="m-theme-primary_color" class="form-control" placeholder="#3b82f6"></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">Logo 链接</label><input type="text" id="m-theme-logo_url" class="form-control" placeholder="https://.../logo.png"></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">页脚文案</label><input type="text" id="m-theme-footer_text" class="form-control" placeholder="免费追剧 · 仅供学习交流"></div>
+          </div>
+        </div>
+      </section>
 
-      <!-- 基础配置 -->
-      <div class="pane active" id="pane-basic">
-        <div class="field"><label>AI API Key（硅基流动）<span class="env-badge" data-env="AI_API_KEY" style="display:none">环境变量已设置</span></label>
-          <div class="desc">用于 AI 搜索语义解析、播放页相关搜索。硅基流动控制台获取，sk- 开头</div>
-          <input type="password" id="f-ai_api_key" placeholder="sk-xxx"></div>
-        <div class="grid2">
-          <div class="field"><label>AI 模型<span class="env-badge" data-env="AI_MODEL" style="display:none">环境变量已设置</span></label>
-            <input type="text" id="f-ai_model" placeholder="默认 deepseek-ai/DeepSeek-V3"></div>
-          <div class="field"><label>AI Base URL<span class="env-badge" data-env="AI_BASE_URL" style="display:none">环境变量已设置</span></label>
-            <input type="text" id="f-ai_base_url" placeholder="默认 https://api.siliconflow.cn/v1"></div>
+      <!-- 2. 播放源设置 -->
+      <section class="section" id="sec-sources">
+        <div class="card-box">
+          <h3><i class="bi bi-hdd-network"></i>播放源（影视接口）</h3>
+          <div class="tip">搜索时使用的影视解析接口。增删改后保存即生效；留空则回退上游数据源。</div>
+          <div id="m-sources"></div>
+          <button class="btn-add" id="btn-add-sources">＋ 添加播放源</button>
         </div>
-        <div class="grid2">
-          <div class="field"><label>TMDB Key<span class="env-badge" data-env="TMDB_KEY" style="display:none">环境变量已设置</span></label>
-            <div class="desc">地区热播榜（韩/日/美剧）用</div>
-            <input type="password" id="f-tmdb_key"></div>
-          <div class="field"><label>今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设置</span></label>
-            <div class="desc">完整 URL，含 app_key</div>
-            <input type="text" id="f-daily_api" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
-        </div>
-        <div class="field"><label>网盘搜索接口（WP_API_HOST）<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设置</span></label>
-          <div class="desc">域名+路径，不带协议和尾部斜杠，如 so.252035.xyz/api/search</div>
-          <input type="text" id="f-wp_api_host"></div>
-        <div class="field"><label>Web3Forms Key（友链申请通知）<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设置</span></label>
-          <input type="password" id="f-web3forms_access_key"></div>
-        <div class="field"><label>精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设置</span></label>
-          <div class="desc">豆瓣 doulist 数字 id，逗号分隔。改动后因缓存最长 6 小时生效</div>
-          <input type="text" id="f-pdlist" placeholder="1322205,278539,203399,..."></div>
-        <div class="field"><label>追剧数据源 URL<span class="env-badge" data-env="ZUIJU_URL" style="display:none">环境变量已设置</span></label>
-          <div class="desc">未启用「追剧自定义数据」时从这里拉取播放源/轮播/福利/友链</div>
-          <input type="text" id="f-zhuiju_url" placeholder="https://www.1dfx.com/api.html?type=zhuiju"></div>
-        <div class="field"><label>顶部导航链接（NAV_LINKS，JSON 数组）<span class="env-badge" data-env="NAV_LINKS" style="display:none">环境变量已设置</span></label>
-          <textarea id="f-nav_links" style="min-height:110px" placeholder='[{"key":"app","href":"/app","icon":"fa-download","label":"APP下载"}]'></textarea></div>
-      </div>
+      </section>
 
-      <!-- 网盘转存 -->
-      <div class="pane" id="pane-netdisk">
-        <div class="note">Cookie 属敏感凭据，仅存于服务端 KV，不会出现在任何前端页面。</div>
-        <div class="field"><label>夸克网盘 Cookie<span class="env-badge" data-env="QUARK_COOKIE" style="display:none">环境变量已设置</span></label>
-          <div class="desc">需含有效登录态，用于夸克转存</div>
-          <textarea id="f-quark_cookie" placeholder="_UP_A4A_11_=..."></textarea></div>
-        <div class="grid2">
-          <div class="field"><label>夸克目标目录 ID<span class="env-badge" data-env="QUARK_DIR" style="display:none">环境变量已设置</span></label>
-            <input type="text" id="f-quark_dir"></div>
-          <div class="field"><label>jjsou 转存密钥<span class="env-badge" data-env="JJSOU_API_KEY" style="display:none">环境变量已设置</span></label>
-            <div class="desc">百度转存走 jjsou 开放接口所需</div>
-            <input type="password" id="f-jjsou_api_key"></div>
+      <!-- 3. 首页轮播设置 -->
+      <section class="section" id="sec-carousel">
+        <div class="card-box">
+          <h3><i class="bi bi-images"></i>首页轮播图</h3>
+          <div class="tip">打开方式：「搜索关键词」点击后站内搜索；「打开外链」新窗口打开。</div>
+          <div id="m-carousel"></div>
+          <button class="btn-add" id="btn-add-carousel">＋ 添加轮播</button>
         </div>
-        <div class="field"><label>百度网盘 Cookie（可选）<span class="env-badge" data-env="BAIDU_COOKIE" style="display:none">环境变量已设置</span></label>
-          <div class="desc">需含 BDUSS/STOKEN；配了才能把资源转存到自己网盘</div>
-          <textarea id="f-baidu_cookie" placeholder="newlogin=1; BAIDUID=...; BDUSS=..."></textarea></div>
-        <div class="field"><label>百度目标目录（完整路径）<span class="env-badge" data-env="BAIDU_DIR" style="display:none">环境变量已设置</span></label>
-          <input type="text" id="f-baidu_dir" placeholder="/网盘搜索"></div>
-      </div>
+      </section>
 
-      <!-- 追剧数据 -->
-      <div class="pane" id="pane-zhuiju">
-        <div class="note">
-          这里保存<b>自定义追剧数据</b>后，播放源/轮播图/福利/友链将完全使用你编辑的 JSON，<b>不再请求上游</b>；清空后恢复从上方「数据源 URL」拉取。结构参照上游：<code>jiekou-list</code>（播放源，必填）、<code>carousel-list</code>、<code>fuli-list</code>、<code>friend-list</code>。
+      <!-- 4. APP页设置 -->
+      <section class="section" id="sec-app">
+        <div class="card-box">
+          <h3><i class="bi bi-info-circle"></i>页面信息</h3>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">标题</label><input type="text" id="m-app_page-title" class="form-control" placeholder="应用中心"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">描述</label><input type="text" id="m-app_page-desc" class="form-control" placeholder="安卓 / 苹果影视应用下载"></div>
+          </div>
         </div>
-        <div class="actions" style="margin-bottom:12px">
-          <button class="btn btn-ghost" id="import-btn">⬇️ 从上游导入（按数据源 URL 拉取）</button>
-          <button class="btn btn-danger" id="clear-zhuiju-btn">清空自定义（恢复上游）</button>
+        <div class="card-box">
+          <h3><i class="bi bi-download"></i>下载项</h3>
+          <div class="tip">APP 下载卡片列表。</div>
+          <div id="m-app-apps"></div>
+          <button class="btn-add" id="btn-add-apps">＋ 添加下载项</button>
         </div>
-        <div class="field">
-          <label>自定义数据（JSON）<span class="kv-badge" id="zhuiju-using" style="display:none">当前启用自定义数据</span></label>
-          <textarea id="f-zhuiju_data" class="code" placeholder='{"jiekou-list":[{"alias":"bfzy","name":"暴风资源","url":"https://..."}], "carousel-list":[...], ...}'></textarea>
-          <div class="status-line" id="zhuiju-meta"></div>
-        </div>
-      </div>
+      </section>
 
-      <!-- 搜索排行榜 -->
-      <div class="pane" id="pane-rank">
-        <div class="actions" style="margin-bottom:14px">
-          <button class="btn btn-ghost" id="rank-refresh">🔄 刷新</button>
-          <button class="btn btn-danger" id="rank-clear">清空全部</button>
-          <span class="status-line" id="rank-total" style="margin:0"></span>
+      <!-- 5. 播放页设置 -->
+      <section class="section" id="sec-play">
+        <div class="card-box">
+          <h3><i class="bi bi-collection-play"></i>播放页配置</h3>
+          <div class="tip">解析接口与广告位（前端接入后生效）。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">解析接口地址</label><input type="text" id="m-play_page-parse_api" class="form-control" placeholder="https://..."></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">广告代码（HTML，可空）</label><textarea id="m-play_page-ad_code" class="form-control" style="min-height:90px" placeholder="<script>...</script>"></textarea></div>
         </div>
-        <div id="rank-list"><div class="empty">加载中…</div></div>
-      </div>
+      </section>
+
+      <!-- 6. 福利页设置 -->
+      <section class="section" id="sec-welfare">
+        <div class="card-box">
+          <h3><i class="bi bi-info-circle"></i>页面信息</h3>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">标题</label><input type="text" id="m-welfare_page-title" class="form-control" placeholder="福利中心"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">描述</label><input type="text" id="m-welfare_page-desc" class="form-control" placeholder="免费福利一站领取"></div>
+          </div>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-gift"></i>福利卡片</h3>
+          <div class="tip">福利中心卡片列表。</div>
+          <div id="m-welfare-cards"></div>
+          <button class="btn-add" id="btn-add-cards">＋ 添加福利卡片</button>
+        </div>
+      </section>
+
+      <!-- 7. 其他设置 -->
+      <section class="section" id="sec-other">
+        <div class="card-box">
+          <h3><i class="bi bi-cpu"></i>AI / 接口</h3>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">AI API Key<span class="env-badge" data-env="AI_API_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-ai_api_key" class="form-control" placeholder="sk-xxx"></div>
+            <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">AI 模型<span class="env-badge" data-env="AI_MODEL" style="display:none">环境变量已设</span></label><input type="text" id="f-ai_model" class="form-control" placeholder="DeepSeek-V3"></div>
+            <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">AI Base URL<span class="env-badge" data-env="AI_BASE_URL" style="display:none">环境变量已设</span></label><input type="text" id="f-ai_base_url" class="form-control" placeholder="https://api.siliconflow.cn/v1"></div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">TMDB Key<span class="env-badge" data-env="TMDB_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-tmdb_key" class="form-control"></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设</span></label><input type="text" id="f-daily_api" class="form-control" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">网盘搜索接口<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设</span></label><input type="text" id="f-wp_api_host" class="form-control" placeholder="so.252035.xyz/api/search"></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-web3forms_access_key" class="form-control"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设</span></label><input type="text" id="f-pdlist" class="form-control" placeholder="1322205,278539,..."></div>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">追剧数据源 URL<span class="env-badge" data-env="ZUIJU_URL" style="display:none">环境变量已设</span></label><input type="text" id="f-zhuiju_url" class="form-control" placeholder="https://www.1dfx.com/api.html?type=zhuiju"></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-key"></i>网盘转存凭据</h3>
+          <div class="tip">敏感凭据仅存 KV，不出现在前端。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">夸克网盘 Cookie<span class="env-badge" data-env="QUARK_COOKIE" style="display:none">环境变量已设</span></label><textarea id="f-quark_cookie" class="form-control" style="min-height:64px" placeholder="_UP_A4A_11_=..."></textarea></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">夸克目标目录 ID<span class="env-badge" data-env="QUARK_DIR" style="display:none">环境变量已设</span></label><input type="text" id="f-quark_dir" class="form-control"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">jjsou 转存密钥<span class="env-badge" data-env="JJSOU_API_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-jjsou_api_key" class="form-control"></div>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">百度网盘 Cookie<span class="env-badge" data-env="BAIDU_COOKIE" style="display:none">环境变量已设</span></label><textarea id="f-baidu_cookie" class="form-control" style="min-height:64px" placeholder="BDUSS=..."></textarea></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">百度目标目录<span class="env-badge" data-env="BAIDU_DIR" style="display:none">环境变量已设</span></label><input type="text" id="f-baidu_dir" class="form-control" placeholder="/网盘搜索"></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-link-45deg"></i>导航与站点</h3>
+          <div class="mb-3"><label class="form-label small fw-semibold">顶部导航链接（JSON 数组）</label><textarea id="f-nav_links" class="form-control" style="min-height:80px" placeholder='[{"key":"app","href":"/app","icon":"bi-download","label":"APP下载"}]'></textarea></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">联系邮箱</label><input type="text" id="m-other-contact_email" class="form-control" placeholder="admin@example.com"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">备案号</label><input type="text" id="m-other-icp" class="form-control" placeholder="京ICP备..."></div>
+          </div>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-bar-chart"></i>搜索排行榜</h3>
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn-add" id="rank-refresh">🔄 刷新</button>
+            <button class="ri-del" id="rank-clear" style="border-radius:10px">清空全部</button>
+            <span class="text-muted small align-self-center" id="rank-total"></span>
+          </div>
+          <div id="rank-list"><div class="empty">加载中…</div></div>
+        </div>
+      </section>
 
       <div class="save-bar">
-        <button class="btn btn-primary" id="save-btn">💾 保存全部配置</button>
-        <span class="status-line" id="save-status" style="margin:0"></span>
+        <button class="btn-save" id="save-btn">💾 保存全部配置</button>
+        <span class="text-muted small" id="save-status"></span>
       </div>
     </div>
   </div>
@@ -220,8 +258,10 @@ input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3p
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
+  const SEC_TITLES = { theme:'网站主题设置', sources:'播放源设置', carousel:'首页轮播设置', app:'APP页设置', play:'播放页设置', welfare:'福利页设置', other:'其他设置' };
+
   const FIELD_KEYS = ['ai_api_key','ai_model','ai_base_url','tmdb_key','daily_api','wp_api_host',
-    'web3forms_access_key','pdlist','zhuiju_url','nav_links',
+    'web3forms_access_key','pdlist','zhuiju_url','nav_links','site_name','site_desc',
     'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir'];
   const ENV_OF = { ai_api_key:'AI_API_KEY', ai_model:'AI_MODEL', ai_base_url:'AI_BASE_URL', tmdb_key:'TMDB_KEY',
     daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
@@ -229,167 +269,183 @@ input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3p
     quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
     baidu_cookie:'BAIDU_COOKIE', baidu_dir:'BAIDU_DIR' };
 
+  // 列表型模块定义
+  const PS_FIELDS = [{ key:'name', ph:'播放源名称，如 暴风资源', cls:'re-w30' }, { key:'url', ph:'接口地址 https://...' }];
+  const CS_FIELDS = [{ key:'pic', ph:'图片链接 https://...', cls:'re-w38' }, { key:'link', ph:'搜索关键词 或 外链 URL' },
+    { key:'mode', type:'select', options:[{ value:'search', label:'搜索关键词' }, { value:'external', label:'打开外链' }] }];
+  const APP_FIELDS = [{ key:'platform', ph:'平台，如 Android', cls:'re-w20' }, { key:'name', ph:'名称' },
+    { key:'url', ph:'下载地址 https://...', cls:'re-w35' }, { key:'icon', ph:'图标 class', cls:'re-w15' }];
+  const WEL_FIELDS = [{ key:'title', ph:'标题', cls:'re-w20' }, { key:'desc', ph:'描述' },
+    { key:'icon', ph:'图标 class', cls:'re-w15' }, { key:'url', ph:'链接', cls:'re-w25' }];
+  const MODULE_FIELDS = { app_page:['title','desc'], play_page:['parse_api','ad_code'], welfare_page:['title','desc'] };
+  const MODULE_LISTS = { app_page:{ apps:APP_FIELDS }, welfare_page:{ cards:WEL_FIELDS } };
+
   let ENV_SET = {};
-  let ZUIJU_ACTIVE = false;
 
-  const toast = (msg, ok = true) => {
-    const t = $('#toast');
-    t.textContent = msg;
-    t.className = 'toast show ' + (ok ? 'ok' : 'err');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+  const toast = (m, ok=true) => { const t=$('#toast'); t.textContent=m; t.className='toast show '+(ok?'ok':'err'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
+  const getVal = (id) => { const e=$(id); return e ? (e.value||'').trim() : ''; };
+  const setVal = (id, v) => { const e=$(id); if (e) e.value = (v==null?'':v); };
+  const fillField = (k, v) => setVal('#f-'+k, v);
+
+  // ── 列表编辑器 ──
+  const buildRow = (fields, vals) => {
+    const row = document.createElement('div'); row.className='row-editor';
+    for (const f of fields) {
+      let el;
+      if (f.type === 'select') {
+        el = document.createElement('select');
+        f.options.forEach(o => { const op=document.createElement('option'); op.value=o.value; op.textContent=o.label; el.appendChild(op); });
+        if (vals[f.key] != null) el.value = vals[f.key];
+      } else { el = document.createElement('input'); el.type='text'; el.placeholder=f.ph||''; el.value = vals[f.key]!=null?vals[f.key]:''; }
+      el.className = 'ri' + (f.cls ? ' '+f.cls : ''); el.dataset.k = f.key;
+      row.appendChild(el);
+    }
+    const del = document.createElement('button'); del.className='ri-del'; del.textContent='删除';
+    del.addEventListener('click', () => row.remove()); row.appendChild(del);
+    return row;
   };
+  const renderList = (boxId, fields, arr) => { const box=$('#'+boxId); box.innerHTML=''; (Array.isArray(arr)?arr:[]).forEach(it=>box.appendChild(buildRow(fields, it))); };
+  const collectList = (boxId, fields) => Array.from($('#'+boxId).querySelectorAll('.row-editor')).map(row => {
+    const o={}; fields.forEach(f => { o[f.key] = (row.querySelector('[data-k="'+f.key+'"]')?.value||'').trim(); }); return o;
+  });
 
-  const fillField = (key, val) => {
-    const el = $('#f-' + key);
-    if (el) el.value = val == null ? '' : String(val);
+  // ── 对象型模块 ──
+  const collectObj = (mod) => {
+    const o = {};
+    (MODULE_FIELDS[mod]||[]).forEach(f => { const v=getVal('#m-'+mod+'-'+f); if (v) o[f]=v; });
+    const lists = MODULE_LISTS[mod]||{};
+    for (const lk in lists) { const arr = collectList('#m-'+mod+'-'+lk, lists[lk]); if (arr.length) o[lk]=arr; }
+    return o;
   };
-
-  const refreshEnvBadges = () => {
-    $$('[data-env]').forEach(b => {
-      const envKey = b.getAttribute('data-env');
-      const fieldKey = ENV_OF[Object.keys(ENV_OF).find(k => ENV_OF[k] === envKey)];
-      const el = $('#f-' + fieldKey);
-      const kvEmpty = !el || !el.value.trim();
-      b.style.display = (ENV_SET[envKey] && kvEmpty) ? '' : 'none';
-    });
+  const fillObj = (mod, data) => {
+    const d = (data && typeof data==='object') ? data : {};
+    (MODULE_FIELDS[mod]||[]).forEach(f => setVal('#m-'+mod+'-'+f, d[f]));
+    const lists = MODULE_LISTS[mod]||{};
+    for (const lk in lists) renderList('#m-'+mod+'-'+lk, lists[lk], d[lk]);
   };
+  const collectTheme = () => { const o={}; ['primary_color','logo_url','footer_text'].forEach(f=>{ const v=getVal('#m-theme-'+f); if(v) o[f]=v; }); return o; };
 
+  // ── 渲染整个配置 ──
   const fill = (cfg, envSet) => {
     ENV_SET = envSet || {};
     for (const k of FIELD_KEYS) fillField(k, cfg[k]);
-    const zd = cfg.zhuiju_data;
-    $('#f-zhuiju_data').value = (zd && typeof zd === 'object') ? JSON.stringify(zd, null, 2) : (typeof zd === 'string' ? zd : '');
-    ZUIJU_ACTIVE = !!(zd && typeof zd === 'object');
-    $('#zhuiju-using').style.display = ZUIJU_ACTIVE ? '' : 'none';
-    $('#zhuiju-meta').textContent = ZUIJU_ACTIVE
-      ? '自定义数据版本：' + new Date(cfg.zhuiju_updated || Date.now()).toLocaleString() + '；保存后各接口立即热加载'
-      : '当前使用上游数据源（未启用自定义数据）';
+    // 主题
+    const th = (cfg.theme && typeof cfg.theme==='object') ? cfg.theme : {};
+    ['primary_color','logo_url','footer_text'].forEach(f => setVal('#m-theme-'+f, th[f]));
+    // 列表
+    renderList('m-sources', PS_FIELDS, cfg.play_sources);
+    renderList('m-carousel', CS_FIELDS, cfg.carousels);
+    // 对象模块
+    fillObj('app_page', cfg.app_page);
+    fillObj('play_page', cfg.play_page);
+    fillObj('welfare_page', cfg.welfare_page);
+    const ot = (cfg.other && typeof cfg.other==='object') ? cfg.other : {};
+    setVal('#m-other-contact_email', ot.contact_email); setVal('#m-other-icp', ot.icp);
     refreshEnvBadges();
   };
-
   const collect = () => {
     const body = {};
-    for (const k of FIELD_KEYS) body[k] = $('#f-' + k).value.trim();
-    body.zhuiju_data = $('#f-zhuiju_data').value; // 空串=清空恢复上游
+    for (const k of FIELD_KEYS) body[k] = getVal('#f-'+k);
+    body.play_sources = collectList('m-sources', PS_FIELDS);
+    body.carousels = collectList('m-carousel', CS_FIELDS);
+    body.theme = collectTheme();
+    body.app_page = collectObj('app_page');
+    body.play_page = collectObj('play_page');
+    body.welfare_page = collectObj('welfare_page');
+    const other = {};
+    const ce = getVal('#m-other-contact_email'), ic = getVal('#m-other-icp');
+    if (ce) other.contact_email = ce; if (ic) other.icp = ic;
+    body.other = other;
     return body;
+  };
+  const refreshEnvBadges = () => {
+    $$('[data-env]').forEach(b => {
+      const ek = b.getAttribute('data-env');
+      const fk = Object.keys(ENV_OF).find(k => ENV_OF[k]===ek);
+      const el = $('#f-'+fk); const kvEmpty = !el || !el.value.trim();
+      b.style.display = (ENV_SET[ek] && kvEmpty) ? '' : 'none';
+    });
   };
 
   // ── 登录 ──
   const doLogin = async () => {
-    const btn = $('#login-btn');
-    btn.disabled = true;
+    const btn=$('#login-btn'); btn.disabled=true;
     try {
-      const r = await fetch('/api/admin/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: $('#login-user').value.trim(), pass: $('#login-pass').value }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (d.code === 1) { await init(); }
-      else toast(d.msg || '登录失败', false);
-    } catch (e) { toast('网络错误', false); }
-    finally { btn.disabled = false; }
+      const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user:getVal('#login-user'), pass:getVal('#login-pass') }) });
+      const d = await r.json().catch(()=>({}));
+      if (d.code===1) init(); else toast(d.msg||'登录失败', false);
+    } catch(_) { toast('网络错误', false); } finally { btn.disabled=false; }
   };
   $('#login-btn').addEventListener('click', doLogin);
-  $('#login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('#login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
   $('#logout-btn').addEventListener('click', async () => {
-    await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
-    $('#main-view').style.display = 'none';
-    $('#login-view').style.display = '';
-    $('#login-pass').value = '';
+    await fetch('/api/admin/logout', { method:'POST' }).catch(()=>{});
+    $('#main-view').style.display='none'; $('#login-view').style.display=''; $('#login-pass').value='';
   });
 
   // ── 初始化 ──
   async function init() {
     try {
       const r = await fetch('/api/admin/config');
-      if (r.status === 401) { $('#main-view').style.display = 'none'; $('#login-view').style.display = ''; return; }
+      if (r.status===401) { $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
       const d = await r.json();
-      if (d.code === 1) {
-        fill(d.cfg || {}, d.env_set || {});
-        $('#kv-status').innerHTML = d.kv_ready
-          ? '✅ KV 已绑定，配置读写正常'
-          : '⚠️ <b style="color:var(--warn)">KV 未绑定</b>：无法保存配置（CF Pages 后台绑定 KV 命名空间，变量名 KV 或 SEARCH_KV）';
-        $('#login-view').style.display = 'none';
-        $('#main-view').style.display = '';
+      if (d.code===1) {
+        fill(d.cfg||{}, d.env_set||{});
+        $('#kv-status').innerHTML = d.kv_ready ? '✅ KV 已绑定' : '⚠️ <span style="color:var(--warn)">KV 未绑定</span>';
+        $('#login-view').style.display='none'; $('#main-view').style.display='';
         return;
       }
-    } catch (_) {}
-    $('#login-view').style.display = '';
+    } catch(_) {}
+    $('#login-view').style.display='';
   }
 
-  // ── Tab 切换 ──
-  $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
-    $$('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    $$('.pane').forEach(p => p.classList.remove('active'));
-    $('#pane-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'rank') loadRank();
+  // ── 侧边导航 ──
+  $$('#side-nav a').forEach(a => a.addEventListener('click', () => {
+    $$('#side-nav a').forEach(x=>x.classList.remove('active')); a.classList.add('active');
+    const sec = a.dataset.section;
+    $$('.section').forEach(s=>s.classList.remove('active'));
+    $('#sec-'+sec).classList.add('active');
+    $('#sec-title').textContent = SEC_TITLES[sec] || '设置';
+    if (sec==='other') loadRank();
   }));
 
   // ── 保存 ──
   $('#save-btn').addEventListener('click', async () => {
-    const btn = $('#save-btn'), st = $('#save-status');
-    btn.disabled = true; st.textContent = '保存中…';
+    const btn=$('#save-btn'), st=$('#save-status'); btn.disabled=true; st.textContent='保存中…';
     try {
-      const r = await fetch('/api/admin/config', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(collect()),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (d.code === 1) { toast('已保存，即时生效'); st.textContent = '上次保存：' + new Date().toLocaleTimeString(); init(); }
-      else { toast(d.msg || '保存失败', false); st.textContent = ''; }
-    } catch (e) { toast('网络错误', false); st.textContent = ''; }
-    finally { btn.disabled = false; }
+      const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) });
+      const d = await r.json().catch(()=>({}));
+      if (d.code===1) { toast('已保存，即时生效'); st.textContent='上次保存：'+new Date().toLocaleTimeString(); init(); }
+      else { toast(d.msg||'保存失败', false); st.textContent=''; }
+    } catch(_) { toast('网络错误', false); st.textContent=''; } finally { btn.disabled=false; }
   });
 
-  // ── 追剧数据导入/清空 ──
-  $('#import-btn').addEventListener('click', async () => {
-    const btn = $('#import-btn');
-    btn.disabled = true; btn.textContent = '拉取中…';
-    try {
-      const r = await fetch('/api/admin/zhuiju-import', { method: 'POST' });
-      const d = await r.json();
-      if (d.code === 1) {
-        $('#f-zhuiju_data').value = JSON.stringify(d.data, null, 2);
-        toast('导入成功：' + (d.keys || []).join('、'));
-      } else toast(d.msg || '导入失败', false);
-    } catch (e) { toast('网络错误', false); }
-    finally { btn.disabled = false; btn.textContent = '⬇️ 从上游导入（按数据源 URL 拉取）'; }
-  });
-  $('#clear-zhuiju-btn').addEventListener('click', () => {
-    $('#f-zhuiju_data').value = '';
-    toast('已清空，点「保存全部配置」后恢复上游数据');
-  });
+  // ── 添加按钮 ──
+  $('#btn-add-sources').addEventListener('click', () => $('#m-sources').appendChild(buildRow(PS_FIELDS, {})));
+  $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
+  $('#btn-add-apps').addEventListener('click', () => $('#m-app-apps').appendChild(buildRow(APP_FIELDS, {})));
+  $('#btn-add-cards').addEventListener('click', () => $('#m-welfare-cards').appendChild(buildRow(WEL_FIELDS, {})));
 
-  // ── 排行榜管理 ──
-  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // ── 搜索排行榜 ──
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   async function loadRank() {
-    const box = $('#rank-list');
-    box.innerHTML = '<div class="empty">加载中…</div>';
+    const box=$('#rank-list'); box.innerHTML='<div class="empty">加载中…</div>';
     try {
       const r = await fetch('/api/admin/rank');
-      if (r.status === 401) { toast('登录已过期', false); $('#main-view').style.display = 'none'; $('#login-view').style.display = ''; return; }
+      if (r.status===401) { toast('登录已过期', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
       const d = await r.json();
-      if (d.code !== 1) { box.innerHTML = '<div class="empty">' + esc(d.msg || '加载失败') + '</div>'; return; }
-      $('#rank-total').textContent = '累计 ' + (d.total || 0) + ' 个词';
-      if (!d.list || !d.list.length) { box.innerHTML = '<div class="empty">暂无数据（用户搜索后自动累计）</div>'; return; }
-      box.innerHTML = d.list.map((it, i) =>
-        '<div class="rank-item"><span class="rank-no' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</span>'
-        + '<span class="rank-word">' + esc(it.word) + '</span>'
-        + '<span class="rank-count">' + it.count + ' 次</span>'
-        + '<button class="rank-del" data-w="' + esc(it.word) + '">删除</button></div>'
-      ).join('');
-      box.querySelectorAll('.rank-del').forEach(b => b.addEventListener('click', () => rankAction('?word=' + encodeURIComponent(b.dataset.w), '已删除')));
-    } catch (e) { box.innerHTML = '<div class="empty">网络错误</div>'; }
+      if (d.code!==1) { box.innerHTML='<div class="empty">'+esc(d.msg||'加载失败')+'</div>'; return; }
+      $('#rank-total').textContent = '累计 '+(d.total||0)+' 个词';
+      if (!d.list || !d.list.length) { box.innerHTML='<div class="empty">暂无数据</div>'; return; }
+      box.innerHTML = d.list.map((it,i) =>
+        '<div class="rank-item"><span class="rank-no'+(i<3?' top':'')+'">'+(i+1)+'</span>'
+        +'<span class="rank-word">'+esc(it.word)+'</span><span class="rank-count">'+it.count+' 次</span>'
+        +'<button class="ri-del" data-w="'+esc(it.word)+'" style="border-radius:9px">删除</button></div>').join('');
+      box.querySelectorAll('.ri-del').forEach(b => b.addEventListener('click', () => rankAction('?word='+encodeURIComponent(b.dataset.w), '已删除')));
+    } catch(_) { box.innerHTML='<div class="empty">网络错误</div>'; }
   }
   async function rankAction(qs, okMsg) {
-    try {
-      const r = await fetch('/api/admin/rank' + qs, { method: 'DELETE' });
-      const d = await r.json();
-      toast(d.code === 1 ? (d.msg || okMsg) : (d.msg || '操作失败'), d.code === 1);
-      loadRank();
-    } catch (e) { toast('网络错误', false); }
+    try { const r = await fetch('/api/admin/rank'+qs, { method:'DELETE' }); const d = await r.json(); toast(d.code===1?(d.msg||okMsg):(d.msg||'操作失败'), d.code===1); loadRank(); } catch(_) { toast('网络错误', false); }
   }
   $('#rank-refresh').addEventListener('click', loadRank);
   $('#rank-clear').addEventListener('click', () => { if (confirm('确定清空全部搜索热词？')) rankAction('', '已清空'); });

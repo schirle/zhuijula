@@ -346,6 +346,18 @@
             } catch (e) { _zhuijuCache = {}; }
             return _zhuijuCache;
         }
+        function applySiteMeta(d) {
+            if (d && d.site_name) {
+                const n = d.site_name;
+                document.title = n;
+                const ot = document.querySelector('meta[property="og:title"]'); if (ot) ot.content = n;
+            }
+            if (d && d.site_desc) {
+                const m = document.querySelector('meta[name="description"]'); if (m) m.content = d.site_desc;
+                const od = document.querySelector('meta[property="og:description"]'); if (od) od.content = d.site_desc;
+            }
+        }
+
         async function loadCarousel() {
             const track = document.getElementById('hc-track');
             const dotsEl = document.getElementById('hc-dots');
@@ -356,13 +368,14 @@
                 const data = await getZhuijuData();
                 items = (data && Array.isArray(data['carousel-list'])) ? data['carousel-list'] : [];
             } catch (e) { items = []; }
+            applySiteMeta(data);
             if (!items.length) { carouselEl.style.display = 'none'; return; }
             track.innerHTML = ''; dotsEl.innerHTML = '';
             items.forEach((it, i) => {
                 const slide = document.createElement('div');
                 slide.className = 'hc-slide';
                 const link = it.link || '#';
-                const isExternal = /^https?:\/\//.test(link);
+                const mode = it.mode || (/^https?:\/\//.test(link) ? 'external' : 'search');
                 const a = document.createElement('a');
                 a.href = esc(link);
                 const img = document.createElement('img');
@@ -380,15 +393,10 @@
                 if (img.complete && img.naturalWidth) fitImg();
                 window.guardImg(img, 4000);
                 a.appendChild(img);
-                if (isExternal) {
+                if (mode === 'external') {
                     a.target = '_blank'; a.rel = 'nofollow noopener';
                 } else {
-                    
-                    a.addEventListener('click', e => {
-                        e.preventDefault();
-                        const m = link.match(/[?&]key=([^&]+)/);
-                        window.searchMovie(m ? decodeURIComponent(m[1]) : '');
-                    });
+                    a.addEventListener('click', e => { e.preventDefault(); window.searchMovie(link.trim()); });
                 }
                 slide.appendChild(a);
                 track.appendChild(slide);

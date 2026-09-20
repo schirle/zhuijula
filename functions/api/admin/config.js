@@ -7,7 +7,36 @@ const STR_FIELDS = [
   'ai_api_key', 'ai_model', 'ai_base_url', 'nav_links', 'pdlist', 'wp_api_host',
   'quark_cookie', 'quark_dir', 'baidu_cookie', 'baidu_dir', 'jjsou_api_key',
   'web3forms_access_key', 'tmdb_key', 'daily_api', 'zhuiju_url',
+  'site_name', 'site_desc',
 ];
+const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
+
+// 结构化列表（数组；空数组 = 清除）
+const LIST_FIELDS = {
+  play_sources: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '播放源必须是对象';
+      it.name = String(it.name || '').trim();
+      it.url = String(it.url || '').trim();
+      if (!it.name) return '播放源名称不能为空';
+      if (!/^https?:\/\//i.test(it.url)) return '播放源地址必须以 http(s):// 开头';
+      it.alias = String(it.alias || '').trim() || slugify(it.name);
+      return null;
+    },
+  },
+  carousels: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '轮播项必须是对象';
+      it.pic = String(it.pic || '').trim();
+      it.link = String(it.link || '').trim();
+      it.mode = it.mode === 'external' ? 'external' : 'search';
+      if (!it.pic) return '轮播图片链接不能为空';
+      if (!it.link) return '轮播打开链接/关键词不能为空';
+      if (it.mode === 'external' && !/^https?:\/\//i.test(it.link)) return '外链必须以 http(s):// 开头';
+      return null;
+    },
+  },
+};
 // 环境变量兜底提示（仅回是否已设置，不回值）
 const ENV_HINTS = {
   AI_API_KEY: 'ai_api_key', AI_MODEL: 'ai_model', AI_BASE_URL: 'ai_base_url',
@@ -58,6 +87,40 @@ async function handleAdminConfig(request, _url, context) {
         return json({ code: 0, msg: '「追剧数据源 URL」必须以 http(s):// 开头' }, 400);
       }
       if (s) cfg[k] = s; else delete cfg[k];
+    }
+
+    // 结构化列表：播放源 / 首页轮播
+    for (const key of Object.keys(LIST_FIELDS)) {
+      if (!(key in body)) continue;
+      let arr = body[key];
+      if (typeof arr === 'string') {
+        const t = arr.trim();
+        arr = t ? JSON.parse(t) : [];
+      }
+      if (!Array.isArray(arr)) return json({ code: 0, msg: '「' + key + '」必须是数组' }, 400);
+      for (let i = 0; i < arr.length; i++) {
+        const err = LIST_FIELDS[key].validate(arr[i] || {});
+        if (err) return json({ code: 0, msg: '「' + key + '」第 ' + (i + 1) + ' 项' + err }, 400);
+      }
+      if (arr.length) cfg[key] = arr; else delete cfg[key];
+    }
+
+    // 对象型模块：网站主题 / APP页 / 播放页 / 福利页 / 其他（对象；空对象 = 清除）
+    for (const key of ['theme', 'app_page', 'play_page', 'welfare_page', 'other']) {
+      if (!(key in body)) continue;
+      let o = body[key];
+      if (typeof o === 'string') {
+        const t = o.trim();
+        if (!t) { delete cfg[key]; continue; }
+        try { o = JSON.parse(t); } catch (_) { return json({ code: 0, msg: '「' + key + '」不是合法 JSON 对象' }, 400); }
+      }
+      if (o && typeof o === 'object' && !Array.isArray(o)) {
+        if (Object.keys(o).length) cfg[key] = o; else delete cfg[key];
+      } else if (o == null) {
+        delete cfg[key];
+      } else {
+        return json({ code: 0, msg: '「' + key + '」必须是对象' }, 400);
+      }
     }
 
     // 追剧自定义数据：对象或 JSON 字符串；空 = 清除（恢复上游）
