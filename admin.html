@@ -278,7 +278,6 @@
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设</span></label><input type="text" id="f-daily_api" class="form-control" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">网盘搜索接口<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设</span></label><input type="text" id="f-wp_api_host" class="form-control" placeholder="so.252035.xyz/api/search"></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设</span></label><input type="text" id="f-pdlist" class="form-control" placeholder="1322205,278539,..."></div>
-            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">追剧/福利数据源（ZUIJU_URL）<span class="env-badge" data-env="ZUIJU_URL" style="display:none">环境变量已设</span></label><input type="text" id="f-zhuiju_url" class="form-control" placeholder="https://你的数据源/api.html?type=zhuiju"></div>
           </div>
           <div class="mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-web3forms_access_key" class="form-control"></div>
         </div>
@@ -347,16 +346,15 @@
 <script>
 (() => {
   'use strict';
-  // ★ 开发预览开关：true = 跳过登录直接进面板（先把设置功能做完）；最后上线改回 false 走真实登录
-  const DEV_BYPASS_LOGIN = true;
+  // 后台鉴权：登录强制开启（账号密码来自 Cloudflare 环境变量 ADMIN_USER / ADMIN_PASS）
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
   const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', pages:'新建页面', other:'其他设置' };
 
-  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','pdlist','zhuiju_url','site_name','site_desc',
+  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','pdlist','site_name','site_desc',
     'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir','stats_code'];
   const ENV_OF = { daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
-    pdlist:'PDlist', zhuiju_url:'ZUIJU_URL', quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
+    pdlist:'PDlist', quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
     baidu_cookie:'BAIDU_COOKIE', baidu_dir:'BAIDU_DIR' };
 
   // 列表型模块定义
@@ -565,7 +563,7 @@
   async function init() {
     try {
       const r = await fetch('/api/admin/config');
-      if (r.status===401 && !DEV_BYPASS_LOGIN) { $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
+      if (r.status===401) { $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
       const d = await r.json();
       if (d.code===1) {
         fill(d.cfg||{}, d.env_set||{});
@@ -573,10 +571,9 @@
         $('#login-view').style.display='none'; $('#main-view').style.display='';
         return;
       }
-      if (!DEV_BYPASS_LOGIN) toast(d.msg || '配置加载失败', false);
+      toast(d.msg || '配置加载失败', false);
     } catch(_) { /* 接口不通（本地/预览环境无 Functions）时静默 */ }
-    if (DEV_BYPASS_LOGIN) { $('#login-view').style.display='none'; $('#main-view').style.display=''; }
-    else $('#login-view').style.display='';
+    $('#login-view').style.display='';
   }
 
   // ── 侧边导航 ──
@@ -596,7 +593,7 @@
       const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) });
       const d = await r.json().catch(()=>({}));
       if (d.code===1) { toast('已保存，即时生效'); st.textContent='上次保存：'+new Date().toLocaleTimeString(); init(); }
-      else if (r.status===401 && DEV_BYPASS_LOGIN) { toast('开发模式：请在 Cloudflare 设置 ADMIN_DEV=1 变量后保存（上线前删除）', false); st.textContent=''; }
+      else if (r.status===401) { toast('登录已过期，请重新登录', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; st.textContent=''; }
       else { toast(d.msg||'保存失败', false); st.textContent=''; }
     } catch(_) { toast('网络错误', false); st.textContent=''; } finally { btn.disabled=false; }
   });
@@ -616,7 +613,7 @@
       const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(partial) });
       const d = await r.json().catch(()=>({}));
       if (d.code===1) { toast('已保存，即时生效'); after(); }
-      else if (r.status===401 && DEV_BYPASS_LOGIN) { toast('开发模式：请在 Cloudflare 设置 ADMIN_DEV=1 变量后保存（上线前删除）', false); }
+      else if (r.status===401) { toast('登录已过期，请重新登录', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; }
       else toast(d.msg||'保存失败', false);
     } catch(_) { toast('网络错误', false); } finally { btn.disabled=false; }
   };
@@ -640,7 +637,6 @@
     try {
       const r = await fetch('/api/admin/rank');
       if (r.status===401) {
-        if (DEV_BYPASS_LOGIN) { box.innerHTML='<div class="empty">开发预览模式：登录功能未开启，排行榜需在正式登录后显示</div>'; return; }
         toast('登录已过期', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; return;
       }
       const d = await r.json();

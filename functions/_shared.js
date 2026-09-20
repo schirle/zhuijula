@@ -128,8 +128,6 @@ export async function createAdminSession(env) {
 }
 
 export async function isAdminRequest(request, env) {
-  // 开发预览模式：设置环境变量 ADMIN_DEV=1 可跳过登录校验（仅本地/预发布用，上线前务必删除该变量）
-  if (env && env.ADMIN_DEV) return true;
   const kv = getKV(env);
   if (!kv) return false;
   const m = (request.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + ADMIN_COOKIE + '=([a-f0-9]{32,128})'));

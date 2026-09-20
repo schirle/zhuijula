@@ -6,7 +6,7 @@ export const onRequest = makeRoute(handleAdminConfig);
 const STR_FIELDS = [
   'pdlist', 'wp_api_host',
   'quark_cookie', 'quark_dir', 'baidu_cookie', 'baidu_dir', 'jjsou_api_key',
-  'web3forms_access_key', 'daily_api', 'zhuiju_url',
+  'web3forms_access_key', 'daily_api',
   'site_name', 'site_desc', 'stats_code',
 ];
 const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
@@ -125,7 +125,7 @@ const ENV_HINTS = {
   QUARK_COOKIE: 'quark_cookie', QUARK_DIR: 'quark_dir',
   BAIDU_COOKIE: 'baidu_cookie', BAIDU_DIR: 'baidu_dir',
   JJSOU_API_KEY: 'jjsou_api_key', WEB3FORMS_ACCESS_KEY: 'web3forms_access_key',
-  DAILY_API: 'daily_api', ZUIJU_URL: 'zhuiju_url',
+  DAILY_API: 'daily_api',
 };
 
 async function handleAdminConfig(request, _url, context) {

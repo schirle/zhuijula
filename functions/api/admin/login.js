@@ -12,16 +12,6 @@ async function sha256hex(s) {
 async function handleAdminLogin(request, _url, context) {
   if (request.method !== 'POST') return json({ code: 0, msg: '仅支持 POST' }, 405);
   const env = context?.env || {};
-  // 开发预览模式：ADMIN_DEV=1 时免账号密码直接发会话（上线前删除该变量）
-  if (env.ADMIN_DEV) {
-    const token = await createAdminSession(env);
-    let cfg = {};
-    try { cfg = await loadSiteConfig(env, true); } catch (_) {}
-    return new Response(JSON.stringify({ code: 1, cfg, env_set: {}, kv_ready: !!(env.KV || env.SEARCH_KV) }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json;charset=utf-8', ...(token ? { 'Set-Cookie': adminCookieHeader(token) } : {}), ...CORS },
-    });
-  }
   const user = (env.ADMIN_USER || '').toString().trim();
   const pass = (env.ADMIN_PASS || '').toString();
   if (!user || !pass) return json({ code: 0, msg: '服务端未配置 ADMIN_USER / ADMIN_PASS 环境变量' }, 500);
