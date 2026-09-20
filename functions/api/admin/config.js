@@ -133,7 +133,6 @@ async function handleAdminConfig(request, _url, context) {
       cfg,
       env_set,
       kv_ready: !!(env.KV || env.SEARCH_KV),
-      default_zhuiju_url: CFG.ZUIJU_API,
     });
   }
 

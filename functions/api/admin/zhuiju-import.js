@@ -9,7 +9,7 @@ async function handleZhuijuImport(request, _url, context) {
   if (!await isAdminRequest(request, env)) return adminDenied();
 
   const cfg = await loadSiteConfig(env, true);
-  const url = cfgVal(cfg, env, 'zhuiju_url', 'ZUIJU_URL') || CFG.ZUIJU_API;
+  const url = cfgVal(cfg, env, 'zhuiju_url', 'ZUIJU_URL');
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 20000);
   try {
