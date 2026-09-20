@@ -11,7 +11,7 @@
 // 后续「加载更多」只做数组切片，保证条目不重不漏，hasMore 基于真实影视数量判断。
 
 import { buildPdlist } from './pdlist.js';
-import { fetchDoubanJson as fetchJson, cacheGet, cachePut, resolveEnv } from '../_shared.js';
+import { fetchDoubanJson as fetchJson, cacheGet, cachePut, resolveEnv, CORS } from '../_shared.js';
 
 // 抓取片单元信息 + 全部影视条目（已过滤 非 movie/tv）
 // 并发抓取前若干页（默认 8 页 / 400 条），单请求 6s 超时，整体必在数秒内返回，
@@ -46,10 +46,12 @@ const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
   // 缩短浏览器缓存：避免 rexxar 抖动期间的残缺数据在用户端滞留 30 天
   'Cache-Control': 'public, s-maxage=21600, max-age=3600, stale-while-revalidate=86400',
+  ...CORS,
 };
 const noStoreHeaders = {
   'content-type': 'application/json; charset=utf-8',
   'Cache-Control': 'no-store',
+  ...CORS,
 };
 
 export async function onRequest(context) {

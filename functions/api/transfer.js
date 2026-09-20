@@ -18,14 +18,14 @@
 // 转存目录（可选，不配则存根目录 / 默认目录）：
 //   QUARK_DIR —— 夸克目标目录「目录 ID」（不是目录名）
 //   BAIDU_DIR —— 百度目标目录「完整路径」，例如 /网盘搜索/zj（不存在会自动创建）
-import { makeRoute, resolveEnv } from '../_shared.js';
+import { makeRoute, resolveEnv, CORS } from '../_shared.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    headers: { 'content-type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...CORS },
   });
 }
 

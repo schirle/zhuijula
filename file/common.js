@@ -113,23 +113,59 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 10000) => {
   }
 };
 
-// 统一站点配置读取：全站共享一份（内存 5 分钟缓存），避免 /api/config 被导航、弹窗、广告等多模块重复请求
-let _cfgCache = null, _cfgTs = 0;
+// 统一站点配置读取：全站共享一份（内存 5 分钟缓存）；并发调用共享同一请求（单例 Promise），
+// 避免 /api/config 被导航、弹窗、广告等多模块在 DOMContentLoaded 同时触发时重复请求
+let _cfgCache = null, _cfgTs = 0, _cfgPromise = null;
 const getSiteConfig = async (force = false) => {
-  const now = Date.now();
-  if (!force && _cfgCache && (now - _cfgTs) < 300000) return _cfgCache;
-  try {
-    const r = await fetch('/api/config');
-    if (!r.ok) { if (_cfgCache) return _cfgCache; throw new Error('HTTP ' + r.status); }
-    const d = await r.json();
-    _cfgCache = d; _cfgTs = now;
-    return d;
-  } catch (e) {
-    if (_cfgCache) return _cfgCache;
-    throw e;
-  }
+  // 命中内存缓存（5 分钟内）直接返回，不发起新请求
+  if (!force && _cfgCache && (Date.now() - _cfgTs) < 300000) return _cfgCache;
+  // 进行中的请求：并发调用复用同一 Promise，避免重复 fetch
+  if (!force && _cfgPromise) return _cfgPromise;
+  _cfgPromise = (async () => {
+    try {
+      const r = await fetch('/api/config');
+      if (!r.ok) { if (_cfgCache) return _cfgCache; throw new Error('HTTP ' + r.status); }
+      const d = await r.json();
+      _cfgCache = d; _cfgTs = Date.now();
+      return d;
+    } catch (e) {
+      if (_cfgCache) return _cfgCache;
+      throw e;
+    } finally {
+      _cfgPromise = null; // 完成后清空，下次走缓存或重新拉取
+    }
+  })();
+  return _cfgPromise;
 };
 window.getSiteConfig = getSiteConfig;
+
+// 复制到剪贴板：优先 Clipboard API，降级到 execCommand；供各页面共用（app/search 等）
+const fallbackCopy = (text) =>
+  new Promise((resolve, reject) => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy') ? resolve() : reject();
+      document.body.removeChild(ta);
+    } catch (e) { reject(e); }
+  });
+const copyText = (text) => {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  }
+  return fallbackCopy(text);
+};
+window.copyText = copyText;
+
+// 统一的 DOM 就绪回调，收敛各页面重复的 readyState 样板
+window.onReady = (fn) => {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+  else fn();
+};
 
 
 const isMobile = () => window.innerWidth <= 768;
@@ -210,8 +246,7 @@ const initBackToTop = () => {
   btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   toggle();
 };
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBackToTop);
-else initBackToTop();
+onReady(initBackToTop);
 
 // ===== 统一顶部导航：自动渲染、移除福利入口、当前页高亮 =====
 const NAV_PAGES = {
@@ -244,7 +279,7 @@ const renderNav = async () => {
     '</a>';
 
   let actions = '';
-  if (page === 'home') actions += '<button id="nav-history" class="nav-btn" type="button" title="观看历史"><i class="fas fa-clock-rotate-left"></i></button>';
+  if (['home', 'search', 'play'].includes(page)) actions += '<button id="nav-history" class="nav-btn" type="button" title="观看历史"><i class="fas fa-clock-rotate-left"></i></button>';
   actions += '<button id="theme-toggle" class="nav-btn" type="button" title="切换深色 / 浅色"><i class="fas fa-moon"></i></button>';
   if (cfg.back) {
     actions += '<button class="nav-btn" id="nav-back" type="button" title="返回"><i class="fas fa-arrow-left"></i><span>返回</span></button>';
@@ -256,7 +291,7 @@ const renderNav = async () => {
     if (history.length > 1) history.back(); else location.href = '/';
   });
   initThemeToggle();
-  if (page === 'home') initHistoryPanel();
+  if (['home', 'search', 'play'].includes(page)) initHistoryPanel();
 
   const links = Array.isArray(data.nav_links) ? data.nav_links : [];
   const navActions = root.querySelector('.nav-actions');
@@ -407,7 +442,5 @@ const initFirstPopup = () => {
   } catch (e) {}
 };
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderNav);
-else renderNav();
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFirstPopup);
-else initFirstPopup();
+onReady(renderNav);
+onReady(initFirstPopup);

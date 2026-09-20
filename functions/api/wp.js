@@ -17,34 +17,28 @@
 // 接口地址前缀通过 Pages 环境变量 WP_API_HOST 配置（必须配置，无默认值），
 // 形如 api.iyuns.com/api/wpysso（含路径，不要带协议头，也不要带尾部斜杠）。
 // 实际请求 = https://{WP_API_HOST}?cloud_types=...&kw=...，路径变更只需改变量。
-import { makeRoute, resolveEnv } from '../_shared.js';
+import { makeRoute, resolveEnv, fetchWithRetry, CORS } from '../_shared.js';
 
 // 支持的平台：作为 cloud_types 逐个请求（与示例格式 cloud_types=baidu 一致，最稳妥）
 const TYPES = ['baidu', 'quark', 'uc', 'xunlei'];
 
+// 复用共享 fetchWithRetry（超时 + 失败归一 _error），去除重复的 AbortController 样板
 async function fetchType(word, type, host) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
-  try {
-    const apiUrl = `https://${host}?cloud_types=${encodeURIComponent(type)}&kw=${encodeURIComponent(word)}`;
-    const r = await fetch(apiUrl, {
-      signal: ctrl.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'zh-CN,zh;q=0.9',
-      },
-    });
-    if (r.status !== 200) return [];
-    const j = await r.json().catch(() => ({}));
-    // 兼容：data.merged_by_type[type] 或 data.results[type]
-    const bucket = j?.data?.merged_by_type?.[type] || j?.data?.results?.[type] || [];
-    return Array.isArray(bucket) ? bucket : [];
-  } catch {
-    return [];
-  } finally {
-    clearTimeout(timer);
-  }
+  const apiUrl = `https://${host}?cloud_types=${encodeURIComponent(type)}&kw=${encodeURIComponent(word)}`;
+  const r = await fetchWithRetry(apiUrl, {
+    timeout: 15000,
+    retries: 0,
+    asJson: true,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'zh-CN,zh;q=0.9',
+    },
+  });
+  if (!r || r._error) return [];
+  // 兼容：data.merged_by_type[type] 或 data.results[type]
+  const bucket = r?.data?.merged_by_type?.[type] || r?.data?.results?.[type] || [];
+  return Array.isArray(bucket) ? bucket : [];
 }
 
 function normalize(items, type) {
@@ -139,6 +133,7 @@ function json(data, status = 200) {
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'Cache-Control': 'public, s-maxage=3600, max-age=3600',
+      ...CORS,
     },
   });
 }

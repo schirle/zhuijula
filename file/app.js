@@ -65,12 +65,11 @@
     list.innerHTML = html;
   };
 
-  // 当天（本地日期）新增/修改的 APP 显示「新」角标；ut 由后台保存时间生成，仅作判断不展示
-  const isToday = (ts) => {
+  // 近 2 天（48 小时）内新增/修改的 APP 显示「新」角标；ut 由后台保存时间生成，仅作判断不展示
+  const isRecent = (ts) => {
     if (!ts) return false;
-    const d = new Date(ts < 1e12 ? ts * 1000 : ts);
-    const n = new Date();
-    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+    const t = ts < 1e12 ? ts * 1000 : ts;
+    return Date.now() - t <= 2 * 24 * 3600 * 1000;
   };
 
   const buildCard = (category, app) => {
@@ -83,7 +82,7 @@
       `<div class="app-card__media"><img src="${esc(app.pic || '')}" alt="${esc(app.name)}" loading="lazy" onerror="window.imgFallback(this)"></div>` +
       `<h3 class="app-card__name">${esc(app.name)}</h3>` +
       `<button class="app-card__btn" type="button"><i class="${p.ctaIcon}"></i> ${esc(p.cta)}</button>` +
-      (isToday(app.ut) ? '<span class="app-card__badge">新</span>' : '');
+      (isRecent(app.ut) ? '<span class="app-card__badge">新</span>' : '');
     return div;
   };
 
@@ -125,30 +124,6 @@
     renderAppList(DEVICE);
   };
 
-  const copyText = (text) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-    }
-    return fallbackCopy(text);
-  };
-
-  const fallbackCopy = (text) =>
-    new Promise((resolve, reject) => {
-      try {
-        const ta = doc.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        doc.body.appendChild(ta);
-        ta.select();
-        const ok = doc.execCommand('copy');
-        doc.body.removeChild(ta);
-        ok ? resolve() : reject();
-      } catch (e) {
-        reject(e);
-      }
-    });
-
   const openModal = (title, bodyHtml) => {
     const overlay = $('#app-modal');
     if (!overlay) return;
@@ -183,15 +158,15 @@
         ? `<div class="download-title">选择下载方式</div><div class="download-links-container">${links}</div>`
         : '<div class="no-download-link">暂无下载链接</div>';
     } else if (category === 'ios') {
-      if (info.link) {
-        html += `<a href="https://apps.apple.com/cn/app/id${esc(info.link)}" target="_blank" rel="noopener" class="app-store-download-btn"><i class="fab fa-apple"></i> App Store 下载</a>`;
-      }
       const code = String(info.copy || '').trim();
       if (code) {
         html += `<div class="download-title">兑换口令（复制后在 App Store 粘贴）</div><div class="dl-code">${esc(code)}</div><button class="copy-btn" type="button"><i class="fas fa-copy"></i> 复制口令</button>`;
       } else if (info.text) {
         const t = String(info.text).replace(/\n/g, '<br>');
         html += `<div class="download-title">${t}</div>`;
+      }
+      if (info.link) {
+        html += `<a href="https://apps.apple.com/cn/app/id${esc(info.link)}" target="_blank" rel="noopener" class="app-store-download-btn"><i class="fab fa-apple"></i> App Store 下载</a>`;
       }
     }
     return html;
