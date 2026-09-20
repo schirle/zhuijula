@@ -285,8 +285,8 @@
 <script>
 (() => {
   'use strict';
-  // ★ 临时开关：true = 跳过登录直接进面板（调界面用）；正常部署请保持 false，走真实登录
-  const DEV_BYPASS_LOGIN = false;
+  // ★ 开发预览开关：true = 跳过登录直接进面板（先把设置功能做完）；最后上线改回 false 走真实登录
+  const DEV_BYPASS_LOGIN = true;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
   const SEC_TITLES = { theme:'网站主题设置', sources:'播放源设置', carousel:'首页轮播设置', app:'APP页设置', play:'播放页设置', welfare:'福利页设置', other:'其他设置' };
@@ -512,12 +512,12 @@
 
   // ── 保存 ──
   $('#save-btn').addEventListener('click', async () => {
-    if (DEV_BYPASS_LOGIN) { toast('登录功能临时关闭中，保存暂不可用；界面调好后再恢复', false); return; }
     const btn=$('#save-btn'), st=$('#save-status'); btn.disabled=true; st.textContent='保存中…';
     try {
       const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) });
       const d = await r.json().catch(()=>({}));
       if (d.code===1) { toast('已保存，即时生效'); st.textContent='上次保存：'+new Date().toLocaleTimeString(); init(); }
+      else if (r.status===401 && DEV_BYPASS_LOGIN) { toast('开发模式：请在 Cloudflare 设置 ADMIN_DEV=1 变量后保存（上线前删除）', false); st.textContent=''; }
       else { toast(d.msg||'保存失败', false); st.textContent=''; }
     } catch(_) { toast('网络错误', false); st.textContent=''; } finally { btn.disabled=false; }
   });
@@ -535,7 +535,10 @@
     const box=$('#rank-list'); box.innerHTML='<div class="empty">加载中…</div>';
     try {
       const r = await fetch('/api/admin/rank');
-      if (r.status===401) { toast('登录已过期', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
+      if (r.status===401) {
+        if (DEV_BYPASS_LOGIN) { box.innerHTML='<div class="empty">开发预览模式：登录功能未开启，排行榜需在正式登录后显示</div>'; return; }
+        toast('登录已过期', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; return;
+      }
       const d = await r.json();
       if (d.code!==1) { box.innerHTML='<div class="empty">'+esc(d.msg||'加载失败')+'</div>'; return; }
       $('#rank-total').textContent = '累计 '+(d.total||0)+' 个词';
