@@ -61,7 +61,16 @@
   .app-card-edit .btn-add{display:inline-block}
   .app-wrap{display:flex;gap:20px;align-items:stretch;margin-bottom:20px}
   .app-form{flex:1;min-width:0;margin-bottom:0}
-  .app-preview{flex:0 0 320px;background:#0f172a;color:#cbd5e1;border-radius:14px;padding:20px;overflow:auto}
+  .app-pv-wrap{flex:0 0 320px;display:flex;flex-direction:column;min-width:0}
+  .app-search{width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none}
+  .app-search:focus{border-color:#3b82f6}
+  .app-search::placeholder{color:#64748b}
+  .app-preview{flex:1 1 auto;background:#0f172a;color:#cbd5e1;border-radius:14px;padding:16px 16px 8px;overflow-y:auto;max-height:500px;scrollbar-width:thin;scrollbar-color:#334155 transparent}
+  .app-preview::-webkit-scrollbar{width:6px}
+  .app-preview::-webkit-scrollbar-thumb{background:#334155;border-radius:999px}
+  .app-preview::-webkit-scrollbar-track{background:transparent}
+  .app-preview .pv-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:-16px;margin:-16px -16px 12px;padding:12px 16px;background:#0f172a;font-size:12.5px;color:#94a3b8;border-bottom:1px solid #1e293b;z-index:1}
+  .app-preview .pv-head b{color:#7dd3fc;font-size:13px}
   .app-preview .pv-empty{color:#64748b;text-align:center;padding:70px 0;font-size:13px}
   .app-preview img{max-width:110px;max-height:110px;border-radius:12px;display:block;margin:0 auto 10px;object-fit:contain}
   .app-preview .pv-name{text-align:center;font-weight:700;color:#fff;font-size:15px;margin-bottom:12px}
@@ -117,7 +126,7 @@
     .row-editor .ri-del{flex:1 1 100%}
     .save-bar{left:0;right:0;padding:14px}
     .app-wrap{flex-direction:column}
-    .app-preview{flex:auto;width:100%}
+    .app-pv-wrap{width:100%}
   }
   @media(max-width:480px){
     .row{padding:0}
@@ -255,7 +264,10 @@
             <button class="btn-save" id="android-save" style="margin-top:14px">💾 保存</button>
             <button class="btn-add" id="android-cancel" style="margin-top:14px;display:none">取消编辑</button>
           </div>
-          <div class="app-preview" id="android-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
+          <div class="app-pv-wrap">
+            <input class="app-search" id="android-search" type="search" placeholder="🔍 搜索已添加的 APP…">
+            <div class="app-preview" id="android-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
+          </div>
         </div>
         <div class="app-wrap">
           <div class="card-box app-form">
@@ -273,7 +285,10 @@
             <button class="btn-save" id="ios-save" style="margin-top:14px">💾 保存</button>
             <button class="btn-add" id="ios-cancel" style="margin-top:14px;display:none">取消编辑</button>
           </div>
-          <div class="app-preview" id="ios-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
+          <div class="app-pv-wrap">
+            <input class="app-search" id="ios-search" type="search" placeholder="🔍 搜索已添加的 APP…">
+            <div class="app-preview" id="ios-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
+          </div>
         </div>
       </section>
 
@@ -428,6 +443,7 @@
   // ── 安卓 / 苹果 APP 编辑器（固定表单 + 已保存列表：悬停 修改/删除；记录新增/修改时间供前端「新」角标）──
   let androidApps = [], iosApps = [];
   let androidEditIdx = -1, iosEditIdx = -1;
+  let androidKw = '', iosKw = '';
   const fillAndroid = (it) => {
     it = it || {};
     const methods = Array.isArray(it.methods) ? it.methods : [];
@@ -452,7 +468,13 @@
   };
 
   // 右侧列表：每条悬停显示 修改 / 删除
-  const appRowHtml = (app, kind, idx) => {
+  const filterApps = (apps, kw) => {
+    const list = apps.map((a, i) => ({ app: a, idx: i }));
+    if (!kw) return list;
+    const k = kw.toLowerCase();
+    return list.filter(o => (o.app.name || '').toLowerCase().includes(k)); // 仅按标题搜索
+  };
+  const appRowHtml = (app, kind, idx, kw) => {
     const methods = Array.isArray(app.methods) ? app.methods : [];
     let sub = '';
     if (kind === 'android') {
@@ -466,13 +488,28 @@
       + '<div class="as-acts"><button type="button" class="as-btn edit">修改</button><button type="button" class="as-btn del">删除</button></div>'
       + '</div>';
   };
+  const appListHtml = (apps, kind, kw) => {
+    const list = filterApps(apps, kw);
+    if (!apps.length) return '<div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div>';
+    if (kw && !list.length) return '<div class="pv-empty">未找到匹配「' + esc(kw) + '」的 APP</div>';
+    return '<div class="pv-head"><span>已保存 APP</span><b>' + apps.length + ' 个' + (kw ? ' · 匹配 ' + list.length : '') + '</b></div>'
+      + list.map(o => appRowHtml(o.app, kind, o.idx, kw)).join('');
+  };
   const renderAndroidList = () => {
     const box = $('#android-preview'); if (!box) return;
-    box.innerHTML = androidApps.length ? androidApps.map((a, i) => appRowHtml(a, 'android', i)).join('') : '<div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div>';
+    box.innerHTML = appListHtml(androidApps, 'android', androidKw);
   };
   const renderIosList = () => {
     const box = $('#ios-preview'); if (!box) return;
-    box.innerHTML = iosApps.length ? iosApps.map((a, i) => appRowHtml(a, 'ios', i)).join('') : '<div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div>';
+    box.innerHTML = appListHtml(iosApps, 'ios', iosKw);
+  };
+  const bindAppSearch = (kind) => {
+    const input = $(kind === 'android' ? '#android-search' : '#ios-search');
+    if (!input) return;
+    input.addEventListener('input', () => {
+      if (kind === 'android') androidKw = input.value.trim(); else iosKw = input.value.trim();
+      kind === 'android' ? renderAndroidList() : renderIosList();
+    });
   };
 
   // 列表项操作：修改 = 回填表单进入编辑态；删除 = 立即保存
@@ -697,7 +734,7 @@
     const editing = androidEditIdx >= 0 ? androidApps[androidEditIdx] : null;
     const next = androidApps.slice();
     if (editing) next[androidEditIdx] = { ...app, created_at: editing.created_at || now, updated_at: now };
-    else next.push({ ...app, created_at: now, updated_at: now });
+    else next.unshift({ ...app, created_at: now, updated_at: now }); // 新增置顶
     saveSection($('#android-save'), { android_apps: next }, () => {
       androidApps = next; androidEditIdx = -1;
       fillAndroid({}); setAndroidEditing(false); renderAndroidList();
@@ -712,7 +749,7 @@
     const editing = iosEditIdx >= 0 ? iosApps[iosEditIdx] : null;
     const next = iosApps.slice();
     if (editing) next[iosEditIdx] = { ...app, created_at: editing.created_at || now, updated_at: now };
-    else next.push({ ...app, created_at: now, updated_at: now });
+    else next.unshift({ ...app, created_at: now, updated_at: now }); // 新增置顶
     saveSection($('#ios-save'), { ios_apps: next }, () => {
       iosApps = next; iosEditIdx = -1;
       fillIos({}); setIosEditing(false); renderIosList();
@@ -721,6 +758,8 @@
   $('#ios-cancel').addEventListener('click', () => { iosEditIdx = -1; fillIos({}); setIosEditing(false); });
   bindAppListActions('android');
   bindAppListActions('ios');
+  bindAppSearch('android');
+  bindAppSearch('ios');
 
   // ── 搜索排行榜 ──
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
