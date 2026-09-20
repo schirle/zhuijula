@@ -1,4 +1,4 @@
-import { makeRoute, json, CFG, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig, buildEnvSet } from '../../_shared.js';
+import { makeRoute, json, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig, buildEnvSet, slugify } from '../../_shared.js';
 
 export const onRequest = makeRoute(handleAdminConfig);
 
@@ -9,8 +9,6 @@ const STR_FIELDS = [
   'web3forms_access_key', 'daily_api',
   'site_name', 'site_desc', 'stats_code',
 ];
-const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
-
 // 结构化列表（数组；空数组 = 清除）
 const LIST_FIELDS = {
   play_sources: {

@@ -3,7 +3,6 @@
 // ══════════════════════════════════════════════
 
 export const CFG = {
-  ZUIJU_API: '', // 追剧/福利数据源改由后台提供：Cloudflare 环境变量 ZUIJU_URL 或后台「追剧自定义数据」，不再内置第三方默认地址
   TIMEOUT_MS: 12000,
   CACHE_TTL_SEC: 600,
   MAX_RETRIES: 2,
@@ -170,6 +169,14 @@ export const cachePut = async (key, res) => {
   try { await caches.default.put(new Request(key), res.clone()); } catch (_) { }
 };
 
+// 统一「命中缓存 → 生成 JSON → 写 Cache-Control → 落 CDN 缓存」流程，消除各 handler 重复样板
+export async function cachedJson(keyReq, data, { smax = 120, maxAge = 60, stale = 3600 } = {}) {
+  const res = json(data);
+  res.headers.set('Cache-Control', `public, s-maxage=${smax}, max-age=${maxAge}, stale-while-revalidate=${stale}`);
+  await cachePut(keyReq, res);
+  return res;
+}
+
 // 豆瓣接口专用 fetch（复用通用 fetch：超时 + 失败返回 null；4xx/网络错误均归一为 null）
 export const fetchDoubanJson = async (url, timeout = 10000) => {
   const r = await fetchWithRetry(url, { timeout, headers: DOUBAN_HEADERS, retries: 0, asJson: true });
@@ -193,7 +200,7 @@ export function makeRoute(handler) {
 }
 
 // ── 通用并发控制 ──
-async function asyncPool(limit, items, fn) {
+export async function asyncPool(limit, items, fn) {
   if (!items.length) return [];
   const results = new Array(items.length);
   let idx = 0;
@@ -419,24 +426,9 @@ export async function ensureSources(env) {
   return Object.keys(API_SOURCES).length > 0;
 }
 
-// ── 搜索缓存 ──
-const _searchCache = new Map();
-const SEARCH_CACHE_TTL = 120000;
-function setSearchCache(wd, result, partial = false) {
-  result._partial = partial;
-  const ttl = partial ? 15000 : SEARCH_CACHE_TTL; // 残缺结果只短缓存，尽快重试拿到完整数据
-  _searchCache.set(wd, { ts: Date.now(), ttl, result });
-  if (_searchCache.size > 300) {
-    const cut = Date.now() - SEARCH_CACHE_TTL;
-    for (const [k, v] of _searchCache) if (v.ts < cut) _searchCache.delete(k);
-  }
-  return result;
-}
+// ── 搜索结果直接走边缘缓存（cachedJson），不再维护进程内 _searchCache，省内存且多实例一致 ──
 
 export async function doSearch(wd) {
-  const cached = _searchCache.get(wd);
-  if (cached && (Date.now() - cached.ts) < cached.ttl) return cached.result;
-
   let entries = Object.entries(API_SOURCES);
   const MAX_SEARCH_SOURCES = 16;
   if (entries.length > MAX_SEARCH_SOURCES) entries = entries.slice(0, MAX_SEARCH_SOURCES);
@@ -490,7 +482,7 @@ export async function doSearch(wd) {
   }
   // 若有源未成功返回（超时被丢弃等），标记为残缺，避免长缓存污染后续请求
   const partial = okSources < entries.length;
-  return setSearchCache(wd, { code: 1, list: all, total: all.length }, partial);
+  return { code: 1, list: all, total: all.length, _partial: partial };
 }
 
 // ═══════════════════════════════════════════════
@@ -510,12 +502,9 @@ export async function handleSearch(request, url, context) {
   const ckey = new Request(url.origin + '/api/search?key=' + encodeURIComponent(wd));
   const hit = await cacheGet(ckey); if (hit) return hit;
   const result = await doSearch(wd);
-  const res = json(result);
   // 残缺结果（有源失败）只短缓存，尽快重试；完整结果长缓存
   const maxAge = result._partial ? 15 : 120;
-  res.headers.set('Cache-Control', `public, s-maxage=${maxAge}, max-age=60, stale-while-revalidate=600`);
-  if (!result._partial) await cachePut(ckey, res);
-  return res;
+  return cachedJson(ckey, result, { smax: maxAge, maxAge: 60, stale: 600 });
 }
 
 // ── 详情 ──
@@ -530,21 +519,18 @@ export async function handleDetail(request, url, context) {
   const hit = await cacheGet(ckey); if (hit) return hit;
   const data = await fetchWithRetry(`${base}?ac=detail&ids=${encodeURIComponent(ids)}`, { timeout: 8000, asJson: true });
   if (data._error) return jsonErr('获取详情超时，请重试', 502);
-  const res = json(data);
-  res.headers.set('Cache-Control', 'public, s-maxage=300, max-age=120, stale-while-revalidate=3600');
-  await cachePut(ckey, res);
-  return res;
+  return cachedJson(ckey, data, { smax: 300, maxAge: 120, stale: 3600 });
 }
 
 // ── 今日推荐 ──
 export async function handleDaily(request, url, context) {
   const env = await resolveEnv(context);
-  const api = env.DAILY_API || 'https://www.cikeee.cc/api?app_key=pub_23020990025';
+  const api = env.DAILY_API || '';
+  // 不再内置第三方默认源：未配置 DAILY_API 时返回空列表，数据完全由后台/环境变量提供
+  if (!api) return cachedJson(new Request(url.origin + '/__daily__'), { code: 1, list: [], total: 0 }, { smax: 60, maxAge: 60, stale: 300 });
   const data = await fetchWithRetry(api, { timeout: 8000, retries: 1, asJson: true });
   if (data._error) return jsonErr('推荐数据加载失败', 502);
-  const res = json(data);
-  res.headers.set('Cache-Control', 'public, s-maxage=600, max-age=300, stale-while-revalidate=1800');
-  return res;
+  return cachedJson(new Request(url.origin + '/__daily__'), data, { smax: 600, maxAge: 300, stale: 1800 });
 }
 
 // ── 豆瓣热门（电影最近热门 + 剧集地区榜单）──
@@ -582,11 +568,7 @@ export async function handleDoubanHot(request, url) {
   // recent_hot 返回 { items }；search_subjects 返回 { subjects: [{ title, rate, cover }] }；subject_collection 返回 { items: [{ subject }] }
   let subjects = Array.isArray(data?.items) ? data.items
     : Array.isArray(data?.subjects) ? data.subjects : [];
-  if (!subjects.length) {
-    const empty = json({ code: 1, list: [], total: 0, type });
-    empty.headers.set('Cache-Control', 'public, s-maxage=604800, max-age=604800, stale-while-revalidate=604800');
-    return empty;
-  }
+  if (!subjects.length) return cachedJson(cacheKey, { code: 1, list: [], total: 0, type }, { smax: 604800, maxAge: 604800, stale: 604800 });
   const list = subjects.map(s => ({
     id: s.id || '', title: s.title || '', rating: s.rating?.value || (typeof s.rating === 'number' ? s.rating : 0) || (parseFloat(s.rate) || 0),
     year: s.year || '', genres: s.genres || [],
@@ -596,10 +578,7 @@ export async function handleDoubanHot(request, url) {
     url: s.url || (s.uri ? s.uri.replace('douban://douban.com', 'https://movie.douban.com') : `https://movie.douban.com/subject/${s.id}/`),
     card_subtitle: s.card_subtitle || (Array.isArray(s.countries) ? s.countries.join(' / ') : ''),
   }));
-  const res = json({ code: 1, list, total: list.length, type });
-  res.headers.set('Cache-Control', 'public, s-maxage=604800, max-age=604800, stale-while-revalidate=604800');
-  await cachePut(cacheKey, res);
-  return res;
+  return cachedJson(cacheKey, { code: 1, list, total: list.length, type }, { smax: 604800, maxAge: 604800, stale: 604800 });
 }
 
 // ── TMDB 地区剧集热播榜（免费公开 API，key 存环境变量 TMDB_KEY，前端不暴露）──
@@ -634,11 +613,7 @@ export async function handleRank(request, url, context) {
     page++;
   }
   const results = collected;
-  if (!results.length) {
-    const empty = json({ code: 1, list: [], total: 0, region, country, range: days });
-    empty.headers.set('Cache-Control', 'public, s-maxage=43200, max-age=43200, stale-while-revalidate=43200');
-    return empty;
-  }
+  if (!results.length) return cachedJson(cacheKey, { code: 1, list: [], total: 0, region, country, range: days }, { smax: 43200, maxAge: 43200, stale: 43200 });
   const list = results.slice(0, limit).map(s => {
     const poster = s.poster_path ? ('https://image.tmdb.org/t/p/w342' + s.poster_path) : '';
     return {
@@ -650,10 +625,7 @@ export async function handleRank(request, url, context) {
       pic: poster ? ('/api/img?u=' + encodeURIComponent(poster)) : '',
     };
   });
-  const res = json({ code: 1, list, total: list.length, region, country, range: days });
-  res.headers.set('Cache-Control', 'public, s-maxage=43200, max-age=43200, stale-while-revalidate=43200');
-  await cachePut(cacheKey, res);
-  return res;
+  return cachedJson(cacheKey, { code: 1, list, total: list.length, region, country, range: days }, { smax: 43200, maxAge: 43200, stale: 43200 });
 }
 
 // ── 站点配置（顶部导航优先取后台 KV 配置的 nav_links，其次 Cloudflare 环境变量 NAV_LINKS(JSON)，最后回退默认）──
@@ -662,11 +634,7 @@ export async function handleConfig(request, url, context) {
   const env = await resolveEnv(context);
   let cfg = {};
   try { cfg = await loadSiteConfig(env, true); } catch (_) {}
-  const DEFAULT_NAV = [
-    { key: 'app', href: '/app', icon: 'fa-download', label: 'APP下载' },
-    { key: 'vip', href: '/vip', icon: 'fa-bolt', label: 'VIP视频解析' },
-  ];
-  let nav = DEFAULT_NAV;
+  let nav = [];
   const cleanNav = (arr) => (Array.isArray(arr) ? arr : [])
     .filter(it => it && typeof it === 'object')
     .map(it => {
@@ -684,9 +652,14 @@ export async function handleConfig(request, url, context) {
   else if (env.NAV_LINKS) {
     try { const p = JSON.parse(env.NAV_LINKS); if (cleanNav(p).length) nav = cleanNav(p); } catch (_) { /* 配置非法时回退默认 */ }
   }
-  const res = json({ code: 1, nav, stats_code: cfg.stats_code || '', vip_jx: Array.isArray(cfg.vip_jx) ? cfg.vip_jx : [], first_popup: (cfg.first_popup && typeof cfg.first_popup === 'object') ? cfg.first_popup : null, promo_ad: (cfg.promo_ad && typeof cfg.promo_ad === 'object') ? cfg.promo_ad : null });
-  res.headers.set('Cache-Control', 'public, s-maxage=300, max-age=300, stale-while-revalidate=3600');
-  return res;
+  // 不再内置默认导航：后台/环境变量未配置时返回空数组，导航完全由运营在后台设置
+  return cachedJson(new Request(url.origin + '/__config__'), {
+    code: 1, nav,
+    stats_code: cfg.stats_code || '',
+    vip_jx: Array.isArray(cfg.vip_jx) ? cfg.vip_jx : [],
+    first_popup: (cfg.first_popup && typeof cfg.first_popup === 'object') ? cfg.first_popup : null,
+    promo_ad: (cfg.promo_ad && typeof cfg.promo_ad === 'object') ? cfg.promo_ad : null,
+  }, { smax: 300, maxAge: 300, stale: 3600 });
 }
 
 // ── 图片代理（项目自有兜底：任意图片源均可代理；仅作访图用途，带 SSRF 基础防护）──
@@ -752,17 +725,18 @@ export async function handleFriendList(request, url, context) {
   const env = await resolveEnv(context);
   // 后台「其他设置 → 友链」优先（运营随时增删，无需改上游数据）
   const cfg = env._siteCfg || await loadSiteConfig(env, true);
+  const cacheKey = new Request(url.origin + '/__friend__');
   if (Array.isArray(cfg.links) && cfg.links.length) {
     const list = cfg.links
       .map(l => ({ name: String(l.name || '').trim(), url: String(l.url || '').trim() }))
       .filter(l => l.name && l.url);
-    if (list.length) return json({ code: 1, list });
+    if (list.length) return cachedJson(cacheKey, { code: 1, list }, { smax: 300, maxAge: 300, stale: 3600 });
   }
   // 兜底：回退上游追剧数据里的 friend-list
   const data = await loadZhuiju(env);
   if (!data) return jsonErr('数据加载失败', 502);
   const list = Array.isArray(data['friend-list']) ? data['friend-list'] : [];
-  return json({ code: 1, list });
+  return cachedJson(cacheKey, { code: 1, list }, { smax: 300, maxAge: 300, stale: 3600 });
 }
 
 // ── 福利列表（fuli-list：name 分类 / title 标题 / link 链接）──
@@ -795,9 +769,7 @@ export async function handleFuli(request, url, context) {
     if (data && Array.isArray(data['fuli-list'])) list = data['fuli-list'];
   }
   if (!list || !list.length) return jsonErr('福利数据加载失败', 502);
-  const res = json({ code: 1, list });
-  res.headers.set('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=120');
-  return res;
+  return cachedJson(new Request(url.origin + '/__fuli__'), { code: 1, list }, { smax: 60, maxAge: 0, stale: 120 });
 }
 
 // ── 追剧全数据 ──
@@ -838,9 +810,7 @@ export async function handleZhuiju(request, url, context) {
     }
   }
   if (!out || !Object.keys(out).length) return jsonErr('数据加载失败，请稍后刷新重试', 502);
-  const res = json(out);
-  res.headers.set('Cache-Control', 'public, s-maxage=60, max-age=30, stale-while-revalidate=600');
-  return res;
+  return cachedJson(new Request(url.origin + '/__zhuiju__'), out, { smax: 60, maxAge: 30, stale: 600 });
 }
 
 

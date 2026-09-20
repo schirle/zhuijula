@@ -4,7 +4,7 @@
 //       名称 PDlist，值 11,22,33,44,55,66,88,99（即豆瓣 doulist 的数字 id）
 // 首页点击任意片单卡片 → 跳转 /list.html?id=<该id>，由 /api/list 抓取豆瓣片单内容。
 
-import { fetchDoubanJson as fetchJson, cacheGet, cachePut, resolveEnv } from '../_shared.js';
+import { fetchDoubanJson as fetchJson, cacheGet, cachePut, resolveEnv, asyncPool } from '../_shared.js';
 
 // 取片单元信息：标题 + 封面（片单封面或首条影片海报）+ 数量
 // 注意：douban 主接口不再内联 items，影片在 /doulist/{id}/items 子接口
@@ -27,20 +27,6 @@ async function fetchDoulistMeta(id) {
   return { id, title: meta.title, desc: meta.desc || meta.description || '', cover, count, ok: true };
 }
 
-async function mapWithConcurrency(arr, limit, fn) {
-  const res = new Array(arr.length);
-  let cursor = 0;
-  const workers = Array.from({ length: Math.min(limit, arr.length) }, async () => {
-    while (cursor < arr.length) {
-      const i = cursor++;
-      try { res[i] = await fn(arr[i], i); }
-      catch (e) { res[i] = null; }
-    }
-  });
-  await Promise.all(workers);
-  return res;
-}
-
 const jsonHeaders = {
     'content-type': 'application/json; charset=utf-8',
     // 缩短缓存：rexxar 抖动时残缺数据最多停留 1 小时（浏览器）/ 6 小时（边缘），并可后台刷新自愈
@@ -53,7 +39,7 @@ export async function buildPdlist(env) {
   const raw = (env && env.PDlist) || '';
   const ids = raw.split(',').map(s => s.trim()).filter(s => /^\d+$/.test(s));
   if (!ids.length) return [];
-  const metas = await mapWithConcurrency(ids, 6, id => fetchDoulistMeta(id));
+  const metas = await asyncPool(6, ids, id => fetchDoulistMeta(id));
   // 过滤抓取失败的片单，避免首页出现无封面/无标题的空壳卡片
   return metas.filter(m => m && m.ok && m.title && m.cover);
 }

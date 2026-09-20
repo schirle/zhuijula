@@ -1,4 +1,4 @@
-import { makeRoute, json, CFG, isAdminRequest, adminDenied, loadSiteConfig, cfgVal, parseZhuijuData } from '../../_shared.js';
+import { makeRoute, json, isAdminRequest, adminDenied, loadSiteConfig, cfgVal, parseZhuijuData } from '../../_shared.js';
 
 export const onRequest = makeRoute(handleZhuijuImport);
 

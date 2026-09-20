@@ -2,28 +2,22 @@
 // key 不出现在前端源码里，避免泄露。
 // 配置：在 Cloudflare Pages 后台 Settings → Environment variables 添加 WEB3FORMS_ACCESS_KEY（建议设为 Secret）。
 
-import { resolveEnv } from '../_shared.js';
+import { makeRoute, json, getClientIP, checkRateLimit } from '../_shared.js';
 
-export async function onRequestPost(context) {
-  const { request } = context;
-  const env = await resolveEnv(context);
+async function handleFriendApply(request, _url, context) {
+  if (request.method !== 'POST') return json({ success: false, message: '仅支持 POST' }, 405);
+  // 用服务端 key 转发到第三方，必须限流，避免被刷爆 Web3Forms 配额
+  if (!checkRateLimit(getClientIP(request), 10, 'friendapply')) return json({ success: false, message: '请求过于频繁，请稍后再试' }, 429);
+
+  const env = context?.env || {};
   const apiKey = env.WEB3FORMS_ACCESS_KEY;
-
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ success: false, message: '服务端未配置 Web3Forms key（后台或环境变量）' }),
-      { status: 500, headers: { 'content-type': 'application/json' } }
-    );
-  }
+  if (!apiKey) return json({ success: false, message: '服务端未配置 Web3Forms key（后台或环境变量）' }, 500);
 
   let payload;
   try {
     payload = await request.json();
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ success: false, message: '请求格式错误' }),
-      { status: 400, headers: { 'content-type': 'application/json' } }
-    );
+  } catch (_) {
+    return json({ success: false, message: '请求格式错误' }, 400);
   }
 
   // 服务端注入 key（覆盖前端任何传入，确保安全）
@@ -36,14 +30,10 @@ export async function onRequestPost(context) {
       body: JSON.stringify(payload),
     });
     const text = await resp.text();
-    return new Response(text, {
-      status: resp.status,
-      headers: { 'content-type': 'application/json' },
-    });
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ success: false, message: '转发到 Web3Forms 失败' }),
-      { status: 502, headers: { 'content-type': 'application/json' } }
-    );
+    return new Response(text, { status: resp.status, headers: { 'content-type': 'application/json' } });
+  } catch (_) {
+    return json({ success: false, message: '转发到 Web3Forms 失败' }, 502);
   }
 }
+
+export const onRequest = makeRoute(handleFriendApply);

@@ -425,11 +425,12 @@
   // 右侧黑框预览：展示已保存内容
   const renderAndroidPreview = (app) => {
     const box = $('#android-preview'); if (!box) return;
-    if (!app.name && !app.image && !app.methods.length) { box.innerHTML = '<div class="pv-empty">保存后在此预览</div>'; return; }
+    const methods = Array.isArray(app.methods) ? app.methods : [];
+    if (!app.name && !app.image && !methods.length) { box.innerHTML = '<div class="pv-empty">保存后在此预览</div>'; return; }
     box.innerHTML = (app.image ? '<img src="'+esc(app.image)+'" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="pv-name">'+esc(app.name || '安卓 APP')+'</div>'
-      + (app.methods.length
-        ? app.methods.map(m => { const c = DL_CHANNELS.find(x => x.key===m.type); return '<div class="pv-item"><b>'+esc(c?c.label:m.type)+'</b><span>'+esc(m.url)+'</span></div>'; }).join('')
+      + (methods.length
+        ? methods.map(m => { const c = DL_CHANNELS.find(x => x.key===m.type); return '<div class="pv-item"><b>'+esc(c?c.label:m.type)+'</b><span>'+esc(m.url)+'</span></div>'; }).join('')
         : '<div class="pv-line" style="color:#64748b">暂无下载链接</div>');
   };
   const renderIosPreview = (app) => {
