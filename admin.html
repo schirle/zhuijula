@@ -543,14 +543,16 @@
     const btn=$('#login-btn'); btn.disabled=true;
     try {
       const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user:getVal('#login-user'), pass:getVal('#login-pass') }) });
-      const d = await r.json().catch(()=>({}));
+      let d = {};
+      try { d = await r.json(); } catch(_) {}
       if (d.code===1) {
         // 登录接口已一并返回配置，直接用返回 data 渲染，避免二次请求再被静默踢回
         fill(d.cfg||{}, d.env_set||{});
         $('#kv-status').innerHTML = d.kv_ready ? '✅ KV 已绑定' : '⚠️ <span style="color:var(--warn)">KV 未绑定</span>';
         $('#login-view').style.display='none'; $('#main-view').style.display='';
-      } else toast(d.msg||'登录失败', false);
-    } catch(_) { toast('连接不上登录接口：请在 Cloudflare Pages 线上站点访问（本地/预览环境没有后端）', false); } finally { btn.disabled=false; }
+      } else if (r.status===404 || !d.code) toast('当前环境没有后端接口（本地/预览环境无 Cloudflare Functions），请到线上站点登录', false);
+      else toast(d.msg||'登录失败', false);
+    } catch(e) { console.error(e); toast('连接不上登录接口：请在 Cloudflare Pages 线上站点访问（本地/预览环境没有后端）', false); } finally { btn.disabled=false; }
   };
   $('#login-btn').addEventListener('click', doLogin);
   $('#login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });

@@ -50,7 +50,13 @@ export const jsonErr = (msg, status = 502) => json({ code: 0, msg }, status);
 // 其余全部动态配置（AI、网盘转存、片单、导航、追剧数据源等）都在后台页维护，
 // 存于 KV 的 site_config；环境变量作为兜底（后台留空的项自动回退环境变量）。
 // ════════════════════════════════════════════════
-export const getKV = (env) => (env && (env.KV || env.SEARCH_KV)) || null;
+// 进程内内存 KV 兜底：仅在本地 wrangler pages dev 且未绑定真实 KV 时启用，
+// 让本地也能登录 / 保存配置进行调试（重启即清空）。线上绑定 KV 后自动走真实 KV，不受影响。
+const _memKV = (() => {
+  const m = new Map();
+  return { get: async (k) => (m.has(k) ? m.get(k) : null), put: async (k, v) => { m.set(k, String(v)); }, delete: async (k) => { m.delete(k); } };
+})();
+export const getKV = (env) => (env && (env.KV || env.SEARCH_KV)) || _memKV;
 const SITE_CONFIG_KEY = 'site_config';
 
 let _cfgCache = null, _cfgTs = 0;
