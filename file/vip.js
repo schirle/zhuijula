@@ -1,23 +1,11 @@
 ﻿(function(){
   'use strict';
 
-  const API_LIST = [
-    {v:'https://jiexi.789jiexi.com/?url=',t:'789解析【爱优腾】'},
-    {v:'https://jx.2s0.cn/player/?url=',t:'极速解析【爱腾哔】'},
-    {v:'https://bd.jx.cn/?url=',t:'冰豆解析【爱优腾果】'},
-    {v:'https://jx.nnxv.cn/tv.php?url=',t:'七哥解析【爱优腾果哔】'},
-    {v:'https://jx.hls.one/?url=',t:'HLS解析【有广告】'},
-    {v:'https://www.8090g.cn/?url=',t:'8090解析【有广告】'},
-    {v:'https://www.playm3u8.cn/jiexi.php?url=',t:'PlayM3U8【有广告】'},
-    {v:'https://jx.xmflv.cc/?url=',t:'XMFLV【有广告】'},
-    {v:'https://www.ckplayer.vip/jiexi/?url=',t:'CkPlayer【有广告】'}
-  ];
-
   const STORAGE_KEY = 'videoHistory';
 
   document.addEventListener('DOMContentLoaded', function() {
-    // VIP 解析接口优先取后台「其他设置 → VIP解析接口」，否则回退内置默认接口
-    let apiList = API_LIST.slice();
+    // VIP 解析接口完全由后台「其他设置 → VIP解析接口」提供；后台未配置则不显示任何默认源
+    let apiList = [];
     window.getSiteConfig().then(function(d){
       if (d && d.code === 1 && Array.isArray(d.vip_jx) && d.vip_jx.length) {
         const remote = d.vip_jx
@@ -47,7 +35,17 @@
       tabNav:      $('.tab-nav')
     };
 
-    
+    // 后台未配置任何解析接口：给出提示并禁用解析，避免展示写死的默认源
+    if (!API_LIST.length) {
+      if (dom.apiSelect) {
+        dom.apiSelect.innerHTML = '<option value="">— 后台未配置解析接口 —</option>';
+        dom.apiSelect.disabled = true;
+      }
+      if (dom.parseBtn) dom.parseBtn.disabled = true;
+      if (dom.status) dom.status.innerHTML = '<i class="fas fa-info-circle"></i> 请到后台「其他设置 → VIP解析接口」添加解析源';
+      renderHistory(); updateTime();
+      return;
+    }
 
     dom.apiSelect.innerHTML = API_LIST.map(function(a){
       return '<option value="'+esc(a.v)+'">'+esc(a.t)+'</option>';
