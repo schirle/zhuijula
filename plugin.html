@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="免费追剧浏览器扩展 - 在豆瓣电影页面一键找资源，Chrome 扩展（无需 Tampermonkey）下载与安装教程">
+    <title>追剧插件 - 免费追剧</title>
+    <meta name="theme-color" content="#0f0f17">
+    <meta property="og:title" content="追剧插件 - 免费追剧">
+    <meta property="og:description" content="在豆瓣电影页面一键找资源，Chrome 扩展（无需 Tampermonkey）下载与安装教程">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="免费追剧">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="file/zhuiju.png">
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="stylesheet" href="file/index.css">
+    <link rel="stylesheet" href="file/plugin.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+(function(){try{var t=localStorage.getItem('ftv_theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+    <link rel="dns-prefetch" href="//sdk.51.la">
+    <link rel="preconnect" href="https://sdk.51.la" crossorigin>
+    <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
+    <script defer src="file/wechat-tip.js"></script>
+    <script defer src="file/common.js"></script>
+</head>
+<body data-page="plugin">
+
+    <nav class="top-nav" id="top-nav"></nav>
+
+    <main class="plugin-main">
+
+        <section class="plugin-hero">
+            <div class="plugin-hero-ico"><i class="fas fa-puzzle-piece"></i></div>
+            <h1 class="plugin-hero-title">追剧插件</h1>
+            <p class="plugin-hero-desc">在豆瓣电影页面一键「找资源」，直达本站全网播放源。下载即用，找资源快捷又方便。</p>
+            <div class="plugin-actions">
+                <button class="btn-install" onclick="installExtension()"><i class="fas fa-download"></i> 下载 Chrome 扩展</button>
+                <button class="btn-ghost" onclick="installUserScript()"><i class="fas fa-wand-magic-sparkles"></i> 安装油猴脚本</button>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="section-header"><span class="section-title"><i class="fas fa-list-ol"></i> 安装步骤</span></div>
+            <ol class="step-list">
+                <li><span class="step-num">1</span><div><b>下载扩展</b><p>点「下载 Chrome 扩展」获取 <code>zhuiju.crx</code>，或点「安装油猴脚本」获取 <code>zhuiju-douban.user.js</code>（需先装 Tampermonkey 插件）。</p></div></li>
+                <li><span class="step-num">2</span><div><b>安装扩展</b><p>地址栏打开 <code>chrome://extensions</code> 并开启右上角「开发者模式」：Chrome 扩展直接把 <code>zhuiju.crx</code> 拖入页面；若浏览器拦截，将其重命名为 <code>.zip</code> 解压后点「加载已解压的扩展程序」选择该文件夹即可。</p></div></li>
+                <li><span class="step-num">3</span><div><b>打开豆瓣即可使用</b><p>访问任意豆瓣电影页面，标题旁会自动出现紫色「找资源」按钮，点击跳转到本站搜索播放源。</p></div></li>
+            </ol>
+        </section>
+
+        <section class="plugin-section">
+            <div class="section-header"><span class="section-title"><i class="fas fa-star"></i> 功能亮点</span></div>
+            <div class="feat-grid">
+                <div class="feat-card"><div class="feat-ico"><i class="fas fa-magnifying-glass"></i></div><div class="feat-title">一键找资源</div><p>豆瓣页面直接唤起本站搜索，省去手动复制片名。</p></div>
+                <div class="feat-card"><div class="feat-ico"><i class="fas fa-bolt"></i></div><div class="feat-title">极速轻量</div><p>纯前端注入按钮，不收集任何数据，零后台进程。</p></div>
+                <div class="feat-card"><div class="feat-ico"><i class="fas fa-shield-halved"></i></div><div class="feat-title">安全无广告</div><p>脚本逻辑透明，仅注入跳转按钮，无额外权限申请。</p></div>
+                <div class="feat-card"><div class="feat-ico"><i class="fas fa-globe"></i></div><div class="feat-title">多端通用</div><p>支持 Chrome / Edge 等 Chromium 内核浏览器，桌面端即装即用。</p></div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="section-header"><span class="section-title"><i class="fas fa-circle-question"></i> 常见问题</span></div>
+            <div class="faq-list">
+                <details class="faq-item"><summary>点击下载后怎么用？</summary><p>Chrome 扩展为 <code>zhuiju.crx</code>：拖入 <code>chrome://extensions</code>（需开启「开发者模式」）即可；若被拦截，重命名为 <code>.zip</code> 解压后「加载已解压的扩展程序」选择该文件夹。油猴脚本则用 Tampermonkey 一键安装。Chrome 不支持直接双击安装未上架商店的扩展。</p></details>
+                <details class="faq-item"><summary>按钮在豆瓣页面不显示？</summary><p>刷新豆瓣页面，确认本扩展已在 <code>chrome://extensions</code> 中处于「已启用」状态，且访问的是 movie.douban.com / www.douban.com。若仍不显示，可移除后重新加载一次。</p></details>
+                <details class="faq-item"><summary>扩展会读取我的浏览数据吗？</summary><p>不会。扩展仅在豆瓣页面注入一个跳转按钮，不读取、不上传任何个人信息，可放心使用。</p></details>
+            </div>
+        </section>
+
+        <footer class="footer">免费追剧 · 仅供学习交流使用</footer>
+    </main>
+
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="返回顶部" title="返回顶部"><i class="fas fa-arrow-up"></i></button>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>后台管理 - 免费追剧</title>
+<style>
+:root {
+  --bg: #0b1017; --bg-card: #131a24; --bg-card-hover: #1a2330; --bg-input: #0f1620;
+  --border: #232d3b; --border-light: #2e3a4a;
+  --text: #e8eef5; --text2: #9fb0c0; --muted: #64748b;
+  --primary: #3b82f6; --primary2: #2563eb; --glow: rgba(59,130,246,.25);
+  --ok: #22c55e; --err: #ef4444; --warn: #f59e0b;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh; background:
+    radial-gradient(900px 480px at 50% -10%, rgba(59,130,246,.12), transparent 60%),
+    var(--bg);
+  color: var(--text); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px; line-height: 1.6;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 18px 60px; }
+h1 { font-size: 20px; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+h1::before { content: ''; width: 5px; height: 20px; border-radius: 3px; background: linear-gradient(135deg, var(--primary), #06b6d4); }
+.sub { color: var(--muted); font-size: 12.5px; margin-bottom: 22px; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: 0 12px 36px rgba(0,0,0,.4); }
+.login-card { max-width: 380px; margin: 8vh auto 0; }
+.login-card h2 { font-size: 17px; margin-bottom: 4px; }
+.login-card .hint { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
+
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.tab-btn { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text2); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.tab-btn:hover { border-color: var(--primary); color: var(--text); }
+.tab-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; border-color: transparent; box-shadow: 0 4px 14px var(--glow); }
+
+.pane { display: none; }
+.pane.active { display: block; animation: fadeUp .25s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.field { margin-bottom: 16px; }
+.field label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.field .desc { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.env-badge { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(34,197,94,.12); color: var(--ok); border: 1px solid rgba(34,197,94,.3); }
+.kv-badge { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(59,130,246,.12); color: #7cb0ff; border: 1px solid rgba(59,130,246,.35); }
+input[type=text], input[type=password], textarea {
+  width: 100%; background: var(--bg-input); border: 1.5px solid var(--border-light); border-radius: var(--radius);
+  color: var(--text); font-size: 13.5px; padding: 10px 13px; outline: none; transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+}
+textarea { resize: vertical; min-height: 88px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.55; }
+textarea.code { min-height: 320px; }
+input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 999px; border: none; cursor: pointer; font-size: 13.5px; font-weight: 700; transition: all .15s; }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; box-shadow: 0 4px 14px var(--glow); }
+.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid var(--border-light); color: var(--text2); }
+.btn-ghost:hover { border-color: var(--primary); color: var(--text); }
+.btn-danger { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: var(--err); }
+.btn-danger:hover { background: rgba(239,68,68,.2); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.save-bar { position: sticky; bottom: 0; margin-top: 22px; padding: 14px 0 4px; background: linear-gradient(to top, var(--bg) 60%, transparent); display: flex; gap: 10px; align-items: center; }
+
+.toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); padding: 11px 22px; border-radius: 999px; font-size: 13.5px; font-weight: 600; opacity: 0; pointer-events: none; transition: all .25s; z-index: 99; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok { background: rgba(34,197,94,.15); color: var(--ok); border: 1px solid rgba(34,197,94,.4); }
+.toast.err { background: rgba(239,68,68,.15); color: var(--err); border: 1px solid rgba(239,68,68,.4); }
+
+.note { background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.25); border-radius: var(--radius); padding: 10px 14px; font-size: 12.5px; color: var(--text2); margin-bottom: 16px; }
+.note b { color: #7cb0ff; }
+
+.rank-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+.rank-no { flex: 0 0 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--bg-card-hover); color: var(--muted); }
+.rank-no.top { color: #fff; background: linear-gradient(135deg, #f59e0b, #ef4444); }
+.rank-word { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-count { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.rank-del { flex-shrink: 0; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(239,68,68,.4); background: transparent; color: var(--err); font-size: 12px; cursor: pointer; }
+.rank-del:hover { background: rgba(239,68,68,.15); }
+.empty { text-align: center; color: var(--muted); padding: 30px 0; font-size: 13px; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.logout-btn { padding: 7px 16px; border-radius: 999px; border: 1px solid var(--border-light); background: transparent; color: var(--text2); font-size: 12.5px; cursor: pointer; }
+.logout-btn:hover { border-color: var(--err); color: var(--err); }
+.status-line { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+.status-line b { color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录 -->
+  <div id="login-view" class="card login-card" style="display:none">
+    <h2>🔐 后台管理</h2>
+    <div class="hint">账号密码来自 Cloudflare Pages 环境变量 ADMIN_USER / ADMIN_PASS</div>
+    <div class="field"><label>账号</label><input type="text" id="login-user" autocomplete="username"></div>
+    <div class="field"><label>密码</label><input type="password" id="login-pass" autocomplete="current-password"></div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center">登 录</button>
+  </div>
+
+  <!-- 主面板 -->
+  <div id="main-view" style="display:none">
+    <div class="topbar">
+      <div>
+        <h1>站点后台</h1>
+        <div class="sub" id="kv-status">检查 KV 状态…</div>
+      </div>
+      <button class="logout-btn" id="logout-btn">退出登录</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="basic">基础配置</button>
+      <button class="tab-btn" data-tab="netdisk">网盘转存</button>
+      <button class="tab-btn" data-tab="zhuiju">追剧数据</button>
+      <button class="tab-btn" data-tab="rank">搜索排行榜</button>
+    </div>
+
+    <div class="card">
+      <div class="note">留空的项会自动回退使用 CF Pages 环境变量（若有）；<b>KV 里保存的值始终优先</b>。保存后即时生效（个别接口有 ≤60s 缓存）。</div>
+
+      <!-- 基础配置 -->
+      <div class="pane active" id="pane-basic">
+        <div class="field"><label>AI API Key（硅基流动）<span class="env-badge" data-env="AI_API_KEY" style="display:none">环境变量已设置</span></label>
+          <div class="desc">用于 AI 搜索语义解析、播放页相关搜索。硅基流动控制台获取，sk- 开头</div>
+          <input type="password" id="f-ai_api_key" placeholder="sk-xxx"></div>
+        <div class="grid2">
+          <div class="field"><label>AI 模型<span class="env-badge" data-env="AI_MODEL" style="display:none">环境变量已设置</span></label>
+            <input type="text" id="f-ai_model" placeholder="默认 deepseek-ai/DeepSeek-V3"></div>
+          <div class="field"><label>AI Base URL<span class="env-badge" data-env="AI_BASE_URL" style="display:none">环境变量已设置</span></label>
+            <input type="text" id="f-ai_base_url" placeholder="默认 https://api.siliconflow.cn/v1"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>TMDB Key<span class="env-badge" data-env="TMDB_KEY" style="display:none">环境变量已设置</span></label>
+            <div class="desc">地区热播榜（韩/日/美剧）用</div>
+            <input type="password" id="f-tmdb_key"></div>
+          <div class="field"><label>今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设置</span></label>
+            <div class="desc">完整 URL，含 app_key</div>
+            <input type="text" id="f-daily_api" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
+        </div>
+        <div class="field"><label>网盘搜索接口（WP_API_HOST）<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设置</span></label>
+          <div class="desc">域名+路径，不带协议和尾部斜杠，如 so.252035.xyz/api/search</div>
+          <input type="text" id="f-wp_api_host"></div>
+        <div class="field"><label>Web3Forms Key（友链申请通知）<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设置</span></label>
+          <input type="password" id="f-web3forms_access_key"></div>
+        <div class="field"><label>精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设置</span></label>
+          <div class="desc">豆瓣 doulist 数字 id，逗号分隔。改动后因缓存最长 6 小时生效</div>
+          <input type="text" id="f-pdlist" placeholder="1322205,278539,203399,..."></div>
+        <div class="field"><label>追剧数据源 URL<span class="env-badge" data-env="ZUIJU_URL" style="display:none">环境变量已设置</span></label>
+          <div class="desc">未启用「追剧自定义数据」时从这里拉取播放源/轮播/福利/友链</div>
+          <input type="text" id="f-zhuiju_url" placeholder="https://www.1dfx.com/api.html?type=zhuiju"></div>
+        <div class="field"><label>顶部导航链接（NAV_LINKS，JSON 数组）<span class="env-badge" data-env="NAV_LINKS" style="display:none">环境变量已设置</span></label>
+          <textarea id="f-nav_links" style="min-height:110px" placeholder='[{"key":"app","href":"/app","icon":"fa-download","label":"APP下载"}]'></textarea></div>
+      </div>
+
+      <!-- 网盘转存 -->
+      <div class="pane" id="pane-netdisk">
+        <div class="note">Cookie 属敏感凭据，仅存于服务端 KV，不会出现在任何前端页面。</div>
+        <div class="field"><label>夸克网盘 Cookie<span class="env-badge" data-env="QUARK_COOKIE" style="display:none">环境变量已设置</span></label>
+          <div class="desc">需含有效登录态，用于夸克转存</div>
+          <textarea id="f-quark_cookie" placeholder="_UP_A4A_11_=..."></textarea></div>
+        <div class="grid2">
+          <div class="field"><label>夸克目标目录 ID<span class="env-badge" data-env="QUARK_DIR" style="display:none">环境变量已设置</span></label>
+            <input type="text" id="f-quark_dir"></div>
+          <div class="field"><label>jjsou 转存密钥<span class="env-badge" data-env="JJSOU_API_KEY" style="display:none">环境变量已设置</span></label>
+            <div class="desc">百度转存走 jjsou 开放接口所需</div>
+            <input type="password" id="f-jjsou_api_key"></div>
+        </div>
+        <div class="field"><label>百度网盘 Cookie（可选）<span class="env-badge" data-env="BAIDU_COOKIE" style="display:none">环境变量已设置</span></label>
+          <div class="desc">需含 BDUSS/STOKEN；配了才能把资源转存到自己网盘</div>
+          <textarea id="f-baidu_cookie" placeholder="newlogin=1; BAIDUID=...; BDUSS=..."></textarea></div>
+        <div class="field"><label>百度目标目录（完整路径）<span class="env-badge" data-env="BAIDU_DIR" style="display:none">环境变量已设置</span></label>
+          <input type="text" id="f-baidu_dir" placeholder="/网盘搜索"></div>
+      </div>
+
+      <!-- 追剧数据 -->
+      <div class="pane" id="pane-zhuiju">
+        <div class="note">
+          这里保存<b>自定义追剧数据</b>后，播放源/轮播图/福利/友链将完全使用你编辑的 JSON，<b>不再请求上游</b>；清空后恢复从上方「数据源 URL」拉取。结构参照上游：<code>jiekou-list</code>（播放源，必填）、<code>carousel-list</code>、<code>fuli-list</code>、<code>friend-list</code>。
+        </div>
+        <div class="actions" style="margin-bottom:12px">
+          <button class="btn btn-ghost" id="import-btn">⬇️ 从上游导入（按数据源 URL 拉取）</button>
+          <button class="btn btn-danger" id="clear-zhuiju-btn">清空自定义（恢复上游）</button>
+        </div>
+        <div class="field">
+          <label>自定义数据（JSON）<span class="kv-badge" id="zhuiju-using" style="display:none">当前启用自定义数据</span></label>
+          <textarea id="f-zhuiju_data" class="code" placeholder='{"jiekou-list":[{"alias":"bfzy","name":"暴风资源","url":"https://..."}], "carousel-list":[...], ...}'></textarea>
+          <div class="status-line" id="zhuiju-meta"></div>
+        </div>
+      </div>
+
+      <!-- 搜索排行榜 -->
+      <div class="pane" id="pane-rank">
+        <div class="actions" style="margin-bottom:14px">
+          <button class="btn btn-ghost" id="rank-refresh">🔄 刷新</button>
+          <button class="btn btn-danger" id="rank-clear">清空全部</button>
+          <span class="status-line" id="rank-total" style="margin:0"></span>
+        </div>
+        <div id="rank-list"><div class="empty">加载中…</div></div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-primary" id="save-btn">💾 保存全部配置</button>
+        <span class="status-line" id="save-status" style="margin:0"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+  const FIELD_KEYS = ['ai_api_key','ai_model','ai_base_url','tmdb_key','daily_api','wp_api_host',
+    'web3forms_access_key','pdlist','zhuiju_url','nav_links',
+    'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir'];
+  const ENV_OF = { ai_api_key:'AI_API_KEY', ai_model:'AI_MODEL', ai_base_url:'AI_BASE_URL', tmdb_key:'TMDB_KEY',
+    daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
+    pdlist:'PDlist', zhuiju_url:'ZUIJU_URL', nav_links:'NAV_LINKS',
+    quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
+    baidu_cookie:'BAIDU_COOKIE', baidu_dir:'BAIDU_DIR' };
+
+  let ENV_SET = {};
+  let ZUIJU_ACTIVE = false;
+
+  const toast = (msg, ok = true) => {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (ok ? 'ok' : 'err');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+  };
+
+  const fillField = (key, val) => {
+    const el = $('#f-' + key);
+    if (el) el.value = val == null ? '' : String(val);
+  };
+
+  const refreshEnvBadges = () => {
+    $$('[data-env]').forEach(b => {
+      const envKey = b.getAttribute('data-env');
+      const fieldKey = ENV_OF[Object.keys(ENV_OF).find(k => ENV_OF[k] === envKey)];
+      const el = $('#f-' + fieldKey);
+      const kvEmpty = !el || !el.value.trim();
+      b.style.display = (ENV_SET[envKey] && kvEmpty) ? '' : 'none';
+    });
+  };
+
+  const fill = (cfg, envSet) => {
+    ENV_SET = envSet || {};
+    for (const k of FIELD_KEYS) fillField(k, cfg[k]);
+    const zd = cfg.zhuiju_data;
+    $('#f-zhuiju_data').value = (zd && typeof zd === 'object') ? JSON.stringify(zd, null, 2) : (typeof zd === 'string' ? zd : '');
+    ZUIJU_ACTIVE = !!(zd && typeof zd === 'object');
+    $('#zhuiju-using').style.display = ZUIJU_ACTIVE ? '' : 'none';
+    $('#zhuiju-meta').textContent = ZUIJU_ACTIVE
+      ? '自定义数据版本：' + new Date(cfg.zhuiju_updated || Date.now()).toLocaleString() + '；保存后各接口立即热加载'
+      : '当前使用上游数据源（未启用自定义数据）';
+    refreshEnvBadges();
+  };
+
+  const collect = () => {
+    const body = {};
+    for (const k of FIELD_KEYS) body[k] = $('#f-' + k).value.trim();
+    body.zhuiju_data = $('#f-zhuiju_data').value; // 空串=清空恢复上游
+    return body;
+  };
+
+  // ── 登录 ──
+  const doLogin = async () => {
+    const btn = $('#login-btn');
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/admin/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: $('#login-user').value.trim(), pass: $('#login-pass').value }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d.code === 1) { await init(); }
+      else toast(d.msg || '登录失败', false);
+    } catch (e) { toast('网络错误', false); }
+    finally { btn.disabled = false; }
+  };
+  $('#login-btn').addEventListener('click', doLogin);
+  $('#login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('#logout-btn').addEventListener('click', async () => {
+    await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
+    $('#main-view').style.display = 'none';
+    $('#login-view').style.display = '';
+    $('#login-pass').value = '';
+  });
+
+  // ── 初始化 ──
+  async function init() {
+    try {
+      const r = await fetch('/api/admin/config');
+      if (r.status === 401) { $('#main-view').style.display = 'none'; $('#login-view').style.display = ''; return; }
+      const d = await r.json();
+      if (d.code === 1) {
+        fill(d.cfg || {}, d.env_set || {});
+        $('#kv-status').innerHTML = d.kv_ready
+          ? '✅ KV 已绑定，配置读写正常'
+          : '⚠️ <b style="color:var(--warn)">KV 未绑定</b>：无法保存配置（CF Pages 后台绑定 KV 命名空间，变量名 KV 或 SEARCH_KV）';
+        $('#login-view').style.display = 'none';
+        $('#main-view').style.display = '';
+        return;
+      }
+    } catch (_) {}
+    $('#login-view').style.display = '';
+  }
+
+  // ── Tab 切换 ──
+  $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+    $$('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    $$('.pane').forEach(p => p.classList.remove('active'));
+    $('#pane-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'rank') loadRank();
+  }));
+
+  // ── 保存 ──
+  $('#save-btn').addEventListener('click', async () => {
+    const btn = $('#save-btn'), st = $('#save-status');
+    btn.disabled = true; st.textContent = '保存中…';
+    try {
+      const r = await fetch('/api/admin/config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collect()),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d.code === 1) { toast('已保存，即时生效'); st.textContent = '上次保存：' + new Date().toLocaleTimeString(); init(); }
+      else { toast(d.msg || '保存失败', false); st.textContent = ''; }
+    } catch (e) { toast('网络错误', false); st.textContent = ''; }
+    finally { btn.disabled = false; }
+  });
+
+  // ── 追剧数据导入/清空 ──
+  $('#import-btn').addEventListener('click', async () => {
+    const btn = $('#import-btn');
+    btn.disabled = true; btn.textContent = '拉取中…';
+    try {
+      const r = await fetch('/api/admin/zhuiju-import', { method: 'POST' });
+      const d = await r.json();
+      if (d.code === 1) {
+        $('#f-zhuiju_data').value = JSON.stringify(d.data, null, 2);
+        toast('导入成功：' + (d.keys || []).join('、'));
+      } else toast(d.msg || '导入失败', false);
+    } catch (e) { toast('网络错误', false); }
+    finally { btn.disabled = false; btn.textContent = '⬇️ 从上游导入（按数据源 URL 拉取）'; }
+  });
+  $('#clear-zhuiju-btn').addEventListener('click', () => {
+    $('#f-zhuiju_data').value = '';
+    toast('已清空，点「保存全部配置」后恢复上游数据');
+  });
+
+  // ── 排行榜管理 ──
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function loadRank() {
+    const box = $('#rank-list');
+    box.innerHTML = '<div class="empty">加载中…</div>';
+    try {
+      const r = await fetch('/api/admin/rank');
+      if (r.status === 401) { toast('登录已过期', false); $('#main-view').style.display = 'none'; $('#login-view').style.display = ''; return; }
+      const d = await r.json();
+      if (d.code !== 1) { box.innerHTML = '<div class="empty">' + esc(d.msg || '加载失败') + '</div>'; return; }
+      $('#rank-total').textContent = '累计 ' + (d.total || 0) + ' 个词';
+      if (!d.list || !d.list.length) { box.innerHTML = '<div class="empty">暂无数据（用户搜索后自动累计）</div>'; return; }
+      box.innerHTML = d.list.map((it, i) =>
+        '<div class="rank-item"><span class="rank-no' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</span>'
+        + '<span class="rank-word">' + esc(it.word) + '</span>'
+        + '<span class="rank-count">' + it.count + ' 次</span>'
+        + '<button class="rank-del" data-w="' + esc(it.word) + '">删除</button></div>'
+      ).join('');
+      box.querySelectorAll('.rank-del').forEach(b => b.addEventListener('click', () => rankAction('?word=' + encodeURIComponent(b.dataset.w), '已删除')));
+    } catch (e) { box.innerHTML = '<div class="empty">网络错误</div>'; }
+  }
+  async function rankAction(qs, okMsg) {
+    try {
+      const r = await fetch('/api/admin/rank' + qs, { method: 'DELETE' });
+      const d = await r.json();
+      toast(d.code === 1 ? (d.msg || okMsg) : (d.msg || '操作失败'), d.code === 1);
+      loadRank();
+    } catch (e) { toast('网络错误', false); }
+  }
+  $('#rank-refresh').addEventListener('click', loadRank);
+  $('#rank-clear').addEventListener('click', () => { if (confirm('确定清空全部搜索热词？')) rankAction('', '已清空'); });
+
+  init();
+})();
+</script>
+</body>
+</html>

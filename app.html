@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="追剧 APP 下载中心 - 安卓、苹果影视应用与在线网站">
+    <title>应用中心 - 免费追剧</title>
+    <meta name="theme-color" content="#0f0f17">
+    <meta property="og:title" content="应用中心 - 免费追剧">
+    <meta property="og:description" content="追剧 APP 下载中心 - 安卓、苹果影视应用与在线网站">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="免费追剧">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="file/zhuiju.png">
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="stylesheet" href="file/index.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+(function(){try{var t=localStorage.getItem('ftv_theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+    <link rel="dns-prefetch" href="//sdk.51.la">
+    <link rel="preconnect" href="https://sdk.51.la" crossorigin>
+    <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
+    <script defer src="file/wechat-tip.js"></script>
+    <script defer src="file/common.js"></script>
+    <link rel="stylesheet" href="file/app.css">
+</head>
+<body data-page="app">
+    <div class="bg-layer"></div>
+
+    <nav class="top-nav" id="top-nav"></nav>
+
+    <main class="main-container app-main">
+        <div class="section-header">
+            <span class="section-title"><i class="fas fa-th-large"></i> 应用中心</span>
+        </div>
+
+        <nav class="app-tabs" id="appChips" aria-label="平台筛选"></nav>
+
+        <section class="app-grid" id="appList" aria-live="polite"></section>
+
+        <footer class="footer">数据每日更新 · 仅供学习交流使用</footer>
+    </main>
+
+    <div id="app-modal" class="modal-overlay">
+        <div class="modal-bg" data-close></div>
+        <div class="modal-content">
+            <button class="modal-close" type="button" aria-label="关闭" data-close>✕</button>
+            <div class="modal-icon"><i class="fas fa-download"></i></div>
+            <h3 class="modal-title" id="appModalTitle"></h3>
+            <div class="modal-body" id="appModalBody"></div>
+        </div>
+    </div>
+
+    <script src="file/app.js"></script>
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="返回顶部" title="返回顶部"><i class="fas fa-arrow-up"></i></button>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>

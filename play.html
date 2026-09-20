@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="免费追剧 - 在线播放">
+    <title>免费追剧</title>
+    <meta name="theme-color" content="#0f0f17">
+    <meta property="og:title" content="免费追剧 - 在线观看">
+    <meta property="og:description" content="无广告，免会员，全网影视免费在线观看">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="免费追剧">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="file/zhuiju.png">
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="stylesheet" href="file/index.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+(function(){try{var t=localStorage.getItem('ftv_theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+    <script defer src="file/wechat-tip.js"></script>
+    <script defer src="file/common.js"></script>
+    <script async src="https://static.addtoany.com/menu/page.js"></script>
+    <link rel="dns-prefetch" href="//unpkg.byted-static.com">
+    <link rel="preconnect" href="//unpkg.byted-static.com" crossorigin>
+    <link rel="dns-prefetch" href="//sdk.51.la">
+    <link rel="preconnect" href="https://sdk.51.la" crossorigin>
+    <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
+
+    <link rel="stylesheet" href="file/play.css">
+</head>
+<body data-page="play">
+    <div class="page-loading" id="page-loading">
+        <div class="spinner"></div>
+        <span class="page-loading-text">正在加载影片数据...</span>
+    </div>
+
+    <nav class="top-nav" id="top-nav"></nav>
+
+    <div id="error-view" class="error-overlay">
+        <p id="error-msg">加载失败</p>
+        <button class="retry-btn" id="retry-btn">重试</button>
+    </div>
+
+    <div class="page-wrapper" id="app" style="display:none">
+        <section class="video-section" id="video-section">
+            <div class="now-ep-label" id="now-ep-label"></div>
+            <div class="video-container">
+                <div id="mse"></div>
+                <div class="player-loading hidden" id="player-loading">
+                    <div class="spinner"></div>
+                    <span class="player-loading-text">加载播放器中...</span>
+                </div>
+                <div class="player-tools" id="player-tools">
+                    <button class="pt-btn" id="speed-btn" type="button" aria-label="倍速">倍速 <span id="speed-val">1.0x</span></button>
+                    <div class="speed-menu" id="speed-menu" hidden>
+                        <button type="button" data-rate="0.5">0.5x</button>
+                        <button type="button" data-rate="0.75">0.75x</button>
+                        <button type="button" data-rate="1" class="active">1.0x</button>
+                        <button type="button" data-rate="1.25">1.25x</button>
+                        <button type="button" data-rate="1.5">1.5x</button>
+                        <button type="button" data-rate="2">2.0x</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="now-playing">
+                <div class="np-poster"><img id="np-poster" src="" alt="海报" loading="lazy"></div>
+                <div class="np-text">
+                    <h1 class="np-title" id="np-title"></h1>
+                    <div class="np-meta" id="np-meta"></div>
+                    <div class="np-actions">
+                        <button class="np-act" id="np-share" type="button"><i class="fas fa-share-nodes"></i>分享</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ad-container ad-slot" id="ad-container"></div>
+
+            <div class="side-tabs" id="side-tabs">
+                <button class="side-tab active" data-tab="episodes">选集</button>
+                <button class="side-tab" data-tab="intro">简介</button>
+                <button class="side-tab" data-tab="related">相关</button>
+            </div>
+
+            <div class="tab-panel active" id="tab-episodes">
+                <div class="source-row" id="source-tabs"></div>
+                <div class="ep-toolbar">
+                    <span class="ep-count" id="ep-count"></span>
+                    <div class="ep-sort" id="ep-sort">
+                        <button class="sort-btn active" data-order="asc">正序</button>
+                        <button class="sort-btn" data-order="desc">倒序</button>
+                    </div>
+                </div>
+                <div class="episodes-wrapper"><div id="episode-list" class="episodes-grid"></div></div>
+            </div>
+
+            <div class="tab-panel" id="tab-intro">
+                <div id="desc-section" class="intro-box" style="display:none">
+                    <p id="vod-description" class="desc-content collapsed"></p>
+                    <button id="desc-toggle-btn" class="desc-toggle">展开 ▾</button>
+                </div>
+                <dl class="intro-meta" id="intro-meta"></dl>
+            </div>
+
+            <div class="tab-panel" id="tab-related">
+                <div class="rec-grid" id="related-list"></div>
+            </div>
+        </aside>
+
+        <aside class="content" id="content">
+            <p class="play-tip">不要相信视频中的广告</p>
+
+            <div class="title-row">
+                <h1 class="vod-title" id="vod-title"></h1>
+                <a class="desc-trigger" id="desc-trigger" href="javascript:void(0)" role="button">简介 <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <p class="vod-desc" id="vod-desc"></p>
+
+            <div class="action-row" id="action-row">
+                <button class="act-btn" id="act-prev" type="button" aria-label="上一集"><i class="fas fa-chevron-left"></i><span>上一集</span></button>
+                <button class="act-btn" id="act-share" type="button" aria-label="分享"><i class="fas fa-share-nodes"></i><span>分享</span></button>
+                <button class="act-btn" id="act-dl" type="button" aria-label="下载"><i class="fas fa-download"></i><span>下载</span></button>
+                <button class="act-btn" id="act-refresh" type="button" aria-label="刷新"><i class="fas fa-arrows-rotate"></i><span>刷新</span></button>
+                <button class="act-btn" id="act-next" type="button" aria-label="下一集"><i class="fas fa-chevron-right"></i><span>下一集</span></button>
+            </div>
+
+            <div class="ep-block">
+                <div class="ep-block-head">
+                    <span class="block-label">选集</span>
+                    <span class="ep-playing" id="ep-playing-label"></span>
+                    <button class="ep-open-all" id="ep-open-all" type="button"><span id="ep-count-text">全0集</span> <i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="ep-one-row" id="ep-one-row"></div>
+            </div>
+
+            <div class="ad-block ad-slot" id="ad-block"></div>
+
+            <div class="rec-block">
+                <div class="block-label">猜你喜欢</div>
+                <div class="rec-grid" id="rec-list"></div>
+            </div>
+
+            <div class="rec-block" id="ai-relate-block" style="display:none">
+                <div class="block-label"><i class="fas fa-wand-magic-sparkles"></i> AI 相关搜索</div>
+                <div class="ai-relate-chips" id="ai-relate"></div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="sheet" id="detail-sheet" aria-hidden="true">
+        <div class="sheet-mask" data-close></div>
+        <div class="sheet-panel">
+            <button class="sheet-close" type="button" data-close aria-label="关闭"><i class="fas fa-times"></i></button>
+            <div class="detail-head">
+                <img class="detail-poster" id="sheet-poster" src="" alt="">
+                <div class="detail-info">
+                    <h3 class="detail-title" id="sheet-title"></h3>
+                    <p class="detail-meta" id="sheet-meta"></p>
+                </div>
+            </div>
+            <dl class="detail-cast" id="sheet-cast"></dl>
+            <h4 class="detail-section-title">简介</h4>
+            <p class="detail-desc" id="sheet-desc"></p>
+        </div>
+    </div>
+
+    <div class="sheet" id="ep-sheet" aria-hidden="true">
+        <div class="sheet-mask" data-close></div>
+        <div class="sheet-panel sheet-lg">
+            <button class="sheet-close" type="button" data-close aria-label="关闭"><i class="fas fa-times"></i></button>
+            <h3 class="sheet-title">选集</h3>
+            <div class="sheet-source-row" id="sheet-source-tabs"></div>
+            <div class="sheet-sort" id="sheet-sort">
+                <button class="sort-btn active" type="button" data-order="asc">正序</button>
+                <button class="sort-btn" type="button" data-order="desc">倒序</button>
+            </div>
+            <div class="sheet-ep-grid" id="sheet-ep-list"></div>
+        </div>
+    </div>
+
+    <div class="share-overlay" id="share-overlay">
+        <div class="share-modal">
+            <button class="share-close" id="share-close"><i class="fas fa-xmark"></i></button>
+            <h3>分享影片</h3>
+            <div class="share-qr-wrapper" id="share-qr-wrapper">
+                <div class="qr-loading" id="qr-loading">生成二维码中...</div>
+                <img id="share-qr-img" src="" alt="扫码观看" style="display:none" onerror="this.style.display='none';document.getElementById('qr-loading').textContent='生成二维码中...'">
+                <p>微信 / 手机扫码即可观看</p>
+            </div>
+            <div class="share-platforms a2a_kit a2a_kit_size_40 a2a_default_style" id="share-platforms">
+                <a class="a2a_button_wechat" title="微信"></a>
+                <a class="a2a_button_sina_weibo" title="微博"></a>
+                <a class="a2a_button_copy_link" title="复制链接"></a>
+            </div>
+            <div class="share-url-row">
+                <input type="text" id="share-url-input" readonly value="" onclick="this.select()">
+                <button id="share-copy-btn">复制链接</button>
+            </div>
+            <p class="share-tip">选择平台一键分享，或扫码用手机观看</p>
+        </div>
+    </div>
+    <script defer src="file/play.js"></script>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>

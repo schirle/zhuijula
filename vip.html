@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>全网VIP视频解析</title>
+<meta name="theme-color" content="#0f0f17">
+<meta property="og:title" content="全网VIP视频解析">
+<meta property="og:description" content="稳定免费的VIP视频解析工具，支持优酷、爱奇艺、腾讯、芒果TV等VIP会员视频免费解析在线观看">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="免费追剧">
+<meta name="twitter:card" content="summary">
+<meta name="description" content="一个稳定免费的VIP视频解析工具，支持全网VIP会员视频免费解析，优酷、爱奇艺、腾讯视频、哔哩哔哩、芒果TV、搜狐视频等VIP会员电影电视剧视频免费解析在线观看！"/>
+<link rel="icon" href="file/zhuiju.png">
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+(function(){try{var t=localStorage.getItem('ftv_theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+    <script defer src="file/wechat-tip.js"></script>
+    <script defer src="file/common.js"></script>
+<link rel="stylesheet" href="file/vip.css">
+    <link rel="dns-prefetch" href="//sdk.51.la">
+    <link rel="preconnect" href="https://sdk.51.la" crossorigin>
+    <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
+</head>
+<body data-page="vip">
+
+    <nav class="top-nav" id="top-nav"></nav>
+
+<div class="vp-container">
+  
+  <div class="control-bar">
+    <div class="input-group api-group">
+      <label><i class="fas fa-plug"></i> 解析接口</label>
+      <select id="api-select"></select>
+    </div>
+    <div class="input-group url-group">
+      <label><i class="fas fa-link"></i> 视频链接</label>
+      <input type="url" id="video-url" placeholder="粘贴腾讯/爱奇艺/优酷/芒果视频链接" autocomplete="off">
+    </div>
+    <button id="parse-btn" class="btn-parse">
+      <i class="fas fa-bolt"></i> 解析视频
+    </button>
+  </div>
+
+  
+  <div class="player-box">
+    <div class="video-wrapper">
+      <iframe id="video-player" allow="fullscreen" allowfullscreen loading="lazy" referrerpolicy="no-referrer"></iframe>
+    </div>
+    <div class="player-footer">
+      <div class="player-status" id="player-status">
+        <i class="fas fa-play-circle"></i> 准备就绪 - 等待解析
+      </div>
+      <div class="player-actions">
+        <button class="btn-sm" id="refresh-btn"><i class="fas fa-sync-alt"></i> 刷新</button>
+        <button class="btn-sm" id="fullscreen-btn"><i class="fas fa-expand"></i> 全屏</button>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="history"><i class="fas fa-history"></i> 播放历史</button>
+    <button class="tab-btn" data-tab="instructions"><i class="fas fa-book-open"></i> 使用教程</button>
+    <button class="tab-btn" data-tab="disclaimer"><i class="fas fa-shield-alt"></i> 免责声明</button>
+  </div>
+
+  
+  <div class="tab-panel active" id="history-panel">
+    <ul class="history-list" id="history-list"></ul>
+    <div class="history-actions">
+      <button id="clear-history" class="btn-sm" style="color:var(--vp-danger)">
+        <i class="fas fa-trash-alt"></i> 清除历史记录
+      </button>
+    </div>
+  </div>
+
+  
+  <div class="tab-panel" id="instructions-panel">
+    <div class="info-section">
+      <h3><i class="fas fa-graduation-cap"></i> 使用教程</h3>
+      <ol>
+        <li><strong>选择解析接口</strong> — 从下拉菜单选择可用接口（失效请换其他）</li>
+        <li><strong>粘贴视频链接</strong> — 复制VIP视频链接（腾讯视频、爱奇艺、优酷、芒果TV等），粘贴到输入框</li>
+        <li><strong>解析视频</strong> — 点击「解析视频」按钮或按 Enter 键</li>
+        <li><strong>观看视频</strong> — 解析成功后自动播放，可使用播放器控制栏操作</li>
+        <li><strong>全屏观看</strong> — 点击「全屏」按钮获得更好体验</li>
+        <li><strong>历史记录</strong> — 系统自动保存播放记录，下次继续观看</li>
+      </ol>
+      <div class="disclaimer-box">
+        <p><strong><i class="fas fa-exclamation-triangle"></i> 注意事项：</strong></p>
+        <p>1. 接口失效请切换其他接口</p>
+        <p>2. 部分视频需等待几秒加载</p>
+        <p>3. 按 ESC 键可退出全屏</p>
+        <p>4. 本工具仅供个人学习使用</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="tab-panel" id="disclaimer-panel">
+    <div class="info-section">
+      <h3><i class="fas fa-shield-alt"></i> 免责声明</h3>
+      <p>1. 本工具提供的视频解析服务仅供学习交流使用，所有解析接口均来源于网络公开资源。</p>
+      <p>2. 本工具不存储任何视频内容，所有视频内容均来自各视频平台。</p>
+      <p>3. 使用本工具观看VIP视频时，仅用于体验目的。</p>
+      <p>4. 本工具不保证解析服务的稳定性和可用性，解析接口可能随时失效。</p>
+      <p>5. 使用本工具产生的一切后果由用户自行承担，开发者不承担任何法律责任。</p>
+      <p>6. 请支持正版视频平台，购买官方VIP会员享受更好的服务。</p>
+      <div class="disclaimer-box" style="border-left-color:var(--vp-danger)">
+        <p><strong><i class="fas fa-exclamation-circle"></i> 郑重声明：</strong>本工具仅用于技术研究，禁止用于任何商业或非法用途。请在24小时内删除从本工具获取的任何视频内容。</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="status-bar">
+    <div class="status-item">
+      <i class="fas fa-history"></i> 历史记录：<strong><span id="history-count">0</span> 条</strong>
+    </div>
+    <div class="status-item">
+      <i class="fas fa-clock"></i> 最近解析：<strong><span id="last-updated">--:--</span></strong>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toast-message"></span></div>
+
+<script defer src="file/vip.js"></script>
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+import { makeRoute, json, CFG, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig } from '../../_shared.js';
+
+export const onRequest = makeRoute(handleAdminConfig);
+
+// 后台配置读写：GET 返回 KV 配置 + 环境变量兜底情况（布尔，不泄露值）；POST 白名单字段保存
+const STR_FIELDS = [
+  'ai_api_key', 'ai_model', 'ai_base_url', 'nav_links', 'pdlist', 'wp_api_host',
+  'quark_cookie', 'quark_dir', 'baidu_cookie', 'baidu_dir', 'jjsou_api_key',
+  'web3forms_access_key', 'tmdb_key', 'daily_api', 'zhuiju_url',
+];
+// 环境变量兜底提示（仅回是否已设置，不回值）
+const ENV_HINTS = {
+  AI_API_KEY: 'ai_api_key', AI_MODEL: 'ai_model', AI_BASE_URL: 'ai_base_url',
+  NAV_LINKS: 'nav_links', PDlist: 'pdlist', WP_API_HOST: 'wp_api_host',
+  QUARK_COOKIE: 'quark_cookie', QUARK_DIR: 'quark_dir',
+  BAIDU_COOKIE: 'baidu_cookie', BAIDU_DIR: 'baidu_dir',
+  JJSOU_API_KEY: 'jjsou_api_key', WEB3FORMS_ACCESS_KEY: 'web3forms_access_key',
+  TMDB_KEY: 'tmdb_key', DAILY_API: 'daily_api', ZUIJU_URL: 'zhuiju_url',
+};
+
+async function handleAdminConfig(request, _url, context) {
+  const env = context?.env || {};
+  if (!await isAdminRequest(request, env)) return adminDenied();
+
+  if (request.method === 'GET') {
+    const cfg = await loadSiteConfig(env, true);
+    const env_set = {};
+    for (const [k] of Object.entries(ENV_HINTS)) env_set[k] = !!(env[k] && String(env[k]).trim());
+    return json({
+      code: 1,
+      cfg,
+      env_set,
+      kv_ready: !!(env.KV || env.SEARCH_KV),
+      default_zhuiju_url: CFG.ZUIJU_API,
+    });
+  }
+
+  if (request.method === 'POST') {
+    let body = {};
+    try { body = await request.json(); } catch (_) { return json({ code: 0, msg: '请求格式错误' }, 400); }
+    const cfg = await loadSiteConfig(env, true);
+
+    // 字符串字段：string/number 直接收；空串 = 清除（回退环境变量）
+    for (const k of STR_FIELDS) {
+      if (!(k in body)) continue;
+      const v = body[k];
+      if (v == null) { delete cfg[k]; continue; }
+      let s = String(v).trim();
+      if (k === 'nav_links' && s) {
+        // 导航链接必须是合法 JSON 数组
+        try {
+          const arr = JSON.parse(s);
+          if (!Array.isArray(arr)) throw new Error('not array');
+          s = JSON.stringify(arr);
+        } catch (_) { return json({ code: 0, msg: '「导航链接」必须是合法的 JSON 数组' }, 400); }
+      }
+      if (k === 'zhuiju_url' && s && !/^https?:\/\//i.test(s)) {
+        return json({ code: 0, msg: '「追剧数据源 URL」必须以 http(s):// 开头' }, 400);
+      }
+      if (s) cfg[k] = s; else delete cfg[k];
+    }
+
+    // 追剧自定义数据：对象或 JSON 字符串；空 = 清除（恢复上游）
+    if ('zhuiju_data' in body) {
+      let data = body.zhuiju_data;
+      if (typeof data === 'string') {
+        const t = data.trim();
+        if (!t) { delete cfg.zhuiju_data; delete cfg.zhuiju_updated; }
+        else {
+          try { data = JSON.parse(t); } catch (_) { return json({ code: 0, msg: '「追剧自定义数据」不是合法 JSON' }, 400); }
+        }
+      }
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        if (!Array.isArray(data['jiekou-list']) || !data['jiekou-list'].length) {
+          return json({ code: 0, msg: '自定义数据缺少 jiekou-list 播放源（保存后搜索将不可用），请先「从上游导入」再改' }, 400);
+        }
+        cfg.zhuiju_data = data;
+        cfg.zhuiju_updated = Date.now(); // 版本号变更 → 各接口立即热加载
+      } else if (data == null || data === '') {
+        delete cfg.zhuiju_data; delete cfg.zhuiju_updated;
+      } else if ('zhuiju_data' in body) {
+        return json({ code: 0, msg: '「追剧自定义数据」必须是 JSON 对象' }, 400);
+      }
+    }
+
+    const ok = await saveSiteConfig(env, cfg);
+    if (!ok) return json({ code: 0, msg: 'KV 未绑定或写入失败（请绑定 KV 命名空间，变量名 KV 或 SEARCH_KV）' }, 500);
+    return json({ code: 1, msg: '已保存' });
+  }
+
+  return json({ code: 0, msg: '不支持的方法' }, 405);
+}

@@ -1,0 +1,16 @@
+{
+  "name": "free-tv",
+  "version": "1.1.0",
+  "description": "免费追剧 - 全网影视免费在线观看",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "minify:js": "esbuild file/app.js file/common.js file/fuli.js file/index.js file/links.js file/list.js file/play.js file/vip.js file/wechat-tip.js file/app.css file/common.css file/fuli.css file/index.css file/links.css file/list.css file/play.css file/vip.css file/plugin.css --minify --outbase=file --outdir=file --out-extension:.js=.min.js --out-extension:.css=.min.css --allow-overwrite",
+    "minify:html": "node minify-html.mjs",
+    "build": "npm run minify:js && npm run minify:html"
+  },
+  "dependencies": {
+    "esbuild": "^0.23.1",
+    "html-minifier-terser": "^7.2.0"
+  }
+}

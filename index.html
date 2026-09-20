@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="免费追剧 - 无广告，免会员，全网影视免费在线观看">
+    <title>免费追剧 - 全网影视免费看</title>
+    <link rel="icon" href="file/zhuiju.png">
+    <meta name="theme-color" content="#0f0f17">
+    <meta property="og:title" content="免费追剧 - 全网影视免费看">
+    <meta property="og:description" content="无广告，免会员，全网影视免费在线观看">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="免费追剧">
+    <meta name="twitter:card" content="summary">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+      (function () { try { var t = localStorage.getItem('ftv_theme'); if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+
+    </script>
+    <link rel="dns-prefetch" href="//sdk.51.la">
+    <link rel="preconnect" href="https://sdk.51.la" crossorigin>
+    <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
+    <script defer src="file/wechat-tip.js"></script>
+    <script defer src="file/common.js"></script>
+    <link rel="stylesheet" href="file/index.css">
+</head>
+<body data-page="home">
+    <div class="bg-layer"></div>
+
+    
+    <nav class="top-nav" id="top-nav"></nav>
+
+    <main class="main-container">
+        
+        <section class="home-search ai-hero" id="home-search">
+            <form class="hs-box hs-hero" id="hs-form" autocomplete="off">
+                <span class="hs-icon"><i class="fas fa-wand-magic-sparkles"></i></span>
+                <input type="text" name="key" id="hs-input" placeholder="用大白话描述想看的，例如：想看复仇的国产电视剧" autocomplete="off">
+                <button type="button" class="hs-clear" id="hs-clear" aria-label="清除">✕</button>
+                <button type="button" class="hs-history-btn" id="hs-history-btn" title="搜索历史" aria-label="搜索历史"><i class="fas fa-clock"></i></button>
+                <button type="button" class="hs-ai" id="hs-ai" title="AI 智能搜索：自动识别类型/题材/地区" aria-pressed="true">AI</button>
+                <button type="submit" class="hs-btn">智能搜索</button>
+            </form>
+            <div class="hs-suggest" id="hs-suggest">
+                <span class="hs-suggest-label">试试：</span>
+                <button type="button" class="hs-chip">复仇的国产剧</button>
+                <button type="button" class="hs-chip">爱情电影</button>
+                <button type="button" class="hs-chip">权谋电视剧</button>
+                <button type="button" class="hs-chip">悬疑美剧</button>
+                <button type="button" class="hs-chip">治愈系日剧</button>
+                <a class="hs-classic-toggle" id="hs-classic" href="javascript:void(0)">传统搜索 ›</a>
+            </div>
+            <div class="hs-history" id="hs-history" style="display:none">
+                <div class="section-header"><span class="section-title">搜索历史</span><span class="section-more" id="hs-history-clear" onclick="clearHistory()">清空</span></div>
+                <div class="hs-history-list" id="hs-history-list"></div>
+            </div>
+        </section>
+
+        
+        <section class="hot-board" id="hot-board" style="display:none">
+            <div class="section-header">
+                <span class="section-title"><i class="fas fa-fire"></i> 大家都在搜</span>
+                <span class="section-sub">点词条，AI 自动理解你的搜索</span>
+            </div>
+            <div class="hot-list" id="hot-list"></div>
+        </section>
+
+        
+        <section class="hero-combo" id="hero-combo">
+            
+            <div class="hero-carousel" id="hero-carousel">
+                <div class="hc-track" id="hc-track">
+                    <div class="hc-loading"><div class="spinner"></div><div class="loading-text">轮播加载中…</div></div>
+                </div>
+                <div class="hc-dots" id="hc-dots"></div>
+            </div>
+
+            
+            <div class="hero-side">
+                <a class="quick-card app" href="/app">
+                    <div class="qc-icon"><i class="fas fa-mobile-screen-button"></i></div>
+                    <div class="qc-text"><div class="qc-title">安装追剧APP</div><div class="qc-desc">安卓苹果免费下载</div></div>
+                    <div class="qc-arrow"><i class="fas fa-chevron-right"></i></div>
+                </a>
+                <div class="quick-card plugin" id="plugin-card" onclick="location.href='/plugin'">
+                    <div class="qc-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <div class="qc-text"><div class="qc-title">安装追剧插件</div><div class="qc-desc">豆瓣影视一键找资源</div></div>
+                    <div class="qc-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+                <div class="side-card daily" id="side-daily">
+                    <div class="sc-head">
+                        <i class="fas fa-star sc-head-ico"></i>
+                        <span class="sc-head-title">今日推荐</span>
+                    </div>
+                    <div class="sc-source">数据来源：此刻电影日历</div>
+                    <div class="sc-body" id="side-daily-body">
+                        <div class="loading-wrap visible"><div class="spinner"></div><div class="loading-text">加载中…</div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+        <div id="browse-view">
+            
+            <div class="rail-wrap" id="rail-continue" style="display:none">
+                <div class="section-header">
+                    <span class="section-title"><i class="fas fa-history"></i> 继续观看</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-continue-scroll"></div>
+            </div>
+
+            <div class="rail-wrap" id="rail-hot">
+                <div class="section-header">
+                    <span class="section-title"><i class="fas fa-fire"></i> 热播推荐</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-hot-scroll"></div>
+            </div>
+
+            <div class="rail-wrap" id="rail-kr">
+                <div class="section-header">
+                    <span class="section-title"><i class="fas fa-fire"></i> 韩剧热播榜</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-kr-scroll"></div>
+            </div>
+
+            <div class="rail-wrap" id="rail-jp">
+                <div class="section-header">
+                    <span class="section-title"><i class="fas fa-tv"></i> 日剧热播榜</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-jp-scroll"></div>
+            </div>
+
+            <div class="rail-wrap" id="rail-us">
+                <div class="section-header">
+                    <span class="section-title"><i class="fas fa-clapperboard"></i> 美剧热播榜</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-us-scroll"></div>
+            </div>
+
+            <div class="rail-wrap" id="rail-playrank" style="display:none">
+                <div class="section-header">
+                    <span class="section-title"><i class="fas fa-chart-line"></i> 本机热播榜</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-playrank-scroll"></div>
+            </div>
+
+            <div class="rail-wrap" id="rail-pl" style="display:none">
+                <div class="section-header">
+                    <span class="section-title" id="rail-pl-title"><i class="fas fa-clapperboard"></i> 推荐片单</span>
+                    <div class="rail-arrows">
+                        <button class="rail-arrow prev" data-dir="prev" aria-label="向左滚动"><i class="fas fa-chevron-left"></i></button>
+                        <button class="rail-arrow next" data-dir="next" aria-label="向右滚动"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="rail-scroll" id="rail-pl-scroll"></div>
+            </div>
+
+            <section class="local-rank" id="search-rank" style="display:none">
+                <div class="section-header"><span class="section-title"><i class="fas fa-search"></i> 本机搜索榜</span></div>
+                <ul class="rank-list" id="search-rank-list"></ul>
+            </section>
+        </div>
+
+        
+        <section id="search-result-section" class="result-section"></section>
+
+        <section id="wp-result-section" class="result-section"></section>
+
+        
+        <section class="friend-links" id="friend-links" style="display:none">
+            <div class="section-header"><span class="section-title"><i class="fas fa-link"></i> 友情链接</span><span class="section-more" id="fl-more" style="display:none" onclick="location.href='links.html'">查看全部 ›</span></div>
+            <div class="friend-list" id="friend-list"></div>
+        </section>
+
+        
+        <div class="footer">免费追剧 · 全网影视免费在线观看 · <a href="links.html" style="color:inherit;text-decoration:underline;text-decoration-color:rgba(255,255,255,.18);text-underline-offset:3px">友情链接</a></div>
+    </main>
+
+    
+    <div id="plugin-popup" class="modal-overlay">
+        <div class="modal-bg" onclick="closePluginPopup()"></div>
+        <div class="modal-content">
+            <div class="modal-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+            <h3 class="modal-title">安装追剧插件</h3>
+            <div class="modal-body">
+                <p>安装本 <span class="highlight">Chrome 扩展（无需 Tampermonkey）</span> 后，浏览豆瓣电影页面时，标题旁会自动出现「<span class="highlight">找资源</span>」按钮，一键跳转到本站搜索全网播放源。</p>
+                <div class="install-steps">
+                    <p><span class="step-num">1</span> 点击下方按钮，下载 <b>zhuiju.crx</b> 扩展文件</p>
+                    <p><span class="step-num">2</span> 浏览器打开 <b>chrome://extensions</b>，开启右上角「开发者模式」，把下载的 <b>zhuiju.crx</b> 拖入页面（若被拦截，重命名为 <b>.zip</b> 解压后「加载已解压的扩展程序」）</p>
+                    <p><span class="step-num">3</span> 打开任意豆瓣电影页面，标题旁即可看到「找资源」按钮</p>
+                </div>
+            </div>
+            <button class="modal-btn" onclick="goInstall()">下载扩展插件</button>
+            <button class="modal-btn secondary" onclick="closePluginPopup()">暂不需要</button>
+        </div>
+    </div>
+
+    
+    <div id="daily-popup" class="modal-overlay">
+        <div class="modal-bg" onclick="closePopup()"></div>
+        <div class="modal-content">
+            <div class="daily-banner">
+                <div class="modal-icon"><i class="fas fa-bullhorn"></i></div>
+                <h3 class="modal-title">网站最新公告</h3>
+                <div class="daily-sub">每日精选好剧 · 免费追剧一站直达</div>
+            </div>
+            <div class="modal-body">
+                <p>免费在线追剧网站，一个就够了！</p>
+                <p>将本站分享安利给好友，好友一定会高兴！</p>
+            </div>
+            <button class="modal-btn" onclick="closePopup()">我知道了</button>
+        </div>
+    </div>
+
+    <script defer src="file/index.js"></script>
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="返回顶部" title="返回顶部"><i class="fas fa-arrow-up"></i></button>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>
