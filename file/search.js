@@ -8,7 +8,7 @@
         const SEARCH_RANK_KEY = 'ftv_search_rank';
         const HISTORY_KEY = 'ftv_history';
 
-        const WP_PAGE_SIZE = 10;
+        const WP_PAGE_SIZE = 16;
         const WP_CATS = [
             { key: 'all', label: '全部' },
             { key: 'quark', label: '夸克' },
@@ -17,10 +17,12 @@
             { key: 'xunlei', label: '迅雷' },
         ];
         const WP_TYPE_LABEL = { baidu: '百度网盘', quark: '夸克', xunlei: '迅雷', uc: 'UC', other: '网盘' };
+        // 网盘区头部（title 后可附 hint / 计数等 extra）
+        const wpHeader = extra => '<div class="wp-header"><span class="section-title"><i class="fas fa-cloud" style="color:var(--primary)"></i> 网盘</span>' + (extra || '') + '</div>';
 
         let abortCtrl = null, lastSearch = '';
         let searchList = [], resultPage = 1;
-        let wpList = [], wpShown = WP_PAGE_SIZE, wpCat = 'all', wpLoadedFor = '';
+        let wpList = [], wpPage = 1, wpCat = 'all', wpLoadedFor = '';
         let curTab = 'all';
         let currentKw = '';
 
@@ -214,7 +216,7 @@
             const wpEl = document.getElementById('wp-area');
             if (!wpEl) return;
             wpLoadedFor = keyword;
-            wpEl.innerHTML = '<div class="wp-header"><span class="section-title"><i class="fas fa-cloud" style="color:var(--primary)"></i> 网盘资源</span><span class="wp-hint">资源来自网络，请自行甄别</span></div><div class="wp-loading"><i class="fas fa-spinner fa-spin"></i> 正在检索网盘资源…</div>';
+            wpEl.innerHTML = wpHeader('<span class="wp-hint">资源来自网络，请自行甄别</span>') + '<div class="wp-loading"><i class="fas fa-spinner fa-spin"></i> 正在检索网盘资源…</div>';
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), 30000);
             try {
@@ -223,17 +225,17 @@
                 const data = await resp.json();
                 renderWp(wpEl, data, keyword);
             } catch (e) {
-                wpEl.innerHTML = '<div class="wp-header"><span class="section-title"><i class="fas fa-cloud" style="color:var(--primary)"></i> 网盘资源</span></div><div class="wp-empty">网盘资源检索暂不可用，请稍后重试</div>';
+                wpEl.innerHTML = wpHeader() + '<div class="wp-empty">网盘资源检索暂不可用，请稍后重试</div>';
             } finally { clearTimeout(t); }
         }
 
         function renderWp(wpEl, data, keyword) {
             const list = Array.isArray(data?.results) ? data.results : [];
             if (!list.length) {
-                wpEl.innerHTML = '<div class="wp-header"><span class="section-title"><i class="fas fa-cloud" style="color:var(--primary)"></i> 网盘资源</span></div><div class="wp-empty">未找到与 "' + esc(keyword) + '" 相关的网盘资源</div>';
+                wpEl.innerHTML = wpHeader() + '<div class="wp-empty">未找到与 "' + esc(keyword) + '" 相关的网盘资源</div>';
                 return;
             }
-            wpList = list; wpShown = WP_PAGE_SIZE; wpCat = 'all';
+            wpList = list; wpPage = 1; wpCat = 'all';
             renderWpPage();
         }
 
@@ -241,12 +243,17 @@
             const wpEl = document.getElementById('wp-area');
             if (!wpEl) return;
             const filtered = wpCat === 'all' ? wpList : wpList.filter(it => it.type === wpCat);
-            const shown = Math.min(wpShown, filtered.length);
-            const header = '<div class="wp-header"><span class="section-title"><i class="fas fa-cloud" style="color:var(--primary)"></i> 网盘资源</span><span class="wp-count">共 ' + filtered.length + ' 条</span></div>';
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / WP_PAGE_SIZE));
+            if (wpPage > totalPages) wpPage = totalPages;
+            if (wpPage < 1) wpPage = 1;
+            const startIdx = (wpPage - 1) * WP_PAGE_SIZE;
+            const endIdx = Math.min(startIdx + WP_PAGE_SIZE, total);
+            const header = wpHeader('<span class="wp-count">共 ' + total + ' 条</span>');
             const cats = '<div class="wp-cats">' + WP_CATS.map(c =>
                 '<button class="wp-cat' + (c.key === wpCat ? ' active' : '') + '" data-cat="' + c.key + '">' + c.label + '</button>').join('') + '</div>';
             const items = [];
-            for (let i = 0; i < shown; i++) {
+            for (let i = startIdx; i < endIdx; i++) {
                 const it = filtered[i];
                 const typeLabel = WP_TYPE_LABEL[it.type] || '网盘';
                 items.push('<div class="wp-item" data-type="' + esc(it.type) + '" data-url="' + esc(it.link) + '" data-title="' + esc(it.title || '') + '">'
@@ -254,23 +261,50 @@
                     + '<span class="wp-title">' + esc(it.title || '') + '</span></div>');
             }
             let html = header + cats + '<div class="wp-list">' + items.join('') + '</div>';
-            if (shown < filtered.length) {
-                html += '<div class="s-more-wrap"><button class="s-more" data-pg="more">加载更多 (' + (filtered.length - shown) + ')</button></div>';
-            }
+            if (totalPages > 1) html += renderWpPager(totalPages);
             wpEl.innerHTML = html;
             wpEl.onclick = e => {
                 const item = e.target.closest('.wp-item');
                 if (item) { openWpModal({ type: item.dataset.type, link: item.dataset.url, title: item.dataset.title || '' }); return; }
-                if (e.target.closest('[data-pg="more"]')) { wpShown += WP_PAGE_SIZE; renderWpPage(); }
+                const pg = e.target.closest('[data-pg]');
+                if (pg) {
+                    const v = pg.getAttribute('data-pg');
+                    if (v === 'prev') wpPage = Math.max(1, wpPage - 1);
+                    else if (v === 'next') wpPage = Math.min(totalPages, wpPage + 1);
+                    else wpPage = parseInt(v, 10) || 1;
+                    renderWpPage();
+                }
             };
             wpEl.querySelectorAll('.wp-cat').forEach(btn => {
                 btn.onclick = () => {
                     const cat = btn.getAttribute('data-cat');
                     if (cat === wpCat) return;
-                    wpCat = cat; wpShown = WP_PAGE_SIZE;
+                    wpCat = cat; wpPage = 1;
                     renderWpPage();
                 };
             });
+        }
+
+        // 页码切换：≤7 页全显；多页时窗口化显示（首页/末页 + 当前页 ±1 + 省略号）
+        function renderWpPager(totalPages) {
+            const cur = wpPage;
+            const nums = [];
+            if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) nums.push(i);
+            } else {
+                nums.push(1);
+                if (cur > 3) nums.push('...');
+                for (let i = Math.max(2, cur - 1); i <= Math.min(totalPages - 1, cur + 1); i++) nums.push(i);
+                if (cur < totalPages - 2) nums.push('...');
+                nums.push(totalPages);
+            }
+            const numBtns = nums.map(n => n === '...'
+                ? '<span class="wp-pager-ellipsis">…</span>'
+                : '<button class="wp-pager-btn' + (n === cur ? ' active' : '') + '" data-pg="' + n + '">' + n + '</button>'
+            ).join('');
+            const prev = '<button class="wp-pager-btn" data-pg="prev"' + (cur <= 1 ? ' disabled' : '') + ' aria-label="上一页"><i class="fas fa-chevron-left"></i></button>';
+            const next = '<button class="wp-pager-btn" data-pg="next"' + (cur >= totalPages ? ' disabled' : '') + ' aria-label="下一页"><i class="fas fa-chevron-right"></i></button>';
+            return '<div class="wp-pager">' + prev + numBtns + next + '</div>';
         }
 
         /* 网盘转存弹窗 */

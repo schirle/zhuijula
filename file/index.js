@@ -247,10 +247,15 @@
             function goSlide(n) {
                 idx = (n + total) % total;
                 track.style.transform = 'translateX(-' + idx * 100 + '%)';
-                thumbEls().forEach((d, i) => {
-                    d.classList.toggle('active', i === idx);
-                    if (i === idx && d.scrollIntoView) d.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-                });
+                const thumbsEls = thumbEls();
+                thumbsEls.forEach((d, i) => d.classList.toggle('active', i === idx));
+                // 仅当轮播在视口内才横向滚动缩略图条；用户已滑走（如到底部）时跳过，
+                // 否则 scrollIntoView 会把整页往上带飞，造成「滑到底部自动滚上去」的 bug
+                const r = carouselEl.getBoundingClientRect();
+                if (r.bottom > 0 && r.top < window.innerHeight) {
+                    const active = thumbsEls[idx];
+                    if (active && active.scrollIntoView) active.scrollIntoView({ inline: 'nearest', behavior: 'smooth' });
+                }
             }
             if (prevBtn) prevBtn.addEventListener('click', () => { goSlide(idx - 1); start(); });
             if (nextBtn) nextBtn.addEventListener('click', () => { goSlide(idx + 1); start(); });
