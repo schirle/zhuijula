@@ -54,32 +54,51 @@
 
             <!-- 右侧榜单 -->
             <aside class="s-side">
-                <div class="side-box" id="side-hot-box">
-                    <div class="side-title"><i class="fas fa-fire"></i> 热搜榜</div>
-                    <ol class="side-rank" id="side-hot"></ol>
-                </div>
-                <div class="side-box" id="side-douban-box">
-                    <div class="side-title"><i class="fas fa-chart-line"></i> 热播榜</div>
-                    <ol class="side-rank" id="side-douban"></ol>
-                </div>
-                <div class="side-box" id="side-pl-box" style="display:none">
-                    <div class="side-title"><i class="fas fa-list-ol"></i> 片单精选</div>
-                    <div class="side-pl" id="side-pl"></div>
-                </div>
+                <!-- 今日推荐（cikeee 每日单部影片） -->
                 <div class="side-box" id="side-today-box">
                     <div class="side-title"><i class="fas fa-calendar-day"></i> 今日推荐</div>
-                    <ol class="side-rank" id="side-today"></ol>
+                    <div class="side-today" id="side-today"></div>
                 </div>
+                <!-- APP下载（打开应用中心） -->
                 <div class="side-box" id="side-app-box">
                     <div class="side-title"><i class="fas fa-download"></i> APP下载</div>
-                    <div class="side-app" id="side-app"></div>
+                    <div class="side-plugin" id="side-app">
+                        <p class="side-plugin-desc">安卓 / iOS 影视应用与在线网站，扫码即装，免费追剧。</p>
+                        <a class="sp-btn" href="/app"><i class="fas fa-download"></i> 获取应用</a>
+                    </div>
                 </div>
+                <!-- 插件推荐（打开插件页） -->
                 <div class="side-box" id="side-plugin-box">
                     <div class="side-title"><i class="fas fa-puzzle-piece"></i> 插件推荐</div>
                     <div class="side-plugin" id="side-plugin">
                         <p class="side-plugin-desc">在豆瓣电影页面一键「找资源」，直达全网播放源。桌面端即装即用。</p>
                         <a class="sp-btn" href="/plugin"><i class="fas fa-download"></i> 获取插件</a>
                     </div>
+                </div>
+                <!-- 大家都搜了什么（全站搜索热榜） -->
+                <div class="side-box" id="side-hot-box">
+                    <div class="side-title"><i class="fas fa-fire"></i> 大家都搜了什么</div>
+                    <ol class="side-rank" id="side-hot"></ol>
+                </div>
+                <!-- 日榜 -->
+                <div class="side-box" id="side-day-box">
+                    <div class="side-title"><i class="fas fa-sun"></i> 日榜</div>
+                    <ol class="side-rank" id="side-day"></ol>
+                </div>
+                <!-- 周榜 -->
+                <div class="side-box" id="side-week-box">
+                    <div class="side-title"><i class="fas fa-calendar-week"></i> 周榜</div>
+                    <ol class="side-rank" id="side-week"></ol>
+                </div>
+                <!-- 月榜 -->
+                <div class="side-box" id="side-month-box">
+                    <div class="side-title"><i class="fas fa-calendar-alt"></i> 月榜</div>
+                    <ol class="side-rank" id="side-month"></ol>
+                </div>
+                <!-- 片单精选 -->
+                <div class="side-box" id="side-pl-box" style="display:none">
+                    <div class="side-title"><i class="fas fa-list-ol"></i> 片单精选</div>
+                    <div class="side-pl" id="side-pl"></div>
                 </div>
             </aside>
         </div>

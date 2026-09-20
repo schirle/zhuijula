@@ -1,5 +1,5 @@
 import { makeRoute, json, getClientIP, checkRateLimit } from '../_shared.js';
-import { readHotMap, recordHot, topHot, TOP_N, DEFAULT_HOT } from '../_hotrank.js';
+import { readHotMap, readHotTs, recordHot, topHot, TOP_N, DEFAULT_HOT } from '../_hotrank.js';
 
 export const onRequest = makeRoute(handleSearchRank);
 
@@ -12,7 +12,15 @@ export async function handleSearchRank(request, url, context) {
     if (!checkRateLimit(getClientIP(request))) return json({ code: 0, msg: '请求过于频繁' }, 429);
     await recordHot(env, recordWord);
   }
+  const range = url.searchParams.get('range');
   const map = await readHotMap(env);
-  const list = Object.keys(map).length ? topHot(map, TOP_N) : DEFAULT_HOT;
-  return json({ code: 1, list });
+  const tsMap = range ? await readHotTs(env) : null;
+  let list;
+  if (Object.keys(map).length) {
+    list = topHot(map, TOP_N, range, tsMap);
+    if (range && !list.length) list = topHot(map, TOP_N); // 该时间窗口暂无数据，回退累计榜
+  } else {
+    list = DEFAULT_HOT;
+  }
+  return json({ code: 1, list, range: range || 'all' });
 }

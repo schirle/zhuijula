@@ -350,24 +350,7 @@
                 });
             } catch (_) { list.innerHTML = '<li class="side-rank-empty">加载失败</li>'; }
         }
-        async function loadSideDouban() {
-            const list = document.getElementById('side-douban');
-            if (!list) return;
-            try {
-                const r = await fetch('/api/douban-hot?type=全部&limit=10');
-                const data = await r.json();
-                const arr = (data && Array.isArray(data.list)) ? data.list : [];
-                if (!arr.length) { list.innerHTML = '<li class="side-rank-empty">暂无数据</li>'; return; }
-                list.innerHTML = '';
-                arr.slice(0, 10).forEach((m, i) => {
-                    const li = document.createElement('li');
-                    if (i === 0) li.className = 'top'; else if (i === 1) li.className = 'top2'; else if (i === 2) li.className = 'top3';
-                    li.innerHTML = '<span class="rk-word">' + esc(m.title || '') + '</span>' + (m.rating ? '<span class="rk-count">★' + Number(m.rating).toFixed(1) + '</span>' : '');
-                    sideGoSearch(li, m.title);
-                    list.appendChild(li);
-                });
-            } catch (_) { list.innerHTML = '<li class="side-rank-empty">加载失败</li>'; }
-        }
+        // 热播榜模块已按需求移除
         async function loadSidePl() {
             const box = document.getElementById('side-pl-box');
             const el = document.getElementById('side-pl');
@@ -391,76 +374,81 @@
             } catch (_) { box.style.display = 'none'; }
         }
 
-        /* 今日推荐（每日推荐接口，失败回退豆瓣热门） */
+        /* 今日推荐（cikeee 每日单部影片推荐） */
+        function renderDailyCard(container, m) {
+            container.innerHTML = '';
+            const a = document.createElement('a');
+            a.className = 'side-today-card';
+            a.href = '/search?key=' + encodeURIComponent(m.title);
+            a.addEventListener('click', e => { e.preventDefault(); doSearch(m.title); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+            const meta = [m.year, m.region, m.genres].filter(Boolean).join(' / ');
+            let metaHtml = '';
+            if (meta) metaHtml = '<div class="side-today-meta">' + (m.rating ? '<span class="side-today-rate">★ ' + Number(m.rating).toFixed(1) + '</span> · ' : '') + esc(meta) + '</div>';
+            else if (m.rating) metaHtml = '<div class="side-today-meta"><span class="side-today-rate">★ ' + Number(m.rating).toFixed(1) + '</span></div>';
+            a.innerHTML = (m.pic ? '<img class="side-today-pic" src="' + esc(proxyImg(m.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<div class="side-today-pic"></div>')
+                + '<div class="side-today-info">'
+                + '<div class="side-today-name">' + esc(m.title) + '</div>'
+                + metaHtml
+                + (m.desc ? '<div class="side-today-desc">' + esc(m.desc) + '</div>' : '')
+                + (m.word ? '<div class="side-today-word">每日一词 · ' + esc(m.word) + '</div>' : '')
+                + '</div>';
+            container.appendChild(a);
+        }
         function parseDaily(data) {
-            const src = (data && (data.data || data)) || {};
-            let arr = [];
-            if (Array.isArray(src.list)) arr = src.list;
-            else if (Array.isArray(src.data?.list)) arr = src.data.list;
-            else if (Array.isArray(src)) arr = src;
-            else if (Array.isArray(data?.list)) arr = data.list;
-            return arr.map(it => ({ title: it.vod_name || it.title || '', rating: it.rating || 0 })).filter(it => it.title);
+            const d = data || {};
+            const mov = d.影片 || d.movie || (d.data && (d.data.影片 || d.data)) || null;
+            if (!mov) return null;
+            return {
+                title: mov.mov_title || mov.vod_name || mov.title || '',
+                pic: mov.海报 || mov.vod_pic || mov.pic || '',
+                rating: mov.评分 || mov.rating || 0,
+                year: mov.年份 || mov.year || '',
+                region: mov.地区 || mov.region || '',
+                genres: Array.isArray(mov.类型) ? mov.类型.join('/') : (mov.类型 || mov.genres || ''),
+                desc: mov.简介 || mov.vod_blurb || mov.desc || '',
+                word: d.daily_word || '',
+            };
         }
         async function loadSideToday() {
-            const list = document.getElementById('side-today');
-            if (!list) return;
-            const render = arr => {
-                if (!arr.length) { list.innerHTML = '<li class="side-today-loading">暂无推荐</li>'; return; }
-                list.innerHTML = '';
-                arr.slice(0, 8).forEach((m, i) => {
-                    const li = document.createElement('li');
-                    if (i === 0) li.className = 'top'; else if (i === 1) li.className = 'top2'; else if (i === 2) li.className = 'top3';
-                    li.innerHTML = '<span class="rk-word">' + esc(m.title) + '</span>' + (m.rating ? '<span class="rk-count">★' + Number(m.rating).toFixed(1) + '</span>' : '');
-                    sideGoSearch(li, m.title);
-                    list.appendChild(li);
-                });
-            };
+            const el = document.getElementById('side-today');
+            if (!el) return;
             try {
                 const r = await fetch('/api/daily');
-                const arr = parseDaily(await r.json());
-                if (arr.length) { render(arr); return; }
+                const m = parseDaily(await r.json());
+                if (m && m.title) { renderDailyCard(el, m); return; }
                 throw new Error('empty');
             } catch (_) {
                 try {
-                    const r2 = await fetch('/api/douban-hot?type=全部&limit=8');
+                    const r2 = await fetch('/api/douban-hot?type=全部&limit=1');
                     const d2 = await r2.json();
-                    render((d2 && Array.isArray(d2.list)) ? d2.list : []);
-                } catch (__) { list.innerHTML = '<li class="side-today-loading">加载失败</li>'; }
+                    const arr = (d2 && Array.isArray(d2.list)) ? d2.list : [];
+                    if (arr[0]) { renderDailyCard(el, { title: arr[0].title || '', pic: arr[0].pic || '', rating: arr[0].rating || 0 }); return; }
+                } catch (__){}
+                el.innerHTML = '<div class="side-today-loading">今日推荐加载失败</div>';
             }
         }
 
-        /* APP下载（zhuiju 的 android-list / ios-list） */
-        async function loadSideApp() {
-            const box = document.getElementById('side-app-box');
-            const el = document.getElementById('side-app');
-            if (!box || !el) return;
+        /* 日榜 / 周榜 / 月榜（搜索榜按时间窗口） */
+        async function loadSideRank(range, elId) {
+            const list = document.getElementById(elId);
+            if (!list) return;
             try {
-                const r = await fetch('/api/zhuiju');
+                const r = await fetch('/api/search-rank?range=' + range);
                 const data = await r.json();
-                const android = (data && Array.isArray(data['android-list'])) ? data['android-list'] : [];
-                const ios = (data && Array.isArray(data['ios-list'])) ? data['ios-list'] : [];
-                const apps = [];
-                for (const a of android) {
-                    const url = (Array.isArray(a.methods) && a.methods[0] && a.methods[0].url) || '';
-                    if (a.name && url) apps.push({ name: a.name, pic: a.pic, url, kind: '安卓' });
-                }
-                for (const a of ios) {
-                    if (a.name && a.link) apps.push({ name: a.name, pic: a.pic, url: a.link, kind: 'iOS' });
-                }
-                if (!apps.length) { box.style.display = 'none'; return; }
-                el.innerHTML = '';
-                apps.slice(0, 6).forEach(app => {
-                    const a = document.createElement('a');
-                    a.className = 'side-app-item';
-                    a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; a.title = app.name;
-                    a.innerHTML = (app.pic ? '<img src="' + esc(proxyImg(app.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<i class="fas fa-download"></i>')
-                        + '<span class="sa-name">' + esc(app.name) + '</span>'
-                        + '<span class="sa-kind">' + esc(app.kind) + '</span>';
-                    el.appendChild(a);
+                const arr = (data && Array.isArray(data.list)) ? data.list : [];
+                if (!arr.length) { list.innerHTML = '<li class="side-rank-empty">暂无数据</li>'; return; }
+                list.innerHTML = '';
+                arr.slice(0, 10).forEach((it, i) => {
+                    const li = document.createElement('li');
+                    if (i === 0) li.className = 'top'; else if (i === 1) li.className = 'top2'; else if (i === 2) li.className = 'top3';
+                    li.innerHTML = '<span class="rk-word">' + esc(it.word) + '</span>' + (it.count ? '<span class="rk-count">' + it.count + '</span>' : '');
+                    sideGoSearch(li, it.word);
+                    list.appendChild(li);
                 });
-                box.style.display = '';
-            } catch (_) { box.style.display = 'none'; }
+            } catch (_) { list.innerHTML = '<li class="side-rank-empty">加载失败</li>'; }
         }
+
+        // APP下载模块改为静态卡片（见 search.html，跳转 /app），无需前端拉取
 
         /* ══════════ 初始化 ══════════ */
         const init = () => {
@@ -490,10 +478,11 @@
             });
 
             loadSideHot();
-            loadSideDouban();
-            loadSidePl();
             loadSideToday();
-            loadSideApp();
+            loadSideRank('day', 'side-day');
+            loadSideRank('week', 'side-week');
+            loadSideRank('month', 'side-month');
+            loadSidePl();
 
             const key = new URLSearchParams(location.search).get('key');
             if (key?.trim()) doSearch(key.trim());
