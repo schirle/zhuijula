@@ -395,7 +395,8 @@
         $('#login-view').style.display='none'; $('#main-view').style.display='';
         return;
       }
-    } catch(_) {}
+      toast(d.msg || '配置加载失败', false);
+    } catch(_) { toast('无法连接后台接口 /api/admin/config（部署或网络异常）', false); }
     $('#login-view').style.display='';
   }
 
