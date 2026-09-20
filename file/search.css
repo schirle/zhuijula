@@ -200,6 +200,18 @@
 .s-more:hover:not(:disabled) { border-color: var(--primary); color: var(--primary-strong); box-shadow: 0 4px 16px var(--primary-glow); }
 .s-more:disabled { opacity: 0.55; cursor: wait; }
 
+/* 结果页码切换 */
+.s-pager { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; padding: 24px 0 10px; }
+.pg-btn {
+  min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text);
+  font-size: 14px; font-weight: 600; transition: all var(--transition);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pg-btn:hover:not(:disabled):not(.active) { border-color: var(--primary); color: var(--primary-strong); box-shadow: 0 4px 16px var(--primary-glow); }
+.pg-btn.active { background: var(--grad-primary); border-color: transparent; color: #fff; }
+.pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── 右侧榜单 ── */
 .side-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 16px; box-shadow: var(--shadow-card); }
 .side-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 10px; }

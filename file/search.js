@@ -2,7 +2,7 @@
         'use strict';
 
         const MAX_CARDS = 240;
-        const SEARCH_PAGE_SIZE = 14;
+        const SEARCH_PAGE_SIZE = 15;
         const SEARCH_TIMEOUT_MS = 35000;
         const MAX_HISTORY = 20;
         const SEARCH_RANK_KEY = 'ftv_search_rank';
@@ -19,7 +19,7 @@
         const WP_TYPE_LABEL = { baidu: '百度网盘', quark: '夸克', xunlei: '迅雷', uc: 'UC', other: '网盘' };
 
         let abortCtrl = null, lastSearch = '';
-        let searchList = [], searchShown = 0;
+        let searchList = [], resultPage = 1;
         let wpList = [], wpShown = WP_PAGE_SIZE, wpCat = 'all', wpLoadedFor = '';
         let curTab = 'all';
         let currentKw = '';
@@ -156,29 +156,41 @@
                 return;
             }
             searchList = data.list.slice(0, MAX_CARDS);
-            searchShown = 0;
             area.innerHTML = '<div class="result-header"><span class="section-title">搜索结果</span><span class="result-count">共 <strong>' + searchList.length + '</strong> 条</span></div>'
                 + '<div class="grid-container" id="result-grid"></div>'
-                + '<div class="s-more-wrap"><button class="s-more" id="s-more" style="display:none">展开更多 <i class="fas fa-chevron-down"></i></button></div>';
-            document.getElementById('s-more')?.addEventListener('click', () => showMoreResults());
-            showMoreResults();
+                + '<div class="s-pager" id="s-pager"></div>';
+            renderResultPage(1);
         }
 
-        function showMoreResults() {
+        /* 结果分页：页码切换，每页 SEARCH_PAGE_SIZE 条 */
+        function renderResultPage(p) {
             const grid = document.getElementById('result-grid');
-            const more = document.getElementById('s-more');
+            const pager = document.getElementById('s-pager');
             if (!grid) return;
-            const start = searchShown;
+            const totalPages = Math.max(1, Math.ceil(searchList.length / SEARCH_PAGE_SIZE));
+            resultPage = Math.min(Math.max(1, p), totalPages);
+            const start = (resultPage - 1) * SEARCH_PAGE_SIZE;
             const end = Math.min(start + SEARCH_PAGE_SIZE, searchList.length);
+            grid.innerHTML = '';
             const frag = document.createDocumentFragment();
             for (let i = start; i < end; i++) frag.appendChild(createResultCard(searchList[i]));
             grid.appendChild(frag);
-            searchShown = end;
             observeImages(grid);
-            if (more) {
-                if (end < searchList.length) { more.style.display = ''; more.disabled = false; more.innerHTML = '展开更多 <i class="fas fa-chevron-down"></i>'; }
-                else more.style.display = 'none';
-            }
+            if (!pager) return;
+            if (totalPages <= 1) { pager.innerHTML = ''; return; }
+            let btns = '<button class="pg-btn" data-pg="prev" aria-label="上一页"' + (resultPage === 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left"></i></button>';
+            for (let n = 1; n <= totalPages; n++) btns += '<button class="pg-btn' + (n === resultPage ? ' active' : '') + '" data-pg="' + n + '">' + n + '</button>';
+            btns += '<button class="pg-btn" data-pg="next" aria-label="下一页"' + (resultPage === totalPages ? ' disabled' : '') + '><i class="fas fa-chevron-right"></i></button>';
+            pager.innerHTML = btns;
+            pager.onclick = e => {
+                const b = e.target.closest('.pg-btn');
+                if (!b || b.disabled) return;
+                const v = b.getAttribute('data-pg');
+                const np = v === 'prev' ? resultPage - 1 : v === 'next' ? resultPage + 1 : parseInt(v, 10);
+                renderResultPage(np);
+                const ra = document.getElementById('result-area');
+                if (ra) window.scrollTo({ top: ra.getBoundingClientRect().top + window.scrollY - 76, behavior: 'smooth' });
+            };
         }
 
         /* ══════════ Tab 切换 ══════════ */

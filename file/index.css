@@ -95,7 +95,7 @@
 @media (max-width: 640px) { .nav-btn span { display: none; } .nav-btn { padding: 0 12px; } }
 
 /* ── 轮播 banner（内容区宽度、圆角） ── */
-.hero { max-width: var(--container-max); width: 100%; margin: 14px auto 0; padding: 0 var(--container-padding); }
+.hero { position: relative; max-width: var(--container-max); width: 100%; margin: 14px auto 0; padding: 0 var(--container-padding); }
 .hero-carousel {
   position: relative; overflow: hidden;
   width: 100%;
@@ -145,9 +145,9 @@
 .hc-thumb.active { border-color: var(--primary); outline-color: transparent; opacity: 1; box-shadow: 0 4px 16px var(--primary-glow); }
 @media (max-width: 767px) { .hc-thumb { width: 96px; } }
 
-/* ── 首页搜索框（悬浮于轮播上方，半透明胶囊） ── */
+/* ── 首页搜索框（桌面悬浮于轮播上方；手机端位于轮播图上方、不悬浮） ── */
 .home-search-box {
-  position: absolute; top: 6%; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
   z-index: 6;
   display: flex; align-items: center; gap: 10px;
   width: min(94%, 860px);
@@ -160,27 +160,28 @@
   transition: all var(--transition);
 }
 .home-search-box:focus-within { background: rgba(15, 15, 23, 0.62); border-color: rgba(255, 255, 255, 0.38); }
-.hs-filter {
-  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-  padding-right: 12px; border-right: 1px solid rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.92); font-size: 14px; font-weight: 600; cursor: pointer;
-}
-.hs-filter i { font-size: 13px; }
+.hs-ico { color: #fff; font-size: 18px; flex-shrink: 0; }
 #home-search-input { flex: 1; min-width: 0; height: 100%; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; caret-color: #fff; }
 #home-search-input::placeholder { color: rgba(255, 255, 255, 0.65); }
 .hs-btn {
-  flex-shrink: 0; width: 38px; height: 38px; padding: 0; border: none; border-radius: 50%;
-  background: #fff; color: #3a3a44; font-size: 15px; cursor: pointer;
+  flex-shrink: 0; height: 34px; padding: 0 22px; border: none; border-radius: var(--radius-pill);
+  background: #fff; color: #3a3a44; font-weight: 700; font-size: 14px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--transition);
 }
-.hs-btn:hover { transform: scale(1.06); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30); }
-.hs-btn:active { transform: scale(0.95); }
-@media (max-width: 560px) {
-  .home-search-box { height: 42px; top: 5%; padding-left: 14px; gap: 8px; }
-  .hs-filter { font-size: 0; gap: 0; padding-right: 10px; }
-  .hs-filter i { font-size: 14px; }
-  .hs-btn { width: 34px; height: 34px; font-size: 13px; }
+.hs-btn:hover { transform: scale(1.04); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30); }
+.hs-btn:active { transform: scale(0.96); }
+@media (max-width: 768px) {
+  .home-search-box {
+    position: static; transform: none;
+    width: 100%; margin: 0 0 12px;
+    height: 44px; padding-left: 16px; gap: 8px;
+    background: #17171f;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+  }
+  .home-search-box:focus-within { background: #17171f; border-color: rgba(255, 255, 255, 0.30); }
+  .hs-btn { padding: 0 16px; height: 32px; font-size: 13px; }
 }
 
 /* ── 频道筛选 chips ── */

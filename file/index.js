@@ -210,8 +210,8 @@
                 slide.appendChild(a);
                 track.appendChild(slide);
 
-                // 缩略图条
-                if (thumbs && multi) {
+                // 缩略图条（每张一个，点击切换）
+                if (thumbs) {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'hc-thumb' + (i === 0 ? ' active' : '');
@@ -222,7 +222,7 @@
                     thumbs.appendChild(b);
                 }
             });
-            if (thumbs && multi) thumbs.style.display = '';
+            if (thumbs) thumbs.style.display = '';
 
             const total = items.length;
             let idx = 0, timer = null;

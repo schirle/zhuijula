@@ -34,15 +34,15 @@
 
     <!-- 轮播 banner（内容区宽度、圆角）+ 悬浮搜索框 -->
     <section class="hero" id="hero-section">
+        <form class="home-search-box" id="home-search-form" autocomplete="off">
+            <i class="fas fa-search hs-ico"></i>
+            <input type="text" id="home-search-input" placeholder="搜索影视剧名，如：庆余年" autocomplete="off">
+            <button type="submit" class="hs-btn">搜索</button>
+        </form>
         <div class="hero-carousel" id="hero-carousel">
             <div class="hc-track" id="hc-track">
                 <div class="hc-loading"><div class="spinner"></div><div class="loading-text">精彩推荐加载中…</div></div>
             </div>
-            <form class="home-search-box" id="home-search-form" autocomplete="off">
-                <span class="hs-filter"><i class="fas fa-filter"></i>筛选</span>
-                <input type="text" id="home-search-input" placeholder="搜索影视剧名，如：庆余年" autocomplete="off">
-                <button type="submit" class="hs-btn" aria-label="搜索"><i class="fas fa-search"></i></button>
-            </form>
         </div>
         <div class="hc-thumbs" id="hc-thumbs" style="display:none"></div>
     </section>
