@@ -277,3 +277,26 @@
 .card-img-wrap.loaded .img-loading, .card-img-wrap.error .img-loading { display: none; }
 
 .footer { text-align: center; padding: 2rem 0 0.5rem; font-size: 12px; color: var(--text-muted); opacity: 0.6; }
+
+/* ── 今日推荐 / APP下载 / 插件推荐（右侧新增模块） ── */
+.side-today-loading { font-size: 12.5px; color: var(--text-muted); padding: 8px 0; }
+.side-app { display: flex; flex-direction: column; gap: 8px; }
+.side-app-item {
+  display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit;
+  padding: 7px 8px; border-radius: 11px; background: var(--surface); border: 1px solid var(--border);
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.side-app-item:hover { background: var(--bg-card-hover); border-color: var(--primary-glow); transform: translateY(-1px); }
+.side-app-item img { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; flex-shrink: 0; background: var(--bg-card); }
+.side-app-item .fa-download { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; color: #fff; background: var(--grad-primary); font-size: 16px; }
+.sa-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sa-kind { flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; color: var(--primary-strong); background: var(--primary-dim); }
+.side-plugin-desc { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 12px; }
+.sp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 18px; border-radius: var(--radius-pill); text-decoration: none;
+  background: var(--grad-primary); color: #fff; font-size: 13.5px; font-weight: 700;
+  transition: all var(--transition);
+}
+.sp-btn:hover { background: var(--grad-primary-strong); box-shadow: 0 6px 18px var(--primary-glow); }
+.side-empty { font-size: 12.5px; color: var(--text-muted); padding: 8px 0; }

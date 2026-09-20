@@ -6,14 +6,12 @@
         const RAIL_LIMIT = 12;
         const FEED_BATCH = 24;
         const FEED_TYPES = [
-            { key: '全部', label: '全部' },
-            { key: '热门', label: '热播榜' },
+            { key: '热门', label: '近期热播' },
             { key: '国产剧', label: '国产剧' },
             { key: '韩剧', label: '韩剧' },
             { key: '日剧', label: '日剧' },
             { key: '美剧', label: '美剧' },
             { key: '英剧', label: '英剧' },
-            { key: '最新', label: '最新' },
         ];
 
         const { observe: observeImages } = initLazyImages('300px');
@@ -56,7 +54,7 @@
         /* ══════════ 频道筛选 + 推荐网格 ══════════ */
         const feedCache = {};
         const shownCount = {};
-        let curType = '全部';
+        let curType = '热门';
 
         function renderChips() {
             const box = document.getElementById('chips');
@@ -78,6 +76,18 @@
                 frag.appendChild(b);
             });
             box.appendChild(frag);
+        }
+
+        function wireHomeSearch() {
+            const form = document.getElementById('home-search-form');
+            if (!form) return;
+            const input = document.getElementById('home-search-input');
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                const kw = (input?.value || '').trim();
+                if (!kw) { input?.focus(); return; }
+                location.href = '/search?key=' + encodeURIComponent(kw);
+            });
         }
 
         function feedSub(m) {
@@ -346,6 +356,7 @@
         const init = () => {
             renderChips();
             loadFeed(false);
+            wireHomeSearch();
             loadCarousel();
             loadContinueWatching();
             loadFriendLinks();

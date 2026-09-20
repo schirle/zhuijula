@@ -138,6 +138,29 @@
 .hc-thumb.active { border-color: var(--primary); outline-color: transparent; opacity: 1; box-shadow: 0 4px 16px var(--primary-glow); }
 @media (max-width: 767px) { .hc-thumb { width: 96px; } }
 
+/* ── 首页搜索框（轮播图下方） ── */
+.home-search { margin-top: 16px; }
+.home-search-box {
+  display: flex; align-items: center; gap: 10px;
+  max-width: 680px; margin: 0 auto;
+  height: 54px; padding: 0 8px 0 20px; border-radius: var(--radius-pill);
+  background: var(--bg-input); border: 1.5px solid var(--border-light);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.25);
+  transition: all var(--transition);
+}
+.home-search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 5px var(--primary-dim), 0 12px 34px rgba(0,0,0,0.32); }
+.hs-ico { color: var(--text-muted); font-size: 18px; flex-shrink: 0; }
+#home-search-input { flex: 1; min-width: 0; height: 100%; background: transparent; border: none; outline: none; color: var(--text); font-size: 15px; caret-color: var(--primary); }
+#home-search-input::placeholder { color: var(--text-muted); }
+.hs-btn {
+  flex-shrink: 0; height: 42px; padding: 0 28px; border: none; border-radius: var(--radius-pill);
+  background: var(--grad-primary); color: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer;
+  transition: all var(--transition);
+}
+.hs-btn:hover { background: var(--grad-primary-strong); }
+.hs-btn:active { transform: scale(0.97); }
+@media (max-width: 560px) { .home-search-box { height: 48px; padding-left: 16px; } .hs-btn { padding: 0 16px; height: 38px; } }
+
 /* ── 频道筛选 chips ── */
 .chips {
   display: flex; gap: 10px; margin: 20px 0 6px; padding: 2px;

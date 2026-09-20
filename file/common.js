@@ -237,28 +237,7 @@ const renderNav = async () => {
   if (cfg.back) {
     actions += '<button class="nav-btn" id="nav-back" type="button" title="返回"><i class="fas fa-arrow-left"></i><span>返回</span></button>';
   }
-  // 顶栏搜索框：body 带 data-search-nav="1" 的页面（首页/搜索页）在品牌区右侧注入
-  const searchBox = document.body.dataset.searchNav === '1'
-    ? '<form class="nav-search" id="nav-search-form" autocomplete="off">'
-      + '<i class="fas fa-search ns-ico"></i>'
-      + '<input type="text" id="nav-search-input" placeholder="搜索影视剧 / 综艺 / 动漫…" autocomplete="off">'
-      + '<button type="submit" class="ns-btn">搜索</button></form>'
-    : '';
-  root.innerHTML = brand + searchBox + '<div class="nav-actions">' + actions + '</div>';
-
-  const nsForm = document.getElementById('nav-search-form');
-  if (nsForm) {
-    const nsInput = document.getElementById('nav-search-input');
-    // 搜索页回填当前关键词
-    const urlKey = getParam('key');
-    if (urlKey && nsInput) nsInput.value = urlKey;
-    nsForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const kw = (nsInput?.value || '').trim();
-      if (!kw) { nsInput?.focus(); return; }
-      location.href = '/search?key=' + encodeURIComponent(kw);
-    });
-  }
+  root.innerHTML = brand + '<div class="nav-actions">' + actions + '</div>';
 
   const back = document.getElementById('nav-back');
   if (back) back.addEventListener('click', () => {

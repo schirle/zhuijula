@@ -108,9 +108,6 @@
             addHistory(kw);
             incSearchRank(kw);
             if (location.search !== `?key=${encodeURIComponent(kw)}`) history.replaceState(null, '', `${location.pathname}?key=${encodeURIComponent(kw)}`);
-            // 同步顶栏搜索框
-            const nsInput = document.getElementById('nav-search-input');
-            if (nsInput) nsInput.value = kw;
             const sInput = document.getElementById('s-input');
             if (sInput) { sInput.value = kw; document.getElementById('s-clear')?.classList.add('visible'); }
 
@@ -394,6 +391,77 @@
             } catch (_) { box.style.display = 'none'; }
         }
 
+        /* 今日推荐（每日推荐接口，失败回退豆瓣热门） */
+        function parseDaily(data) {
+            const src = (data && (data.data || data)) || {};
+            let arr = [];
+            if (Array.isArray(src.list)) arr = src.list;
+            else if (Array.isArray(src.data?.list)) arr = src.data.list;
+            else if (Array.isArray(src)) arr = src;
+            else if (Array.isArray(data?.list)) arr = data.list;
+            return arr.map(it => ({ title: it.vod_name || it.title || '', rating: it.rating || 0 })).filter(it => it.title);
+        }
+        async function loadSideToday() {
+            const list = document.getElementById('side-today');
+            if (!list) return;
+            const render = arr => {
+                if (!arr.length) { list.innerHTML = '<li class="side-today-loading">暂无推荐</li>'; return; }
+                list.innerHTML = '';
+                arr.slice(0, 8).forEach((m, i) => {
+                    const li = document.createElement('li');
+                    if (i === 0) li.className = 'top'; else if (i === 1) li.className = 'top2'; else if (i === 2) li.className = 'top3';
+                    li.innerHTML = '<span class="rk-word">' + esc(m.title) + '</span>' + (m.rating ? '<span class="rk-count">★' + Number(m.rating).toFixed(1) + '</span>' : '');
+                    sideGoSearch(li, m.title);
+                    list.appendChild(li);
+                });
+            };
+            try {
+                const r = await fetch('/api/daily');
+                const arr = parseDaily(await r.json());
+                if (arr.length) { render(arr); return; }
+                throw new Error('empty');
+            } catch (_) {
+                try {
+                    const r2 = await fetch('/api/douban-hot?type=全部&limit=8');
+                    const d2 = await r2.json();
+                    render((d2 && Array.isArray(d2.list)) ? d2.list : []);
+                } catch (__) { list.innerHTML = '<li class="side-today-loading">加载失败</li>'; }
+            }
+        }
+
+        /* APP下载（zhuiju 的 android-list / ios-list） */
+        async function loadSideApp() {
+            const box = document.getElementById('side-app-box');
+            const el = document.getElementById('side-app');
+            if (!box || !el) return;
+            try {
+                const r = await fetch('/api/zhuiju');
+                const data = await r.json();
+                const android = (data && Array.isArray(data['android-list'])) ? data['android-list'] : [];
+                const ios = (data && Array.isArray(data['ios-list'])) ? data['ios-list'] : [];
+                const apps = [];
+                for (const a of android) {
+                    const url = (Array.isArray(a.methods) && a.methods[0] && a.methods[0].url) || '';
+                    if (a.name && url) apps.push({ name: a.name, pic: a.pic, url, kind: '安卓' });
+                }
+                for (const a of ios) {
+                    if (a.name && a.link) apps.push({ name: a.name, pic: a.pic, url: a.link, kind: 'iOS' });
+                }
+                if (!apps.length) { box.style.display = 'none'; return; }
+                el.innerHTML = '';
+                apps.slice(0, 6).forEach(app => {
+                    const a = document.createElement('a');
+                    a.className = 'side-app-item';
+                    a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; a.title = app.name;
+                    a.innerHTML = (app.pic ? '<img src="' + esc(proxyImg(app.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<i class="fas fa-download"></i>')
+                        + '<span class="sa-name">' + esc(app.name) + '</span>'
+                        + '<span class="sa-kind">' + esc(app.kind) + '</span>';
+                    el.appendChild(a);
+                });
+                box.style.display = '';
+            } catch (_) { box.style.display = 'none'; }
+        }
+
         /* ══════════ 初始化 ══════════ */
         const init = () => {
             const form = document.getElementById('s-form');
@@ -424,6 +492,8 @@
             loadSideHot();
             loadSideDouban();
             loadSidePl();
+            loadSideToday();
+            loadSideApp();
 
             const key = new URLSearchParams(location.search).get('key');
             if (key?.trim()) doSearch(key.trim());
