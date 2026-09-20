@@ -655,6 +655,8 @@ export async function handleConfig(request, url, context) {
   // 不再内置默认导航：后台/环境变量未配置时返回空数组，导航完全由运营在后台设置
   return cachedJson(new Request(url.origin + '/__config__'), {
     code: 1, nav,
+    nav_links: Array.isArray(cfg.nav_links) ? cfg.nav_links : [],
+    carousels: Array.isArray(cfg.carousels) ? cfg.carousels : [],
     stats_code: cfg.stats_code || '',
     vip_jx: Array.isArray(cfg.vip_jx) ? cfg.vip_jx : [],
     first_popup: (cfg.first_popup && typeof cfg.first_popup === 'object') ? cfg.first_popup : null,
@@ -789,7 +791,7 @@ export async function handleZhuiju(request, url, context) {
     }
     if (cfg.site_name) out.site_name = cfg.site_name;
     if (cfg.site_desc) out.site_desc = cfg.site_desc;
-    // 后台「APP页」结构化配置优先于上游 android-list / ios-list
+    // 后台「APP页」结构化配置优先于上游 android-list / ios-list（ut 为最近新增/修改时间，仅用于前端「新」角标判断）
     if (Array.isArray(cfg.android_apps) && cfg.android_apps.length) {
       out['android-list'] = cfg.android_apps.map(a => ({
         name: String(a.name || ''),
@@ -797,6 +799,7 @@ export async function handleZhuiju(request, url, context) {
         methods: (Array.isArray(a.methods) ? a.methods : [])
           .filter(m => m && m.url)
           .map(m => ({ type: String(m.type || ''), url: String(m.url || '') })),
+        ut: Number(a.updated_at || a.created_at || 0) || undefined,
       })).filter(a => a.name);
     }
     if (Array.isArray(cfg.ios_apps) && cfg.ios_apps.length) {
@@ -806,6 +809,7 @@ export async function handleZhuiju(request, url, context) {
         link: String(a.link || ''),
         copy: String(a.copy || ''),
         text: String(a.text || ''),
+        ut: Number(a.updated_at || a.created_at || 0) || undefined,
       })).filter(a => a.name);
     }
   }

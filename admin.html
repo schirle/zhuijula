@@ -68,6 +68,21 @@
   .app-preview .pv-item{display:flex;gap:8px;font-size:12.5px;padding:8px 10px;background:#1e293b;border-radius:8px;margin-bottom:6px;word-break:break-all}
   .app-preview .pv-item b{color:#7dd3fc;flex:0 0 auto}
   .app-preview .pv-line{font-size:12.5px;padding:8px 10px;background:#1e293b;border-radius:8px;margin-bottom:6px;word-break:break-all}
+  .app-saved{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #1e293b;border-radius:12px;margin-bottom:10px;transition:border-color .15s,background .15s}
+  .app-saved:hover{border-color:#3b82f6;background:rgba(30,41,59,.6)}
+  .app-saved img{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;background:#1e293b}
+  .app-saved .as-info{flex:1;min-width:0;padding-right:76px}
+  .app-saved .as-name{color:#fff;font-weight:700;font-size:13.5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app-saved .as-sub{color:#94a3b8;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app-saved .as-acts{position:absolute;display:flex;gap:6px}
+  .app-saved{position:relative}
+  .app-saved .as-acts{right:10px;top:50%;transform:translateY(-50%);opacity:0;pointer-events:none;transition:opacity .15s}
+  .app-saved:hover .as-acts{opacity:1;pointer-events:auto}
+  .as-btn{border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .as-btn.edit{background:#3b82f6;color:#fff}
+  .as-btn.edit:hover{background:#2f6fdd}
+  .as-btn.del{background:rgba(239,68,68,.9);color:#fff}
+  .as-btn.del:hover{background:#dc2626}
   .dl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .dl-label{flex:0 0 78px;font-weight:600;font-size:13px;color:var(--muted)}
   .dl-row input{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:inherit}
@@ -224,7 +239,7 @@
         <div class="app-wrap">
           <div class="card-box app-form">
             <h3><i class="bi bi-android2"></i>安卓 APP</h3>
-            <div class="tip">填写 APP名称 / 图片地址，在对应网盘的输入框里直接填下载链接（留空则不显示该渠道），点「保存」后右侧实时显示已保存内容。</div>
+            <div class="tip">填写 APP名称 / 图片地址，在对应网盘的输入框里直接填下载链接（留空则不显示该渠道）。点「保存」加入右侧列表；鼠标悬停列表项可 修改 / 删除，当天新增或修改的 APP 前端会显示「新」角标。</div>
             <div class="row">
               <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">APP名称</label><input type="text" id="m-android-name" class="form-control" placeholder="影视APP"></div>
               <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图片地址</label><input type="text" id="m-android-image" class="form-control" placeholder="https://.../icon.png"></div>
@@ -238,13 +253,14 @@
               <div class="dl-row"><span class="dl-label">其他网盘</span><input type="text" id="m-android-dl-other" placeholder="下载链接 https://..."></div>
             </div>
             <button class="btn-save" id="android-save" style="margin-top:14px">💾 保存</button>
+            <button class="btn-add" id="android-cancel" style="margin-top:14px;display:none">取消编辑</button>
           </div>
-          <div class="app-preview" id="android-preview"><div class="pv-empty">保存后在此预览</div></div>
+          <div class="app-preview" id="android-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
         </div>
         <div class="app-wrap">
           <div class="card-box app-form">
             <h3><i class="bi bi-apple"></i>苹果 APP</h3>
-            <div class="tip">填写 APP信息（无需下载方式），点「保存」后右侧实时显示已保存内容。</div>
+            <div class="tip">填写 APP信息（无需下载方式）。点「保存」加入右侧列表；鼠标悬停列表项可 修改 / 删除，当天新增或修改的 APP 前端会显示「新」角标。</div>
             <div class="row">
               <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">APP名称</label><input type="text" id="m-ios-name" class="form-control" placeholder="影视APP"></div>
               <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图片地址</label><input type="text" id="m-ios-image" class="form-control" placeholder="https://.../icon.png"></div>
@@ -255,8 +271,9 @@
             </div>
             <div class="mb-3"><label class="form-label small fw-semibold">相关说明</label><input type="text" id="m-ios-text" class="form-control"></div>
             <button class="btn-save" id="ios-save" style="margin-top:14px">💾 保存</button>
+            <button class="btn-add" id="ios-cancel" style="margin-top:14px;display:none">取消编辑</button>
           </div>
-          <div class="app-preview" id="ios-preview"><div class="pv-empty">保存后在此预览</div></div>
+          <div class="app-preview" id="ios-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
         </div>
       </section>
 
@@ -408,7 +425,9 @@
     const o={}; fields.forEach(f => { o[f.key] = (row.querySelector('[data-k="'+f.key+'"]')?.value||'').trim(); }); return o;
   });
 
-  // ── 安卓 / 苹果 APP 编辑器（固定表单 + 分区保存 + 右侧实时预览）──
+  // ── 安卓 / 苹果 APP 编辑器（固定表单 + 已保存列表：悬停 修改/删除；记录新增/修改时间供前端「新」角标）──
+  let androidApps = [], iosApps = [];
+  let androidEditIdx = -1, iosEditIdx = -1;
   const fillAndroid = (it) => {
     it = it || {};
     const methods = Array.isArray(it.methods) ? it.methods : [];
@@ -422,25 +441,74 @@
   });
   const fillIos = (it) => { it = it || {}; ['name','image','link','copy','text'].forEach(k => setVal('#m-ios-'+k, it[k])); };
   const collectIosApp = () => { const o={}; ['name','image','link','copy','text'].forEach(k => o[k]=getVal('#m-ios-'+k)); return o; };
-  // 右侧黑框预览：展示已保存内容
-  const renderAndroidPreview = (app) => {
-    const box = $('#android-preview'); if (!box) return;
-    const methods = Array.isArray(app.methods) ? app.methods : [];
-    if (!app.name && !app.image && !methods.length) { box.innerHTML = '<div class="pv-empty">保存后在此预览</div>'; return; }
-    box.innerHTML = (app.image ? '<img src="'+esc(app.image)+'" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="pv-name">'+esc(app.name || '安卓 APP')+'</div>'
-      + (methods.length
-        ? methods.map(m => { const c = DL_CHANNELS.find(x => x.key===m.type); return '<div class="pv-item"><b>'+esc(c?c.label:m.type)+'</b><span>'+esc(m.url)+'</span></div>'; }).join('')
-        : '<div class="pv-line" style="color:#64748b">暂无下载链接</div>');
+  // 编辑态按钮：修改时按钮变为「保存修改」并显示取消
+  const setAndroidEditing = (on) => {
+    $('#android-save').textContent = on ? '💾 保存修改' : '💾 保存';
+    $('#android-cancel').style.display = on ? '' : 'none';
   };
-  const renderIosPreview = (app) => {
+  const setIosEditing = (on) => {
+    $('#ios-save').textContent = on ? '💾 保存修改' : '💾 保存';
+    $('#ios-cancel').style.display = on ? '' : 'none';
+  };
+
+  // 右侧列表：每条悬停显示 修改 / 删除
+  const appRowHtml = (app, kind, idx) => {
+    const methods = Array.isArray(app.methods) ? app.methods : [];
+    let sub = '';
+    if (kind === 'android') {
+      sub = methods.length ? methods.map(m => { const c = DL_CHANNELS.find(x => x.key === m.type); return c ? c.label : m.type; }).join(' / ') : '暂无下载链接';
+    } else {
+      sub = [app.link ? '商城ID ' + app.link : '', app.copy ? '口令 ' + app.copy : '', app.text || ''].filter(Boolean).join(' · ') || '暂无信息';
+    }
+    return '<div class="app-saved" data-kind="' + kind + '" data-idx="' + idx + '">'
+      + (app.image ? '<img src="' + esc(app.image) + '" alt="" onerror="this.style.display=\'none\'">' : '')
+      + '<div class="as-info"><div class="as-name">' + esc(app.name || '未命名 APP') + '</div><div class="as-sub">' + esc(sub) + '</div></div>'
+      + '<div class="as-acts"><button type="button" class="as-btn edit">修改</button><button type="button" class="as-btn del">删除</button></div>'
+      + '</div>';
+  };
+  const renderAndroidList = () => {
+    const box = $('#android-preview'); if (!box) return;
+    box.innerHTML = androidApps.length ? androidApps.map((a, i) => appRowHtml(a, 'android', i)).join('') : '<div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div>';
+  };
+  const renderIosList = () => {
     const box = $('#ios-preview'); if (!box) return;
-    if (!app.name && !app.image && !app.link && !app.copy && !app.text) { box.innerHTML = '<div class="pv-empty">保存后在此预览</div>'; return; }
-    box.innerHTML = (app.image ? '<img src="'+esc(app.image)+'" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="pv-name">'+esc(app.name || '苹果 APP')+'</div>'
-      + (app.link ? '<div class="pv-line"><b style="color:#7dd3fc">商城ID：</b>'+esc(app.link)+'</div>' : '')
-      + (app.copy ? '<div class="pv-line"><b style="color:#7dd3fc">复制内容：</b>'+esc(app.copy)+'</div>' : '')
-      + (app.text ? '<div class="pv-line"><b style="color:#7dd3fc">说明：</b>'+esc(app.text)+'</div>' : '');
+    box.innerHTML = iosApps.length ? iosApps.map((a, i) => appRowHtml(a, 'ios', i)).join('') : '<div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div>';
+  };
+
+  // 列表项操作：修改 = 回填表单进入编辑态；删除 = 立即保存
+  const bindAppListActions = (kind) => {
+    const box = $(kind === 'android' ? '#android-preview' : '#ios-preview');
+    if (!box) return;
+    box.addEventListener('click', (e) => {
+      const row = e.target.closest('.app-saved'); if (!row) return;
+      const idx = parseInt(row.dataset.idx, 10);
+      if (e.target.closest('.del')) {
+        const cur = kind === 'android' ? androidApps : iosApps;
+        const target = cur[idx];
+        if (!confirm('确定删除「' + ((target && target.name) || '') + '」吗？')) return;
+        const next = cur.slice(); next.splice(idx, 1);
+        saveSection(box, kind === 'android' ? { android_apps: next } : { ios_apps: next }, () => {
+          if (kind === 'android') {
+            androidApps = next; renderAndroidList();
+            if (androidEditIdx === idx) { androidEditIdx = -1; fillAndroid({}); setAndroidEditing(false); }
+            else if (androidEditIdx > idx) androidEditIdx--;
+          } else {
+            iosApps = next; renderIosList();
+            if (iosEditIdx === idx) { iosEditIdx = -1; fillIos({}); setIosEditing(false); }
+            else if (iosEditIdx > idx) iosEditIdx--;
+          }
+          toast('已删除');
+        });
+        return;
+      }
+      if (e.target.closest('.edit')) {
+        const app = (kind === 'android' ? androidApps : iosApps)[idx]; if (!app) return;
+        if (kind === 'android') { fillAndroid(app); androidEditIdx = idx; setAndroidEditing(true); }
+        else { fillIos(app); iosEditIdx = idx; setIosEditing(true); }
+        const form = box.closest('.app-wrap')?.querySelector('.app-form');
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   };
 
   // ── 对象型模块 ──
@@ -485,10 +553,13 @@
     renderList('m-nav', NAV_FIELDS, cfg.nav_links);
     // 对象模块
     fillObj('app_page', cfg.app_page);
-    const savedAndroid = (Array.isArray(cfg.android_apps) && cfg.android_apps[0]) || {};
-    const savedIos = (Array.isArray(cfg.ios_apps) && cfg.ios_apps[0]) || {};
-    fillAndroid(savedAndroid); renderAndroidPreview(savedAndroid);
-    fillIos(savedIos); renderIosPreview(savedIos);
+    // APP 已保存列表（created_at/updated_at 仅用于前端「新」角标，不在界面展示具体时间）
+    androidApps = Array.isArray(cfg.android_apps) ? cfg.android_apps : [];
+    iosApps = Array.isArray(cfg.ios_apps) ? cfg.ios_apps : [];
+    androidEditIdx = -1; iosEditIdx = -1;
+    fillAndroid({}); fillIos({});
+    setAndroidEditing(false); setIosEditing(false);
+    renderAndroidList(); renderIosList();
     fillObj('play_page', cfg.play_page);
     renderList('m-custom-pages', CP_FIELDS, cfg.custom_pages);
     renderList('m-links', LI_FIELDS, cfg.links);
@@ -500,10 +571,8 @@
     for (const k of FIELD_KEYS) body[k] = getVal('#f-'+k);
     body.play_sources = collectList('m-sources', PS_FIELDS);
     body.carousels = collectList('m-carousel', CS_FIELDS);
-    const androidApp = collectAndroidApp();
-    body.android_apps = (androidApp.name || androidApp.image || androidApp.methods.length) ? [androidApp] : [];
-    const iosApp = collectIosApp();
-    body.ios_apps = (iosApp.name || iosApp.image || iosApp.link || iosApp.copy || iosApp.text) ? [iosApp] : [];
+    body.android_apps = androidApps;
+    body.ios_apps = iosApps;
     body.nav_links = collectList('m-nav', NAV_FIELDS);
     body.theme = collectTheme();
     const fpChk = $('#m-first_popup-enabled');
@@ -624,14 +693,34 @@
     const app = collectAndroidApp();
     if (!app.name) return toast('请先填写 APP名称', false);
     if (!app.image) return toast('请先填写 图片地址', false);
-    saveSection($('#android-save'), { android_apps:[app] }, () => renderAndroidPreview(app));
+    const now = Date.now();
+    const editing = androidEditIdx >= 0 ? androidApps[androidEditIdx] : null;
+    const next = androidApps.slice();
+    if (editing) next[androidEditIdx] = { ...app, created_at: editing.created_at || now, updated_at: now };
+    else next.push({ ...app, created_at: now, updated_at: now });
+    saveSection($('#android-save'), { android_apps: next }, () => {
+      androidApps = next; androidEditIdx = -1;
+      fillAndroid({}); setAndroidEditing(false); renderAndroidList();
+    });
   });
+  $('#android-cancel').addEventListener('click', () => { androidEditIdx = -1; fillAndroid({}); setAndroidEditing(false); });
   $('#ios-save').addEventListener('click', () => {
     const app = collectIosApp();
     if (!app.name) return toast('请先填写 APP名称', false);
     if (!app.image) return toast('请先填写 图片地址', false);
-    saveSection($('#ios-save'), { ios_apps:[app] }, () => renderIosPreview(app));
+    const now = Date.now();
+    const editing = iosEditIdx >= 0 ? iosApps[iosEditIdx] : null;
+    const next = iosApps.slice();
+    if (editing) next[iosEditIdx] = { ...app, created_at: editing.created_at || now, updated_at: now };
+    else next.push({ ...app, created_at: now, updated_at: now });
+    saveSection($('#ios-save'), { ios_apps: next }, () => {
+      iosApps = next; iosEditIdx = -1;
+      fillIos({}); setIosEditing(false); renderIosList();
+    });
   });
+  $('#ios-cancel').addEventListener('click', () => { iosEditIdx = -1; fillIos({}); setIosEditing(false); });
+  bindAppListActions('android');
+  bindAppListActions('ios');
 
   // ── 搜索排行榜 ──
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));

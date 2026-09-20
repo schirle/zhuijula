@@ -9,7 +9,6 @@
   const PLATFORMS = {
     android: { icon: 'fab fa-android', dataKey: 'android-list', label: '安卓APP', sub: '安卓应用 · 网盘下载', cta: '下载', ctaIcon: 'fas fa-download' },
     ios: { icon: 'fab fa-apple', dataKey: 'ios-list', label: '苹果APP', sub: 'iOS 应用 · App Store', cta: '下载', ctaIcon: 'fas fa-download' },
-    web: { icon: 'fas fa-globe', dataKey: 'website-list', label: '更多网站', sub: '在线影视网站 · 点开即看', cta: '打开', ctaIcon: 'fas fa-external-link-alt' },
   };
 
   const PAN_DISK = {
@@ -66,6 +65,14 @@
     list.innerHTML = html;
   };
 
+  // 当天（本地日期）新增/修改的 APP 显示「新」角标；ut 由后台保存时间生成，仅作判断不展示
+  const isToday = (ts) => {
+    if (!ts) return false;
+    const d = new Date(ts < 1e12 ? ts * 1000 : ts);
+    const n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  };
+
   const buildCard = (category, app) => {
     const p = PLATFORMS[category];
     const div = doc.createElement('div');
@@ -75,7 +82,8 @@
     div.innerHTML =
       `<div class="app-card__media"><img src="${esc(app.pic || '')}" alt="${esc(app.name)}" loading="lazy" onerror="window.imgFallback(this)"></div>` +
       `<h3 class="app-card__name">${esc(app.name)}</h3>` +
-      `<button class="app-card__btn" type="button"><i class="${p.ctaIcon}"></i> ${esc(p.cta)}</button>`;
+      `<button class="app-card__btn" type="button"><i class="${p.ctaIcon}"></i> ${esc(p.cta)}</button>` +
+      (isToday(app.ut) ? '<span class="app-card__badge">新</span>' : '');
     return div;
   };
 
@@ -168,18 +176,23 @@
           const label = PAN_DISK.labels[m.type] || '下载';
           return `<a href="${esc(m.url)}" target="_blank" rel="nofollow noopener" class="download-link-item"><img src="${esc(
             icon
-          )}" alt="" loading="lazy" onerror="window.imgFallback(this)"><span>${esc(label)}</span></a>`;
+          )}" alt="" loading="lazy" onerror="window.imgFallback(this)"><span>${esc(label)}</span><i class="fas fa-arrow-right dl-arrow"></i></a>`;
         })
         .join('');
       html += links
         ? `<div class="download-title">选择下载方式</div><div class="download-links-container">${links}</div>`
         : '<div class="no-download-link">暂无下载链接</div>';
     } else if (category === 'ios') {
-      const text = (info.text || '').replace(/\\n/g, '\n').replace(/\n/g, '<br>');
-      if (text) html += `<div class="download-title">${text}</div>`;
-      html += `<div class="app-store-link-box">口令：<span id="appStoreLink">${esc(info.copy || info.link || '')}</span></div>`;
-      html += '<button class="copy-btn" type="button"><i class="fas fa-copy"></i> 复制口令</button>';
-      html += `<a href="https://apps.apple.com/cn/app/id${esc(info.link || '')}" target="_blank" rel="noopener" class="app-store-download-btn"><i class="fab fa-apple"></i> AppStore 下载</a>`;
+      if (info.link) {
+        html += `<a href="https://apps.apple.com/cn/app/id${esc(info.link)}" target="_blank" rel="noopener" class="app-store-download-btn"><i class="fab fa-apple"></i> App Store 下载</a>`;
+      }
+      const code = String(info.copy || '').trim();
+      if (code) {
+        html += `<div class="download-title">兑换口令（复制后在 App Store 粘贴）</div><div class="dl-code">${esc(code)}</div><button class="copy-btn" type="button"><i class="fas fa-copy"></i> 复制口令</button>`;
+      } else if (info.text) {
+        const t = String(info.text).replace(/\n/g, '<br>');
+        html += `<div class="download-title">${t}</div>`;
+      }
     }
     return html;
   };
@@ -193,13 +206,16 @@
 
   const openDownloadPopup = (category, info) => {
     if (!info) return;
-    openModal(`下载 ${info.name || ''}`, buildDownloadContent(category, info));
+    const cover = info.pic
+      ? `<div class="download-cover"><img src="${esc(info.pic)}" alt="${esc(info.name)}" loading="lazy" onerror="window.imgFallback(this)"></div>`
+      : '';
+    openModal(`下载 ${esc(info.name || '')}`, cover + buildDownloadContent(category, info));
     if (category === 'ios') {
       const btn = $('#app-modal').querySelector('.copy-btn');
       if (btn)
         btn.addEventListener('click', () => {
-          const linkEl = $('#appStoreLink');
-          const text = linkEl ? linkEl.textContent : '';
+          const codeEl = $('#app-modal').querySelector('.dl-code');
+          const text = codeEl ? codeEl.textContent : '';
           copyText(text).then(() => flashBtn(btn, true), () => flashBtn(btn, false));
         });
     }
@@ -210,11 +226,6 @@
     if (!item) return;
     const category = item.dataset.category;
     const name = item.dataset.name;
-    if (category === 'web') {
-      const site = findByName(getData(PLATFORMS.web.dataKey), name);
-      if (site && site.link) win.open(site.link, '_blank', 'noopener');
-      return;
-    }
     const info = findByName(getData(PLATFORMS[category].dataKey), name);
     openDownloadPopup(category, info);
   };

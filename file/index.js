@@ -175,11 +175,11 @@
         async function loadCarousel() {
             const track = document.getElementById('hc-track');
             const carouselEl = document.getElementById('hero-carousel');
-            const heroSection = document.getElementById('hero-section');
             if (!track || !carouselEl) return;
             let items = [];
             try { const d = await window.getSiteConfig().catch(() => ({})); if (d && Array.isArray(d.carousels) && d.carousels.length) items = d.carousels; } catch (_) {}
-            if (!items.length) { if (heroSection) heroSection.style.display = 'none'; return; }
+            // 轮播为空：只隐藏轮播图区域，悬浮搜索框必须保留显示
+            if (!items.length) { carouselEl.style.display = 'none'; const thumbs = document.getElementById('hc-thumbs'); if (thumbs) thumbs.style.display = 'none'; return; }
             track.innerHTML = '';
 
             const thumbs = document.getElementById('hc-thumbs');

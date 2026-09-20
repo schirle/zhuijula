@@ -39,6 +39,13 @@
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
   background: var(--grad-primary); opacity: 0; transition: opacity var(--transition);
 }
+.app-card__badge {
+  position: absolute; top: 10px; right: 10px; z-index: 1;
+  background: var(--grad-primary); color: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: 1px;
+  padding: 3px 9px; border-radius: 999px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.25);
+}
 .app-card:hover { transform: translateY(-4px); border-color: var(--border-light); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10); }
 .app-card:hover::before { opacity: 1; }
 .app-card__media {
@@ -88,6 +95,8 @@
 }
 .modal-close:hover { background: var(--bg-card-hover); color: var(--text); }
 
+.download-cover { width: 72px; height: 72px; border-radius: 18px; overflow: hidden; margin: 0 auto 14px; background: var(--bg-card-hover); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12); }
+.download-cover img { width: 100%; height: 100%; object-fit: cover; }
 .download-title { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6; }
 .download-links-container { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .download-link-item {
@@ -98,6 +107,8 @@
 }
 .download-link-item:hover { background: var(--primary-dim); border-color: var(--primary-glow); transform: translateY(-2px); color: var(--primary-strong); }
 .download-link-item img { width: 24px; height: 24px; border-radius: 6px; object-fit: contain; flex-shrink: 0; }
+.dl-arrow { margin-left: auto; color: var(--text-muted); font-size: 13px; }
+.dl-code { background: var(--surface); border: 1px dashed var(--border-light); border-radius: var(--radius); padding: 12px; text-align: center; font-weight: 700; color: var(--text); word-break: break-all; margin-bottom: 10px; }
 .no-download-link { font-size: 13px; color: var(--text-muted); text-align: center; padding: 10px 0; }
 
 .app-store-link-box {
