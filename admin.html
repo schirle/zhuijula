@@ -379,7 +379,7 @@
         $('#kv-status').innerHTML = d.kv_ready ? '✅ KV 已绑定' : '⚠️ <span style="color:var(--warn)">KV 未绑定</span>';
         $('#login-view').style.display='none'; $('#main-view').style.display='';
       } else toast(d.msg||'登录失败', false);
-    } catch(_) { toast('网络错误', false); } finally { btn.disabled=false; }
+    } catch(_) { toast('连接不上登录接口：请在 Cloudflare Pages 线上站点访问（本地/预览环境没有后端）', false); } finally { btn.disabled=false; }
   };
   $('#login-btn').addEventListener('click', doLogin);
   $('#login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
@@ -401,7 +401,7 @@
         return;
       }
       toast(d.msg || '配置加载失败', false);
-    } catch(_) { toast('无法连接后台接口 /api/admin/config（部署或网络异常）', false); }
+    } catch(_) { /* 初始加载接口不通（如本地/预览环境无 Functions）时静默，仅显示登录框 */ }
     $('#login-view').style.display='';
   }
 
