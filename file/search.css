@@ -222,6 +222,15 @@
 .side-rank .rk-word { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .side-rank .rk-count { flex: 0 0 auto; font-size: 11px; color: var(--text-muted); }
 .side-rank-empty { font-size: 12.5px; color: var(--text-muted); padding: 8px 0; }
+.side-title-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.side-rank-tabs { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
+.srt {
+  border: none; background: var(--surface); color: var(--text-muted);
+  font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill);
+  cursor: pointer; transition: all .15s;
+}
+.srt:hover { color: var(--text); }
+.srt.active { background: var(--grad-primary); color: #fff; }
 .side-pl { display: flex; flex-direction: column; gap: 10px; }
 .side-pl-item { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; padding: 4px; border-radius: 10px; transition: background .15s; }
 .side-pl-item:hover { background: var(--bg-card-hover); }

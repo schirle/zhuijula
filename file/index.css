@@ -95,19 +95,20 @@
 @media (max-width: 640px) { .nav-btn span { display: none; } .nav-btn { padding: 0 12px; } }
 
 /* ── 大幅轮播 + 缩略图条 ── */
-.hero { margin-top: 16px; }
+.hero { margin-top: 16px; width: 100%; }
 .hero-carousel {
-  position: relative; border-radius: var(--radius-lg); overflow: hidden;
-  background: var(--bg-card); border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-card);
-  aspect-ratio: 21 / 8; min-height: 200px; max-height: 300px;
+  aspect-ratio: 21 / 9; min-height: 200px; max-height: 340px;
 }
 @media (min-width: 768px) { .hc-slide img { object-fit: cover; } }
 @media (max-width: 900px) { .hero-carousel { min-height: 0; aspect-ratio: 16 / 9; max-height: none; } }
 .hc-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); will-change: transform; }
 .hc-slide { flex: 0 0 100%; min-width: 100%; position: relative; height: 100%; background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-card)); }
 .hc-slide a { display: block; width: 100%; height: 100%; }
-.hc-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.hc-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .hc-slide img.fit-cover { object-fit: cover; }
 .hc-loading { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
 .hc-arrow {
@@ -140,7 +141,10 @@
 @media (max-width: 767px) { .hc-thumb { width: 96px; } }
 
 /* ── 首页搜索框（轮播图下方，显著） ── */
-.home-search { margin-top: 20px; }
+.home-search {
+  margin-top: 16px; max-width: var(--container-max);
+  margin-left: auto; margin-right: auto; padding: 0 var(--container-padding);
+}
 .home-search-tip { text-align: center; font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; }
 .home-search-box {
   display: flex; align-items: center; gap: 12px;

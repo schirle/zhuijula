@@ -332,11 +332,11 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         };
-        async function loadSideHot() {
+        async function loadSideHot(range) {
             const list = document.getElementById('side-hot');
             if (!list) return;
             try {
-                const r = await fetch('/api/search-rank');
+                const r = await fetch('/api/search-rank?range=' + (range || 'day'));
                 const data = await r.json();
                 const arr = (data && Array.isArray(data.list)) ? data.list : [];
                 if (!arr.length) { list.innerHTML = '<li class="side-rank-empty">暂无热搜数据</li>'; return; }
@@ -385,7 +385,7 @@
             let metaHtml = '';
             if (meta) metaHtml = '<div class="side-today-meta">' + (m.rating ? '<span class="side-today-rate">★ ' + Number(m.rating).toFixed(1) + '</span> · ' : '') + esc(meta) + '</div>';
             else if (m.rating) metaHtml = '<div class="side-today-meta"><span class="side-today-rate">★ ' + Number(m.rating).toFixed(1) + '</span></div>';
-            a.innerHTML = (m.pic ? '<img class="side-today-pic" src="' + esc(proxyImg(m.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<div class="side-today-pic"></div>')
+            a.innerHTML = (m.pic ? '<img class="side-today-pic" src="' + esc('/api/img?u=' + encodeURIComponent(m.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<div class="side-today-pic"></div>')
                 + '<div class="side-today-info">'
                 + '<div class="side-today-name">' + esc(m.title) + '</div>'
                 + metaHtml
@@ -396,16 +396,14 @@
         }
         function parseDaily(data) {
             const d = data || {};
-            const mov = d.影片 || d.movie || (d.data && (d.data.影片 || d.data)) || null;
-            if (!mov) return null;
             return {
-                title: mov.mov_title || mov.vod_name || mov.title || '',
-                pic: mov.海报 || mov.vod_pic || mov.pic || '',
-                rating: mov.评分 || mov.rating || 0,
-                year: mov.年份 || mov.year || '',
-                region: mov.地区 || mov.region || '',
-                genres: Array.isArray(mov.类型) ? mov.类型.join('/') : (mov.类型 || mov.genres || ''),
-                desc: mov.简介 || mov.vod_blurb || mov.desc || '',
+                title: d.mov_title || '',
+                pic: d.mov_pic || '',
+                rating: d.mov_rating || 0,
+                year: d.mov_year || '',
+                region: d.mov_area || '',
+                genres: Array.isArray(d.mov_type) ? d.mov_type.join('/') : (d.mov_type || ''),
+                desc: d.mov_intro || '',
                 word: d.daily_word || '',
             };
         }
@@ -416,37 +414,13 @@
                 const r = await fetch('/api/daily');
                 const m = parseDaily(await r.json());
                 if (m && m.title) { renderDailyCard(el, m); return; }
-                throw new Error('empty');
+                el.innerHTML = '<div class="side-today-loading">暂无今日推荐</div>';
             } catch (_) {
-                try {
-                    const r2 = await fetch('/api/douban-hot?type=全部&limit=1');
-                    const d2 = await r2.json();
-                    const arr = (d2 && Array.isArray(d2.list)) ? d2.list : [];
-                    if (arr[0]) { renderDailyCard(el, { title: arr[0].title || '', pic: arr[0].pic || '', rating: arr[0].rating || 0 }); return; }
-                } catch (__){}
                 el.innerHTML = '<div class="side-today-loading">今日推荐加载失败</div>';
             }
         }
 
-        /* 日榜 / 周榜 / 月榜（搜索榜按时间窗口） */
-        async function loadSideRank(range, elId) {
-            const list = document.getElementById(elId);
-            if (!list) return;
-            try {
-                const r = await fetch('/api/search-rank?range=' + range);
-                const data = await r.json();
-                const arr = (data && Array.isArray(data.list)) ? data.list : [];
-                if (!arr.length) { list.innerHTML = '<li class="side-rank-empty">暂无数据</li>'; return; }
-                list.innerHTML = '';
-                arr.slice(0, 10).forEach((it, i) => {
-                    const li = document.createElement('li');
-                    if (i === 0) li.className = 'top'; else if (i === 1) li.className = 'top2'; else if (i === 2) li.className = 'top3';
-                    li.innerHTML = '<span class="rk-word">' + esc(it.word) + '</span>' + (it.count ? '<span class="rk-count">' + it.count + '</span>' : '');
-                    sideGoSearch(li, it.word);
-                    list.appendChild(li);
-                });
-            } catch (_) { list.innerHTML = '<li class="side-rank-empty">加载失败</li>'; }
-        }
+        // 日/周/月榜已合并进「大家都搜了什么」模块（侧栏 tab 切换，见 init 中 #side-rank-tabs 绑定）
 
         // APP下载模块改为静态卡片（见 search.html，跳转 /app），无需前端拉取
 
@@ -477,12 +451,19 @@
                 });
             });
 
-            loadSideHot();
+            loadSideHot('day');
             loadSideToday();
-            loadSideRank('day', 'side-day');
-            loadSideRank('week', 'side-week');
-            loadSideRank('month', 'side-month');
             loadSidePl();
+
+            // 大家都搜了什么：日 / 周 / 月 切换
+            document.querySelectorAll('#side-rank-tabs .srt').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.classList.contains('active')) return;
+                    document.querySelectorAll('#side-rank-tabs .srt').forEach(x => x.classList.remove('active'));
+                    btn.classList.add('active');
+                    loadSideHot(btn.dataset.range);
+                });
+            });
 
             const key = new URLSearchParams(location.search).get('key');
             if (key?.trim()) doSearch(key.trim());

@@ -32,28 +32,27 @@
 
     <nav class="top-nav" id="top-nav"></nav>
 
-    <main class="main-container">
+    <!-- 首页搜索框（置于导航栏正下方，与搜索页位置一致、更醒目） -->
+    <section class="home-search">
+        <p class="home-search-tip">海量影视免费看 · 输入片名即刻搜索</p>
+        <form class="home-search-box" id="home-search-form" autocomplete="off">
+            <i class="fas fa-search hs-ico"></i>
+            <input type="text" id="home-search-input" placeholder="搜索影视剧名，如：庆余年" autocomplete="off">
+            <button type="submit" class="hs-btn">搜索</button>
+        </form>
+    </section>
 
-        <!-- 大幅轮播 + 缩略图条 -->
-        <section class="hero" id="hero-section">
-            <div class="hero-carousel" id="hero-carousel">
-                <div class="hc-track" id="hc-track">
-                    <div class="hc-loading"><div class="spinner"></div><div class="loading-text">精彩推荐加载中…</div></div>
-                </div>
+    <!-- 大幅轮播 + 缩略图条（横向占满通栏） -->
+    <section class="hero" id="hero-section">
+        <div class="hero-carousel" id="hero-carousel">
+            <div class="hc-track" id="hc-track">
+                <div class="hc-loading"><div class="spinner"></div><div class="loading-text">精彩推荐加载中…</div></div>
             </div>
-            <div class="hc-thumbs" id="hc-thumbs" style="display:none"></div>
-        </section>
+        </div>
+        <div class="hc-thumbs" id="hc-thumbs" style="display:none"></div>
+    </section>
 
-        <!-- 首页搜索框（轮播图下方） -->
-        <section class="home-search">
-            <p class="home-search-tip">海量影视免费看 · 输入片名即刻搜索</p>
-            <form class="home-search-box" id="home-search-form" autocomplete="off">
-                <i class="fas fa-search hs-ico"></i>
-                <input type="text" id="home-search-input" placeholder="搜索影视剧名，如：庆余年" autocomplete="off">
-                <button type="submit" class="hs-btn">搜索</button>
-            </form>
-        </section>
-
+    <main class="main-container">
         <!-- 频道筛选 -->
         <nav class="chips" id="chips" aria-label="频道筛选"></nav>
 
