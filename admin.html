@@ -45,7 +45,7 @@
   .btn-save:hover{background:var(--primary-d)}
   .btn-add{background:#eef4ff;color:var(--primary-d);border:1px solid #d6e4ff;font-weight:600;padding:8px 16px;border-radius:10px}
   .btn-add:hover{background:#e2edff}
-  .row-editor{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .row-editor{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
   .row-editor .ri{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:inherit}
   .row-editor .ri:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.13)}
   .row-editor select.ri{flex:0 0 130px;cursor:pointer}
@@ -67,7 +67,25 @@
   .toast.show{opacity:1;transform:translateX(-50%)}
   .toast.ok{background:#eaf6ee;color:var(--ok);border:1px solid #bfe6cb}
   .toast.err{background:#fdeaea;color:var(--err);border:1px solid #f4c2c2}
-  @media(max-width:760px){.sidebar{width:64px}.sidebar .brand small,.nav a span.txt{display:none}.main{margin-left:64px}}
+  @media(max-width:760px){
+    .sidebar{position:fixed;top:0;left:0;right:0;width:100%;height:auto;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--border);z-index:30;overflow:visible}
+    .brand{display:none}
+    .nav{display:flex;flex-direction:row;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+    .nav a{margin-bottom:0;padding:9px 12px}
+    .nav a span.txt{display:inline}
+    .side-foot{display:none}
+    .main{margin-left:0;margin-top:58px}
+    .topbar{position:sticky;top:58px;padding:0 14px}
+    .content{padding:14px}
+    .row-editor .ri, .row-editor select.ri{flex:1 1 100%}
+    .row-editor .ri-del{flex:1 1 100%}
+    .save-bar{left:0;right:0;padding:14px}
+  }
+  @media(max-width:480px){
+    .row{padding:0}
+    .col-md-4,.col-md-6{padding-left:0;padding-right:0}
+    .topbar h2{font-size:15px}
+  }
 </style>
 </head>
 <body>
@@ -159,10 +177,16 @@
           </div>
         </div>
         <div class="card-box">
-          <h3><i class="bi bi-download"></i>下载项</h3>
-          <div class="tip">APP 下载卡片列表。</div>
-          <div id="m-app-apps"></div>
-          <button class="btn-add" id="btn-add-apps">＋ 添加下载项</button>
+          <h3><i class="bi bi-android2"></i>安卓 APP</h3>
+          <div class="tip">下载方式：UC网盘 / 夸克网盘 / 百度网盘 / 迅雷网盘 / 其他网盘。</div>
+          <div id="m-android-apps"></div>
+          <button class="btn-add" id="btn-add-android">＋ 添加安卓APP</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-apple"></i>苹果 APP</h3>
+          <div class="tip">下载方式同上。</div>
+          <div id="m-ios-apps"></div>
+          <button class="btn-add" id="btn-add-ios">＋ 添加苹果APP</button>
         </div>
       </section>
 
@@ -275,12 +299,12 @@
   const PS_FIELDS = [{ key:'name', ph:'播放源名称，如 暴风资源', cls:'re-w30' }, { key:'url', ph:'接口地址 https://...' }];
   const CS_FIELDS = [{ key:'pic', ph:'图片链接 https://...', cls:'re-w38' }, { key:'link', ph:'搜索关键词 或 外链 URL' },
     { key:'mode', type:'select', options:[{ value:'search', label:'搜索关键词' }, { value:'external', label:'打开外链' }] }];
-  const APP_FIELDS = [{ key:'platform', ph:'平台，如 Android', cls:'re-w20' }, { key:'name', ph:'名称' },
-    { key:'url', ph:'下载地址 https://...', cls:'re-w35' }, { key:'icon', ph:'图标 class', cls:'re-w15' }];
+  const APP_FIELDS = [{ key:'name', ph:'APP名称', cls:'re-w25' }, { key:'image', ph:'图片地址 https://...', cls:'re-w35' },
+    { key:'method', type:'select', options:[{ value:'uc', label:'UC网盘' }, { value:'quark', label:'夸克网盘' }, { value:'baidu', label:'百度网盘' }, { value:'thunder', label:'迅雷网盘' }, { value:'other', label:'其他网盘' }] }];
   const WEL_FIELDS = [{ key:'title', ph:'标题', cls:'re-w20' }, { key:'desc', ph:'描述' },
     { key:'icon', ph:'图标 class', cls:'re-w15' }, { key:'url', ph:'链接', cls:'re-w25' }];
   const MODULE_FIELDS = { app_page:['title','desc'], play_page:['parse_api','ad_code'], welfare_page:['title','desc'] };
-  const MODULE_LISTS = { app_page:{ apps:APP_FIELDS }, welfare_page:{ cards:WEL_FIELDS } };
+  const MODULE_LISTS = { app_page:{ android_apps:APP_FIELDS, ios_apps:APP_FIELDS }, welfare_page:{ cards:WEL_FIELDS } };
 
   let ENV_SET = {};
 
@@ -433,7 +457,8 @@
   // ── 添加按钮 ──
   $('#btn-add-sources').addEventListener('click', () => $('#m-sources').appendChild(buildRow(PS_FIELDS, {})));
   $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
-  $('#btn-add-apps').addEventListener('click', () => $('#m-app-apps').appendChild(buildRow(APP_FIELDS, {})));
+  $('#btn-add-android').addEventListener('click', () => $('#m-android-apps').appendChild(buildRow(APP_FIELDS, { method:'uc' })));
+  $('#btn-add-ios').addEventListener('click', () => $('#m-ios-apps').appendChild(buildRow(APP_FIELDS, { method:'uc' })));
   $('#btn-add-cards').addEventListener('click', () => $('#m-welfare-cards').appendChild(buildRow(WEL_FIELDS, {})));
 
   // ── 搜索排行榜 ──

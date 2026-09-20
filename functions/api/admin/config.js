@@ -36,6 +36,30 @@ const LIST_FIELDS = {
       return null;
     },
   },
+  android_apps: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '安卓APP项必须是对象';
+      it.name = String(it.name || '').trim();
+      it.image = String(it.image || '').trim();
+      it.method = String(it.method || '').trim();
+      if (!it.name) return 'APP名称不能为空';
+      if (!it.image) return 'APP图片地址不能为空';
+      if (!['uc','quark','baidu','thunder','other'].includes(it.method)) return '请选择下载方式（UC/夸克/百度/迅雷/其他网盘）';
+      return null;
+    },
+  },
+  ios_apps: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '苹果APP项必须是对象';
+      it.name = String(it.name || '').trim();
+      it.image = String(it.image || '').trim();
+      it.method = String(it.method || '').trim();
+      if (!it.name) return 'APP名称不能为空';
+      if (!it.image) return 'APP图片地址不能为空';
+      if (!['uc','quark','baidu','thunder','other'].includes(it.method)) return '请选择下载方式（UC/夸克/百度/迅雷/其他网盘）';
+      return null;
+    },
+  },
 };
 // 环境变量兜底提示（仅回是否已设置，不回值）
 const ENV_HINTS = {
