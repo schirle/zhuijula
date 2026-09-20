@@ -1,4 +1,4 @@
-import { makeRoute, json, CORS, getClientIP, checkRateLimit, createAdminSession, adminCookieHeader } from '../../_shared.js';
+import { makeRoute, json, CORS, getClientIP, checkRateLimit, createAdminSession, adminCookieHeader, loadSiteConfig } from '../../_shared.js';
 
 export const onRequest = makeRoute(handleAdminLogin);
 
@@ -29,7 +29,14 @@ async function handleAdminLogin(request, _url, context) {
 
   const token = await createAdminSession(env);
   if (!token) return json({ code: 0, msg: 'KV 未绑定，无法创建会话（请绑定 KV 命名空间，变量名 KV 或 SEARCH_KV）' }, 500);
-  return new Response(JSON.stringify({ code: 1 }), {
+  // 登录成功同时把后台配置一并返回，避免前端再做一次依赖 Cookie 的二次请求（那次请求若没带上 Cookie 会被静默踢回登录页）
+  let cfg = {};
+  try { cfg = await loadSiteConfig(env, true); } catch (_) {}
+  const env_set = {};
+  for (const k of ['AI_API_KEY','AI_MODEL','AI_BASE_URL','NAV_LINKS','PDlist','WP_API_HOST','QUARK_COOKIE','QUARK_DIR','JJSOU_API_KEY','WEB3FORMS_ACCESS_KEY','TMDB_KEY','DAILY_API','ZUIJU_URL']) {
+    env_set[k] = !!(env[k] && String(env[k]).trim());
+  }
+  return new Response(JSON.stringify({ code: 1, cfg, env_set, kv_ready: !!(env.KV || env.SEARCH_KV) }), {
     status: 200,
     headers: { 'Content-Type': 'application/json;charset=utf-8', 'Set-Cookie': adminCookieHeader(token), ...CORS },
   });

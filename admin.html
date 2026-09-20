@@ -373,7 +373,12 @@
     try {
       const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user:getVal('#login-user'), pass:getVal('#login-pass') }) });
       const d = await r.json().catch(()=>({}));
-      if (d.code===1) init(); else toast(d.msg||'登录失败', false);
+      if (d.code===1) {
+        // 登录接口已一并返回配置，直接用返回 data 渲染，避免二次请求再被静默踢回
+        fill(d.cfg||{}, d.env_set||{});
+        $('#kv-status').innerHTML = d.kv_ready ? '✅ KV 已绑定' : '⚠️ <span style="color:var(--warn)">KV 未绑定</span>';
+        $('#login-view').style.display='none'; $('#main-view').style.display='';
+      } else toast(d.msg||'登录失败', false);
     } catch(_) { toast('网络错误', false); } finally { btn.disabled=false; }
   };
   $('#login-btn').addEventListener('click', doLogin);
