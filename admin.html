@@ -106,6 +106,9 @@
   .rank-no.top{color:#fff;background:linear-gradient(135deg,#f59e0b,#ef4444)}
   .rank-word{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .rank-count{color:var(--muted);font-size:12px}
+  .rank-tab{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 13px;border-radius:9px;font-size:13px;cursor:pointer;transition:.15s}
+  .rank-tab:hover{color:var(--text)}
+  .rank-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
   .empty{text-align:center;color:var(--muted);padding:26px 0}
   .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);padding:11px 22px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.18)}
   .toast.show{opacity:1;transform:translateX(-50%)}
@@ -141,7 +144,6 @@
 <div id="login-view" class="login-wrap" style="display:none">
   <div class="login-card">
     <h2><i class="bi bi-shield-lock" style="color:var(--primary)"></i> 后台管理</h2>
-    <p class="text-muted small">账号密码来自 Cloudflare Pages 环境变量 ADMIN_USER / ADMIN_PASS</p>
     <div class="mb-3"><label class="form-label small fw-semibold">账号</label><input type="text" id="login-user" class="form-control" autocomplete="username"></div>
     <div class="mb-3"><label class="form-label small fw-semibold">密码</label><input type="password" id="login-pass" class="form-control" autocomplete="current-password"></div>
     <button class="btn btn-save w-100" id="login-btn">登 录</button>
@@ -156,7 +158,6 @@
       <a class="active" data-section="basic"><i class="bi bi-sliders"></i><span class="txt">基础设置</span></a>
       <a data-section="play"><i class="bi bi-collection-play"></i><span class="txt">播放设置</span></a>
       <a data-section="app"><i class="bi bi-phone"></i><span class="txt">APP设置</span></a>
-      <a data-section="pages"><i class="bi bi-file-earmark-plus"></i><span class="txt">新建页面</span></a>
       <a data-section="other"><i class="bi bi-gear"></i><span class="txt">其他设置</span></a>
     </nav>
     <div class="side-foot">数据存于 KV，保存即时生效</div>
@@ -192,7 +193,7 @@
           <div class="mb-3"><label class="form-label small fw-semibold">弹窗内容</label><textarea id="m-first_popup-content" class="form-control" style="min-height:90px" placeholder="在这里写欢迎语、公告或活动说明，支持换行"></textarea></div>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮文字</label><input type="text" id="m-first_popup-btn_text" class="form-control" placeholder="了解详情"></div>
-            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮链接</label><input type="text" id="m-first_popup-btn_link" class="form-control" placeholder="https://... 或 /page/xxx"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮链接</label><input type="text" id="m-first_popup-btn_link" class="form-control" placeholder="https://..."></div>
           </div>
         </div>
         <div class="card-box">
@@ -305,15 +306,6 @@
         </div>
       </section>
 
-      <!-- 4. 新建页面 -->
-      <section class="section" id="sec-pages">
-        <div class="card-box">
-          <h3><i class="bi bi-file-earmark-plus"></i>新建页面</h3>
-          <div class="tip">创建自定义页面：填「页面地址、名称标题、介绍、内容」，保存后访问 /page/页面地址 即可查看（如 /page/about）。内容支持 HTML 代码。</div>
-          <div id="m-custom-pages"></div>
-          <button class="btn-add" id="btn-add-page">＋ 新建页面</button>
-        </div>
-      </section>
 
       <!-- 5. 其他设置 -->
       <section class="section" id="sec-other">
@@ -335,7 +327,7 @@
           </div>
           <div class="mb-3"><label class="form-label small fw-semibold">广告文案</label><input type="text" id="m-promo_ad-text" class="form-control" placeholder="限时免费 · 海量热播剧每日更新"></div>
           <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">点击链接</label><input type="text" id="m-promo_ad-link" class="form-control" placeholder="https://... 或 /page/xxx（留空仅展示）</label></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">点击链接</label><input type="text" id="m-promo_ad-link" class="form-control" placeholder="https://...（留空仅展示）</label></div>
             <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">左侧图标 class</label><input type="text" id="m-promo_ad-icon" class="form-control" placeholder="fa-fire（FontAwesome，留空则用火焰图标）"></label></div>
           </div>
         </div>
@@ -369,6 +361,13 @@
         </div>
         <div class="card-box">
           <h3><i class="bi bi-bar-chart"></i>搜索排行榜</h3>
+          <div class="d-flex gap-2 mb-2 flex-wrap">
+            <button class="rank-tab active" data-range="all">总榜</button>
+            <button class="rank-tab" data-range="day">日榜</button>
+            <button class="rank-tab" data-range="week">周榜</button>
+            <button class="rank-tab" data-range="month">月榜</button>
+            <button class="btn-add ms-auto" id="rank-prune">🧹 清理30天前</button>
+          </div>
           <div class="d-flex gap-2 mb-3">
             <button class="btn-add" id="rank-refresh">🔄 刷新</button>
             <button class="ri-del" id="rank-clear" style="border-radius:10px">清空全部</button>
@@ -394,7 +393,7 @@
   // 后台鉴权：登录强制开启（账号密码来自 Cloudflare 环境变量 ADMIN_USER / ADMIN_PASS）
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
-  const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', pages:'新建页面', other:'其他设置' };
+  const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', other:'其他设置' };
 
   const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','pdlist','site_name','site_desc',
     'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir','stats_code'];
@@ -409,12 +408,6 @@
   const DL_CHANNELS = [
     { key:'uc', label:'UC网盘' }, { key:'quark', label:'夸克网盘' }, { key:'baidu', label:'百度网盘' },
     { key:'thunder', label:'迅雷网盘' }, { key:'other', label:'其他网盘' },
-  ];
-  const CP_FIELDS = [
-    { key:'slug', ph:'页面地址（英文，如 about，访问 /page/about）', cls:'re-w20' },
-    { key:'title', ph:'页面名称/标题', cls:'re-w25' },
-    { key:'intro', ph:'页面介绍', cls:'re-w35' },
-    { key:'content', type:'textarea', ph:'页面内容（支持 HTML 代码）', cls:'re-w100' },
   ];
   const NAV_FIELDS = [{ key:'label', ph:'显示文字，如 APP下载', cls:'re-w20' }, { key:'href', ph:'链接 / 路径，如 /app', cls:'re-w35' }, { key:'icon', ph:'图标 class，如 fa-download' }];
   const LI_FIELDS = [{ key:'name', ph:'站点名称', cls:'re-w25' }, { key:'url', ph:'友链地址 https://...' }];
@@ -611,7 +604,6 @@
     setAndroidEditing(false); setIosEditing(false);
     renderAndroidList(); renderIosList();
     fillObj('play_page', cfg.play_page);
-    renderList('m-custom-pages', CP_FIELDS, cfg.custom_pages);
     renderList('m-links', LI_FIELDS, cfg.links);
     renderList('m-vip-jx', JX_FIELDS, cfg.vip_jx);
     refreshEnvBadges();
@@ -644,7 +636,6 @@
     body.promo_ad = (pa.enabled && pa.text) ? pa : {};
     body.app_page = collectObj('app_page');
     body.play_page = collectObj('play_page');
-    body.custom_pages = collectList('m-custom-pages', CP_FIELDS);
     body.links = collectList('m-links', LI_FIELDS);
     body.vip_jx = collectList('m-vip-jx', JX_FIELDS);
     return body;
@@ -724,7 +715,6 @@
   $('#btn-add-sources').addEventListener('click', () => $('#m-sources').appendChild(buildRow(PS_FIELDS, {})));
   $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
   $('#btn-add-nav').addEventListener('click', () => $('#m-nav').appendChild(buildRow(NAV_FIELDS, {})));
-  $('#btn-add-page').addEventListener('click', () => $('#m-custom-pages').appendChild(buildRow(CP_FIELDS, {})));
   $('#btn-add-links').addEventListener('click', () => $('#m-links').appendChild(buildRow(LI_FIELDS, {})));
   $('#btn-add-vip-jx').addEventListener('click', () => $('#m-vip-jx').appendChild(buildRow(JX_FIELDS, {})));
 
@@ -776,10 +766,12 @@
 
   // ── 搜索排行榜 ──
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-  async function loadRank() {
+  let rankRange = 'all';
+  async function loadRank(range) {
+    if (range) rankRange = range;
     const box=$('#rank-list'); box.innerHTML='<div class="empty">加载中…</div>';
     try {
-      const r = await fetch('/api/admin/rank');
+      const r = await fetch('/api/admin/rank?range='+encodeURIComponent(rankRange));
       if (r.status===401) {
         toast('登录已过期', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; return;
       }
@@ -797,8 +789,16 @@
   async function rankAction(qs, okMsg) {
     try { const r = await fetch('/api/admin/rank'+qs, { method:'DELETE' }); const d = await r.json(); toast(d.code===1?(d.msg||okMsg):(d.msg||'操作失败'), d.code===1); loadRank(); } catch(_) { toast('网络错误', false); }
   }
-  $('#rank-refresh').addEventListener('click', loadRank);
+  $('#rank-refresh').addEventListener('click', () => loadRank());
   $('#rank-clear').addEventListener('click', () => { if (confirm('确定清空全部搜索热词？')) rankAction('', '已清空'); });
+  document.querySelectorAll('#sec-other .rank-tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#sec-other .rank-tab').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    loadRank(btn.dataset.range);
+  }));
+  $('#rank-prune').addEventListener('click', async () => {
+    try { const r = await fetch('/api/admin/rank', { method:'POST' }); const d = await r.json(); toast(d.code===1?(d.msg||'已清理'):(d.msg||'操作失败'), d.code===1); loadRank(); } catch(_) { toast('网络错误', false); }
+  });
 
   init();
 })();

@@ -1,7 +1,7 @@
 import { minify } from 'html-minifier-terser';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const files = ['index.html', 'app.html', 'play.html', 'vip.html', 'list.html', 'links.html', 'fuli.html', 'plugin.html'];
+const files = ['index.html', 'app.html', 'play.html', 'vip.html', 'list.html', 'links.html', 'plugin.html'];
 
 const options = {
   collapseWhitespace: true,

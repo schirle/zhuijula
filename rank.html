@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex">
+    <meta name="description" content="本站搜索排行榜 - 全站用户真实搜索热词实时榜单">
+    <title>搜索排行榜 - 免费追剧</title>
+    <link rel="icon" href="file/zhuiju.png">
+    <meta name="theme-color" content="#0f0f17">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+      (function () { try { var t = localStorage.getItem('ftv_theme'); if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+    </script>
+    <script defer src="file/common.js"></script>
+    <link rel="stylesheet" href="file/rank.css">
+</head>
+<body data-page="rank" data-search-nav="1">
+    <nav class="top-nav" id="top-nav"></nav>
+
+    <main class="main-container">
+        <section class="rank-head">
+            <h1 class="rank-page-title"><i class="fas fa-fire"></i> 本站搜索排行榜</h1>
+            <p class="rank-page-sub">实时聚合全站用户的真实搜索热词，点击词条即可直达搜索结果</p>
+            <div class="rank-tabs" id="rank-tabs">
+                <button type="button" class="rank-tab active" data-range="all">总榜</button>
+                <button type="button" class="rank-tab" data-range="day">日榜</button>
+                <button type="button" class="rank-tab" data-range="week">周榜</button>
+                <button type="button" class="rank-tab" data-range="month">月榜</button>
+            </div>
+        </section>
+
+        <div class="rank-box">
+            <ol class="rank-list" id="rank-list">
+                <li class="rank-loading"><i class="fas fa-spinner fa-spin"></i> 加载中…</li>
+            </ol>
+        </div>
+
+        <div class="footer">免费追剧 · 全网影视免费在线观看</div>
+    </main>
+
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="返回顶部" title="返回顶部"><i class="fas fa-arrow-up"></i></button>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>
