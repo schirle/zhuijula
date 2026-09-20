@@ -1,4 +1,4 @@
-import { makeRoute, json, loadSiteConfig } from '../../_shared.js';
+import { makeRoute, json, loadSiteConfig } from '../_shared.js';
 
 export const onRequest = makeRoute(handleCustomPage);
 
