@@ -1,0 +1,98 @@
+.plugin-main {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: calc(var(--container-padding) + 8px) var(--container-padding) 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.plugin-hero {
+  text-align: center;
+  padding: 1.75rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary-dim), var(--accent-dim));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.plugin-hero-ico {
+  width: 64px; height: 64px; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; color: #fff;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  box-shadow: 0 8px 22px rgba(124, 58, 237, 0.35);
+}
+.plugin-hero-title { font-size: 1.5rem; font-weight: 800; }
+.plugin-hero-desc { margin: 10px auto 0; max-width: 34ch; color: var(--text-secondary); font-size: 0.92rem; }
+.plugin-actions { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+.btn-install {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 22px; border: none; border-radius: var(--radius-pill);
+  background: var(--grad-primary-strong); color: #fff;
+  font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  box-shadow: 0 8px 22px var(--primary-glow);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.btn-install:hover { transform: translateY(-2px); box-shadow: 0 12px 28px var(--primary-glow); }
+.btn-install:active { transform: translateY(0); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 12px 18px; border-radius: var(--radius-pill);
+  color: var(--primary-strong); font-weight: 600; font-size: 0.92rem;
+  background: var(--bg-card); border: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.btn-ghost:hover { background: var(--bg-card-hover); }
+[data-theme="dark"] .btn-ghost { color: var(--primary-light); }
+
+.plugin-section { display: flex; flex-direction: column; gap: 0.85rem; }
+.section-header { margin-bottom: 2px; }
+
+.step-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.step-list li { display: flex; gap: 12px; align-items: flex-start; }
+.step-num {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--grad-primary); color: #fff; font-size: 0.8rem; font-weight: 700;
+  box-shadow: 0 4px 10px var(--primary-glow);
+}
+.step-list b { font-size: 0.95rem; }
+.step-list p { margin-top: 3px; color: var(--text-secondary); font-size: 0.88rem; }
+.plugin-main code { background: var(--primary-dim); color: var(--primary-strong); padding: 1px 6px; border-radius: 6px; font-size: 0.85em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.feat-card {
+  padding: 1rem; border-radius: var(--radius);
+  background: var(--bg-card); border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+.feat-ico {
+  width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff; background: linear-gradient(135deg, #7c3aed, #6d28d9); margin-bottom: 10px;
+}
+.feat-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+.feat-card p { color: var(--text-secondary); font-size: 0.85rem; }
+@media (max-width: 380px) { .feat-grid { grid-template-columns: 1fr; } }
+
+.faq-list { display: flex; flex-direction: column; gap: 10px; }
+.faq-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 0; overflow: hidden;
+}
+.faq-item summary {
+  cursor: pointer; padding: 14px 16px; font-weight: 600; font-size: 0.92rem;
+  list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+  content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+  color: var(--text-muted); font-size: 0.8rem; transition: transform var(--transition);
+}
+.faq-item[open] summary::after { transform: rotate(180deg); }
+.faq-item p { padding: 0 16px 14px; color: var(--text-secondary); font-size: 0.88rem; }
+
+.footer { text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 1rem 0 0; }

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex">
+    <meta name="description" content="免费追剧搜索 - 全网影视一键搜索，免会员免费在线观看">
+    <title>搜索 - 免费追剧</title>
+    <link rel="icon" href="file/zhuiju.png">
+    <meta name="theme-color" content="#0f0f17">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="stylesheet" href="file/common.css">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <script>
+      (function () { try { var t = localStorage.getItem('ftv_theme'); if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+    </script>
+    <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
+    <script defer src="file/wechat-tip.js"></script>
+    <script defer src="file/common.js"></script>
+    <link rel="stylesheet" href="file/search.css">
+</head>
+<body data-page="search" data-search-nav="1">
+    <nav class="top-nav" id="top-nav"></nav>
+
+    <main class="main-container">
+        <!-- 大搜索框 + Tab -->
+        <section class="s-hero">
+            <form class="s-box" id="s-form" autocomplete="off">
+                <i class="fas fa-search s-ico"></i>
+                <input type="text" id="s-input" placeholder="搜索影视剧名，如：庆余年" autocomplete="off">
+                <button type="button" class="s-clear" id="s-clear" aria-label="清除">✕</button>
+                <button type="submit" class="s-btn">搜索</button>
+            </form>
+            <div class="s-tabs" id="s-tabs">
+                <button type="button" class="s-tab active" data-tab="all">全部</button>
+                <button type="button" class="s-tab" data-tab="wp">网盘资源</button>
+            </div>
+        </section>
+
+        <div class="s-layout">
+            <!-- 结果区 -->
+            <div class="s-main">
+                <div id="result-area">
+                    <div class="s-guide">
+                        <div class="s-guide-icon"><i class="fas fa-clapperboard"></i></div>
+                        <div class="s-guide-title">输入片名，一键搜索全网免费片源</div>
+                        <div class="s-guide-sub">聚合 16+ 影视资源站，自动匹配最佳播放源</div>
+                    </div>
+                </div>
+                <div id="wp-area" style="display:none"></div>
+            </div>
+
+            <!-- 右侧榜单 -->
+            <aside class="s-side">
+                <div class="side-box" id="side-hot-box">
+                    <div class="side-title"><i class="fas fa-fire"></i> 热搜榜</div>
+                    <ol class="side-rank" id="side-hot"></ol>
+                </div>
+                <div class="side-box" id="side-douban-box">
+                    <div class="side-title"><i class="fas fa-chart-line"></i> 热播榜</div>
+                    <ol class="side-rank" id="side-douban"></ol>
+                </div>
+                <div class="side-box" id="side-pl-box" style="display:none">
+                    <div class="side-title"><i class="fas fa-list-ol"></i> 片单精选</div>
+                    <div class="side-pl" id="side-pl"></div>
+                </div>
+            </aside>
+        </div>
+
+        <div class="footer">免费追剧 · 全网影视免费在线观看</div>
+    </main>
+
+    <script defer src="file/search.js"></script>
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="返回顶部" title="返回顶部"><i class="fas fa-arrow-up"></i></button>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
+</body>
+</html>
