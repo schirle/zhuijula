@@ -1,4 +1,4 @@
-import { makeRoute, json, CFG, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig } from '../../_shared.js';
+import { makeRoute, json, CFG, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig, buildEnvSet } from '../../_shared.js';
 
 export const onRequest = makeRoute(handleAdminConfig);
 
@@ -119,14 +119,7 @@ const LIST_FIELDS = {
     },
   },
 };
-// 环境变量兜底提示（仅回是否已设置，不回值）
-const ENV_HINTS = {
-  PDlist: 'pdlist', WP_API_HOST: 'wp_api_host',
-  QUARK_COOKIE: 'quark_cookie', QUARK_DIR: 'quark_dir',
-  BAIDU_COOKIE: 'baidu_cookie', BAIDU_DIR: 'baidu_dir',
-  JJSOU_API_KEY: 'jjsou_api_key', WEB3FORMS_ACCESS_KEY: 'web3forms_access_key',
-  DAILY_API: 'daily_api',
-};
+// 环境变量兜底提示现已统一到 _shared.js 的 buildEnvSet（单点定义，login/config 共用）
 
 async function handleAdminConfig(request, _url, context) {
   const env = context?.env || {};
@@ -134,8 +127,7 @@ async function handleAdminConfig(request, _url, context) {
 
   if (request.method === 'GET') {
     const cfg = await loadSiteConfig(env, true);
-    const env_set = {};
-    for (const [k] of Object.entries(ENV_HINTS)) env_set[k] = !!(env[k] && String(env[k]).trim());
+    const env_set = buildEnvSet(env);
     return json({
       code: 1,
       cfg,

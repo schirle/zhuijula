@@ -277,8 +277,7 @@
             const el = document.querySelector('.promo-ad');
             if (!el) return;
             try {
-                const r = await fetch('/api/config');
-                const d = await r.json().catch(() => ({}));
+                const d = await window.getSiteConfig().catch(() => ({}));
                 const pa = d && d.promo_ad;
                 if (!pa) return; // 后台未配置 → 保留默认展示
                 if (!(pa.enabled && pa.text)) { el.style.display = 'none'; return; }

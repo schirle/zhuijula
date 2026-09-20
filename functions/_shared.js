@@ -101,6 +101,14 @@ const CONFIG_ENV_MAP = {
   zhuiju_url: 'ZUIJU_URL',
 };
 
+// 后台环境变量兜底提示：统一所有后台会读取的环境变量，返回是否已设置（不泄露值）。
+// 单点定义，避免 /api/admin/login 与 /api/admin/config 各自硬编码键集导致不一致（前端徽标漏显）。
+export const buildEnvSet = (env) => {
+  const set = {};
+  for (const ek of Object.values(CONFIG_ENV_MAP)) set[ek] = !!(env[ek] && String(env[ek]).trim());
+  return set;
+};
+
 // 返回「KV 配置覆盖后的 env」：各 API 顶部 await resolveEnv(context)，之后照常 env.XXX
 export async function resolveEnv(context) {
   const env = context?.env || {};

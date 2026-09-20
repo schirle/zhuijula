@@ -1,4 +1,4 @@
-import { makeRoute, json, CORS, getClientIP, checkRateLimit, createAdminSession, adminCookieHeader, loadSiteConfig } from '../../_shared.js';
+import { makeRoute, json, CORS, getClientIP, checkRateLimit, createAdminSession, adminCookieHeader, loadSiteConfig, buildEnvSet } from '../../_shared.js';
 
 export const onRequest = makeRoute(handleAdminLogin);
 
@@ -10,7 +10,7 @@ async function sha256hex(s) {
 }
 
 async function handleAdminLogin(request, _url, context) {
-  if (request.method !== 'POST') return json({ code: 0, msg: '仅支持 POST' }, 405);
+  if (request.method !== 'POST') return json({ code: 0, msg: '请打开后台登录页 /admin.html 填写账号密码登录，不要直接访问此接口' }, 405);
   const env = context?.env || {};
   const user = (env.ADMIN_USER || '').toString().trim();
   const pass = (env.ADMIN_PASS || '').toString();
@@ -32,10 +32,7 @@ async function handleAdminLogin(request, _url, context) {
   // 登录成功同时把后台配置一并返回，避免前端再做一次依赖 Cookie 的二次请求（那次请求若没带上 Cookie 会被静默踢回登录页）
   let cfg = {};
   try { cfg = await loadSiteConfig(env, true); } catch (_) {}
-  const env_set = {};
-  for (const k of ['NAV_LINKS','PDlist','WP_API_HOST','QUARK_COOKIE','QUARK_DIR','JJSOU_API_KEY','WEB3FORMS_ACCESS_KEY','DAILY_API','ZUIJU_URL']) {
-    env_set[k] = !!(env[k] && String(env[k]).trim());
-  }
+  const env_set = buildEnvSet(env);
   return new Response(JSON.stringify({ code: 1, cfg, env_set, kv_ready: !!(env.KV || env.SEARCH_KV) }), {
     status: 200,
     headers: { 'Content-Type': 'application/json;charset=utf-8', 'Set-Cookie': adminCookieHeader(token), ...CORS },

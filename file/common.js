@@ -113,6 +113,24 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 10000) => {
   }
 };
 
+// 统一站点配置读取：全站共享一份（内存 5 分钟缓存），避免 /api/config 被导航、弹窗、广告等多模块重复请求
+let _cfgCache = null, _cfgTs = 0;
+const getSiteConfig = async (force = false) => {
+  const now = Date.now();
+  if (!force && _cfgCache && (now - _cfgTs) < 300000) return _cfgCache;
+  try {
+    const r = await fetch('/api/config');
+    if (!r.ok) { if (_cfgCache) return _cfgCache; throw new Error('HTTP ' + r.status); }
+    const d = await r.json();
+    _cfgCache = d; _cfgTs = now;
+    return d;
+  } catch (e) {
+    if (_cfgCache) return _cfgCache;
+    throw e;
+  }
+};
+window.getSiteConfig = getSiteConfig;
+
 
 const isMobile = () => window.innerWidth <= 768;
 
@@ -214,15 +232,13 @@ const DEFAULT_NAV_LINKS = [
   { key: 'vip', href: '/vip', icon: 'fa-bolt', label: 'VIP视频解析' },
 ];
 
-// 顶部导航：品牌/主题/返回按钮同步渲染；链接按钮异步读取 /api/config（CF 变量 NAV_LINKS）注入，失败回退默认
+// 顶部导航：品牌/主题/返回按钮同步渲染；链接按钮读取 /api/config（nav 字段）注入，失败回退默认
 const renderNav = async () => {
   const root = document.getElementById('top-nav');
   if (!root) return;
+  const data = await getSiteConfig().catch(() => ({}));
   // 注入后台配置的统计代码（analytics 等），<script> 需重建以执行
-  try {
-    const r = await fetch('/api/config');
-    if (r.ok) { const d = await r.json(); if (d && d.stats_code) injectStats(d.stats_code); }
-  } catch (_) {}
+  if (data && data.stats_code) injectStats(data.stats_code);
   const page = document.body.dataset.page || '';
   const cfg = NAV_PAGES[page] || {};
 
@@ -245,25 +261,7 @@ const renderNav = async () => {
   });
   initThemeToggle();
 
-  // 异步读取 CF 环境变量配置的导航链接（未配置或异常时回退 DEFAULT_NAV_LINKS）
-  let links = DEFAULT_NAV_LINKS;
-  // 导航配置基本静态（由 CF 环境变量驱动），localStorage 缓存 1 小时，避免每页重复请求 /api/config
-  const NAV_CACHE_KEY = 'ftv_nav_cache';
-  const cached = lsGetJson(NAV_CACHE_KEY);
-  if (cached && cached.ts && Array.isArray(cached.nav) && cached.nav.length && (Date.now() - cached.ts) < 3600000) {
-    links = cached.nav;
-  } else {
-    try {
-      const r = await fetch('/api/config');
-      if (r.ok) {
-        const data = await r.json();
-        if (data && Array.isArray(data.nav) && data.nav.length) {
-          links = data.nav;
-          lsSetJson(NAV_CACHE_KEY, { ts: Date.now(), nav: data.nav });
-        }
-      }
-    } catch (_) { }
-  }
+  const links = Array.isArray(data.nav) && data.nav.length ? data.nav : DEFAULT_NAV_LINKS;
   const navActions = root.querySelector('.nav-actions');
   if (navActions) {
     let html = '';
@@ -317,9 +315,8 @@ const initFirstPopup = () => {
     const KEY = 'ftv_firstpopup_v1';
     const seen = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
     const mark = v => { try { localStorage.setItem(KEY, v); } catch (e) {} };
-    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const hash = o => (o.title || '') + ' ' + (o.content || '') + ' ' + (o.btn_text || '');
-    fetch('/api/config').then(r => r.json()).then(d => {
+    getSiteConfig().then(d => {
       const fp = d && d.code === 1 ? d.first_popup : null;
       if (!fp || !fp.enabled || !fp.title) return;
       if (seen() === hash(fp)) return; // 已看过该版本

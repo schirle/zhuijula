@@ -18,7 +18,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     // VIP 解析接口优先取后台「其他设置 → VIP解析接口」，否则回退内置默认接口
     let apiList = API_LIST.slice();
-    fetch('/api/config').then(function(r){ return r.json(); }).then(function(d){
+    window.getSiteConfig().then(function(d){
       if (d && d.code === 1 && Array.isArray(d.vip_jx) && d.vip_jx.length) {
         const remote = d.vip_jx
           .map(function(x){ return { v: String(x.url || '').trim(), t: String(x.name || '').trim() }; })
