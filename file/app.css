@@ -41,10 +41,10 @@
 }
 .app-card__badge {
   position: absolute; top: 10px; right: 10px; z-index: 1;
-  background: var(--grad-primary); color: #fff;
+  background: linear-gradient(135deg, #ff4d4f, #e11d48); color: #fff;
   font-size: 11px; font-weight: 800; letter-spacing: 1px;
   padding: 3px 9px; border-radius: 999px;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 3px 10px rgba(225, 29, 72, 0.35);
 }
 .app-card:hover { transform: translateY(-4px); border-color: var(--border-light); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10); }
 .app-card:hover::before { opacity: 1; }
@@ -125,3 +125,22 @@
 .copy-btn:hover { background: var(--grad-primary-strong); }
 .app-store-download-btn { background: #000; color: #fff; text-decoration: none; }
 .app-store-download-btn:hover { background: #1a1a1a; }
+
+/* 下载弹窗（modal-overlay 原仅定义于 search.css，app 页未引入，这里补齐） */
+#app-modal.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; justify-content: center; align-items: center; padding: 0 1rem;
+  opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility .25s ease;
+}
+#app-modal.modal-overlay.show { opacity: 1; visibility: visible; }
+#app-modal .modal-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+#app-modal .modal-content {
+  position: relative; width: 100%; max-width: 400px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.6rem; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+  max-height: 84vh; overflow-y: auto; transform: scale(.92); opacity: 0; transition: all .25s ease;
+}
+#app-modal.modal-overlay.show .modal-content { transform: scale(1); opacity: 1; }
+#app-modal .modal-icon { text-align: center; font-size: 34px; color: var(--primary); margin-bottom: 10px; }
+#app-modal .modal-title { text-align: center; font-size: 18px; margin-bottom: 4px; padding-right: 28px; }
+#app-modal .modal-body { margin-top: 6px; }
