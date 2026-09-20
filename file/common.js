@@ -226,13 +226,7 @@ const NAV_PAGES = {
   plugin:{ title: '追剧插件', back: true, active: 'plugin' },
 };
 
-// 默认导航链接（可由 Cloudflare 环境变量 NAV_LINKS(JSON) 覆盖，便于免改代码增删改）
-const DEFAULT_NAV_LINKS = [
-  { key: 'app', href: '/app', icon: 'fa-download', label: 'APP下载' },
-  { key: 'vip', href: '/vip', icon: 'fa-bolt', label: 'VIP视频解析' },
-];
-
-// 顶部导航：品牌/主题/返回按钮同步渲染；链接按钮读取 /api/config（nav 字段）注入，失败回退默认
+// 顶部导航：品牌/主题/返回按钮同步渲染；链接按钮完全由后台「顶部导航」配置（nav_links）驱动，无配置则显示空导航
 const renderNav = async () => {
   const root = document.getElementById('top-nav');
   if (!root) return;
@@ -261,12 +255,12 @@ const renderNav = async () => {
   });
   initThemeToggle();
 
-  const links = Array.isArray(data.nav) && data.nav.length ? data.nav : DEFAULT_NAV_LINKS;
+  const links = Array.isArray(data.nav_links) ? data.nav_links : [];
   const navActions = root.querySelector('.nav-actions');
   if (navActions) {
     let html = '';
     for (const l of links) {
-      const isActive = cfg.active === l.key;
+      const isActive = cfg.active === (l.key || l.label);
       html += '<a class="nav-btn primary' + (isActive ? ' active' : '') + '" href="' + esc(l.href || '#') + '"' +
         (isActive ? ' aria-current="page"' : '') + ' title="' + esc(l.label || '') + '">' +
         '<i class="fas ' + esc(l.icon || 'fa-link') + '"></i><span>' + esc(l.label || '') + '</span></a>';

@@ -171,16 +171,14 @@
             };
         }
 
-        /* ══════════ 轮播 banner（大图由后台「首页轮播」配置，未配置则用默认图） ══════════ */
-        const BANNER_ITEMS = [
-            { pic: 'https://pic1.iqiyipic.com/jisu/20260918/74/3c/47319ce6c735c70f54f87c9b8ba2e06c_2260_744.avif', link: '' }
-        ];
+        /* ══════════ 轮播 banner（图片来自后台「首页轮播」配置，未配置则隐藏） ══════════ */
         async function loadCarousel() {
             const track = document.getElementById('hc-track');
             const carouselEl = document.getElementById('hero-carousel');
             const heroSection = document.getElementById('hero-section');
             if (!track || !carouselEl) return;
-            const items = BANNER_ITEMS;
+            let items = [];
+            try { const d = await window.getSiteConfig().catch(() => ({})); if (d && Array.isArray(d.carousels) && d.carousels.length) items = d.carousels; } catch (_) {}
             if (!items.length) { if (heroSection) heroSection.style.display = 'none'; return; }
             track.innerHTML = '';
 
@@ -279,7 +277,7 @@
             try {
                 const d = await window.getSiteConfig().catch(() => ({}));
                 const pa = d && d.promo_ad;
-                if (!pa) return; // 后台未配置 → 保留默认展示
+                if (!pa) { if (el) el.style.display = 'none'; return; } // 后台未配置 → 隐藏
                 if (!(pa.enabled && pa.text)) { el.style.display = 'none'; return; }
                 const textEl = el.querySelector('.promo-text');
                 if (textEl) textEl.textContent = pa.text;

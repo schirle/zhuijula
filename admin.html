@@ -550,9 +550,9 @@
         fill(d.cfg||{}, d.env_set||{});
         $('#kv-status').innerHTML = d.kv_ready ? '✅ KV 已绑定' : '⚠️ <span style="color:var(--warn)">KV 未绑定</span>';
         $('#login-view').style.display='none'; $('#main-view').style.display='';
-      } else if (r.status===404 || !d.code) toast('当前环境没有后端接口（本地/预览环境无 Cloudflare Functions），请到线上站点登录', false);
+      } else if (r.status===404 || !d.code) toast('登录接口无响应（HTTP ' + r.status + '）：请确认 CF Pages 部署包含 functions 目录并已重新部署', false);
       else toast(d.msg||'登录失败', false);
-    } catch(e) { console.error(e); toast('连接不上登录接口：请在 Cloudflare Pages 线上站点访问（本地/预览环境没有后端）', false); } finally { btn.disabled=false; }
+    } catch(e) { console.error(e); toast('登录请求失败：' + (e && e.message ? e.message : e) + '（按 F12→Network 看 /api/admin/login 的状态码）', false); } finally { btn.disabled=false; }
   };
   $('#login-btn').addEventListener('click', doLogin);
   $('#login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
