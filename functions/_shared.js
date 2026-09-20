@@ -327,7 +327,7 @@ function syncApiSources(data) {
   }
   if (Object.keys(src).length) API_SOURCES = src;
 }
-const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
+export const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
 
 async function loadZhuiju(env) {
   const now = Date.now();
