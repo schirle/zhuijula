@@ -158,6 +158,20 @@
           <div class="mb-3"><label class="form-label small fw-semibold">网站描述</label><input type="text" id="f-site_desc" class="form-control" placeholder="无广告，免会员，全网影视免费在线观看"></div>
         </div>
         <div class="card-box">
+          <h3><i class="bi bi-envelope-open"></i>首次打开弹窗</h3>
+          <div class="tip">访客首次打开站点时弹出一次（内容变更后会再次弹出）。留空则不弹。</div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="m-first_popup-enabled" role="switch">
+            <label class="form-check-label small fw-semibold" for="m-first_popup-enabled">启用首次弹窗</label>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">弹窗标题</label><input type="text" id="m-first_popup-title" class="form-control" placeholder="欢迎来到 免费追剧"></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">弹窗内容</label><textarea id="m-first_popup-content" class="form-control" style="min-height:90px" placeholder="在这里写欢迎语、公告或活动说明，支持换行"></textarea></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮文字</label><input type="text" id="m-first_popup-btn_text" class="form-control" placeholder="了解详情"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮链接</label><input type="text" id="m-first_popup-btn_link" class="form-control" placeholder="https://... 或 /page/xxx"></div>
+          </div>
+        </div>
+        <div class="card-box">
           <h3><i class="bi bi-brush"></i>外观</h3>
           <div class="tip">自定义主题色、Logo、页脚文案（前端接入后生效）。</div>
           <div class="row">
@@ -284,6 +298,18 @@
           <div class="mb-3"><label class="form-label small fw-semibold">统计代码（HTML）</label><textarea id="f-stats_code" class="form-control" style="min-height:90px" placeholder="<script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-XXXX&quot;></script>"></textarea></div>
         </div>
         <div class="card-box">
+          <h3><i class="bi bi-link-45deg"></i>友链设置</h3>
+          <div class="tip">此处友链优先于上游数据，显示在「友情链接」页。每条填：站点名称 / 友链地址（http(s):// 开头）。</div>
+          <div id="m-links"></div>
+          <button class="btn-add" id="btn-add-links">＋ 添加友链</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-bolt"></i>VIP 视频解析接口</h3>
+          <div class="tip">VIP 视频页（/vip）的解析接口列表。每条填：解析名称 / 解析地址（需含拼接前缀，如 https://jiexi.xxx.com/?url=）。留空则使用页面内置默认接口。</div>
+          <div id="m-vip-jx"></div>
+          <button class="btn-add" id="btn-add-vip-jx">＋ 添加解析接口</button>
+        </div>
+        <div class="card-box">
           <h3><i class="bi bi-bar-chart"></i>搜索排行榜</h3>
           <div class="d-flex gap-2 mb-3">
             <button class="btn-add" id="rank-refresh">🔄 刷新</button>
@@ -334,6 +360,8 @@
     { key:'content', type:'textarea', ph:'页面内容（支持 HTML 代码）', cls:'re-w100' },
   ];
   const NAV_FIELDS = [{ key:'label', ph:'显示文字，如 APP下载', cls:'re-w20' }, { key:'href', ph:'链接 / 路径，如 /app', cls:'re-w35' }, { key:'icon', ph:'图标 class，如 fa-download' }];
+  const LI_FIELDS = [{ key:'name', ph:'站点名称', cls:'re-w25' }, { key:'url', ph:'友链地址 https://...' }];
+  const JX_FIELDS = [{ key:'name', ph:'解析名称，如 789解析', cls:'re-w25' }, { key:'url', ph:'解析地址（含 ?url=）https://...' }];
   const MODULE_FIELDS = { app_page:['title','desc'], play_page:['image_url','ad_link'] };
   const MODULE_LISTS = {};
 
@@ -425,6 +453,13 @@
     // 主题
     const th = (cfg.theme && typeof cfg.theme==='object') ? cfg.theme : {};
     ['primary_color','logo_url','footer_text'].forEach(f => setVal('#m-theme-'+f, th[f]));
+    // 首次弹窗
+    const fp = (cfg.first_popup && typeof cfg.first_popup==='object') ? cfg.first_popup : {};
+    const fpChk = $('#m-first_popup-enabled'); if (fpChk) fpChk.checked = !!fp.enabled;
+    setVal('#m-first_popup-title', fp.title);
+    setVal('#m-first_popup-content', fp.content);
+    setVal('#m-first_popup-btn_text', fp.btn_text);
+    setVal('#m-first_popup-btn_link', fp.btn_link);
     // 列表
     renderList('m-sources', PS_FIELDS, cfg.play_sources);
     renderList('m-carousel', CS_FIELDS, cfg.carousels);
@@ -437,6 +472,8 @@
     fillIos(savedIos); renderIosPreview(savedIos);
     fillObj('play_page', cfg.play_page);
     renderList('m-custom-pages', CP_FIELDS, cfg.custom_pages);
+    renderList('m-links', LI_FIELDS, cfg.links);
+    renderList('m-vip-jx', JX_FIELDS, cfg.vip_jx);
     refreshEnvBadges();
   };
   const collect = () => {
@@ -450,9 +487,20 @@
     body.ios_apps = (iosApp.name || iosApp.image || iosApp.link || iosApp.copy || iosApp.text) ? [iosApp] : [];
     body.nav_links = collectList('m-nav', NAV_FIELDS);
     body.theme = collectTheme();
+    const fpChk = $('#m-first_popup-enabled');
+    const fp = {
+      enabled: !!(fpChk && fpChk.checked),
+      title: getVal('#m-first_popup-title'),
+      content: getVal('#m-first_popup-content'),
+      btn_text: getVal('#m-first_popup-btn_text'),
+      btn_link: getVal('#m-first_popup-btn_link'),
+    };
+    body.first_popup = (fp.title || fp.content || fp.btn_text || fp.btn_link) ? fp : {};
     body.app_page = collectObj('app_page');
     body.play_page = collectObj('play_page');
     body.custom_pages = collectList('m-custom-pages', CP_FIELDS);
+    body.links = collectList('m-links', LI_FIELDS);
+    body.vip_jx = collectList('m-vip-jx', JX_FIELDS);
     return body;
   };
   const refreshEnvBadges = () => {
@@ -530,6 +578,8 @@
   $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
   $('#btn-add-nav').addEventListener('click', () => $('#m-nav').appendChild(buildRow(NAV_FIELDS, {})));
   $('#btn-add-page').addEventListener('click', () => $('#m-custom-pages').appendChild(buildRow(CP_FIELDS, {})));
+  $('#btn-add-links').addEventListener('click', () => $('#m-links').appendChild(buildRow(LI_FIELDS, {})));
+  $('#btn-add-vip-jx').addEventListener('click', () => $('#m-vip-jx').appendChild(buildRow(JX_FIELDS, {})));
 
   // ── APP 分区保存（只提交该分区字段，成功后右侧黑框实时刷新）──
   const saveSection = async (btn, partial, after) => {

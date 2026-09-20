@@ -16,6 +16,19 @@
   const STORAGE_KEY = 'videoHistory';
 
   document.addEventListener('DOMContentLoaded', function() {
+    // VIP 解析接口优先取后台「其他设置 → VIP解析接口」，否则回退内置默认接口
+    let apiList = API_LIST.slice();
+    fetch('/api/config').then(function(r){ return r.json(); }).then(function(d){
+      if (d && d.code === 1 && Array.isArray(d.vip_jx) && d.vip_jx.length) {
+        const remote = d.vip_jx
+          .map(function(x){ return { v: String(x.url || '').trim(), t: String(x.name || '').trim() }; })
+          .filter(function(x){ return x.v && x.t; });
+        if (remote.length) apiList = remote;
+      }
+    }).catch(function(){}).finally(function(){ initVip(apiList); });
+  });
+
+  function initVip(API_LIST) {
     const dom = {
       apiSelect:   $('#api-select'),
       videoUrl:    $('#video-url'),
@@ -207,7 +220,7 @@
         dom.apiSelect.value = history[0].apiUrl;
       }
     }
-  });
+  }
 })();
 
 

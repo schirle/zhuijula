@@ -331,5 +331,40 @@ const initThemeToggle = () => {
   });
 };
 
+// 首次打开弹窗：后台「基础设置 → 首次弹窗」配置，访客首次访问（或内容变更后）弹出一次
+const initFirstPopup = () => {
+  try {
+    if (location.pathname.includes('admin')) return; // 后台页不弹
+    const KEY = 'ftv_firstpopup_v1';
+    const seen = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
+    const mark = v => { try { localStorage.setItem(KEY, v); } catch (e) {} };
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const hash = o => (o.title || '') + ' ' + (o.content || '') + ' ' + (o.btn_text || '');
+    fetch('/api/config').then(r => r.json()).then(d => {
+      const fp = d && d.code === 1 ? d.first_popup : null;
+      if (!fp || !fp.enabled || !fp.title) return;
+      if (seen() === hash(fp)) return; // 已看过该版本
+      if (!document.getElementById('ftv-popup-style')) {
+        const st = document.createElement('style'); st.id = 'ftv-popup-style';
+        st.textContent = '.ftv-pop{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:0 16px;background:rgba(15,23,42,.55);opacity:0;transition:opacity .25s}.ftv-pop.show{opacity:1}.ftv-pop *{box-sizing:border-box}.ftv-card{width:100%;max-width:420px;background:var(--bg-card,#fff);color:var(--text,#1e293b);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.35);transform:translateY(10px);transition:transform .25s;position:relative}.ftv-pop.show .ftv-card{transform:none}.ftv-card h3{margin:0 0 12px;font-size:18px;font-weight:800}.ftv-card p{margin:0 0 18px;font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--text-secondary,#475569)}.ftv-pop .close{position:absolute;top:14px;right:16px;border:none;background:none;font-size:18px;color:var(--text-muted,#94a3b8);cursor:pointer}.ftv-pop .ftv-btn{display:block;width:100%;text-align:center;padding:12px;border-radius:12px;background:var(--grad-primary,linear-gradient(135deg,#3b82f6,#2563eb));color:#fff;font-weight:700;text-decoration:none;font-size:14px}';
+        document.head.appendChild(st);
+      }
+      const overlay = document.createElement('div'); overlay.className = 'ftv-pop';
+      const card = document.createElement('div'); card.className = 'ftv-card';
+      card.innerHTML = '<button class="close" aria-label="关闭">✕</button>'
+        + '<h3>' + esc(fp.title) + '</h3>'
+        + '<p>' + esc(fp.content || '') + '</p>'
+        + (fp.btn_text && fp.btn_link ? '<a class="ftv-btn" href="' + esc(fp.btn_link) + '" target="_blank" rel="noopener">' + esc(fp.btn_text) + '</a>' : '');
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('show'));
+      const close = () => { overlay.classList.remove('show'); mark(hash(fp)); setTimeout(() => overlay.remove(), 260); };
+      overlay.addEventListener('click', e => { if (e.target === overlay || e.target.classList.contains('close')) close(); });
+    }).catch(() => {});
+  } catch (e) {}
+};
+
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderNav);
 else renderNav();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFirstPopup);
+else initFirstPopup();

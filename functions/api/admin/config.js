@@ -96,6 +96,28 @@ const LIST_FIELDS = {
       return null;
     },
   },
+  // 友情链接（name 站名 / url 链接）—— 后台设置后 /api/friend-list 优先返回
+  links: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '友链项必须是对象';
+      it.name = String(it.name || '').trim();
+      it.url = String(it.url || '').trim();
+      if (!it.name) return '友链站点名称不能为空';
+      if (!/^https?:\/\//i.test(it.url)) return '友链地址必须以 http(s):// 开头';
+      return null;
+    },
+  },
+  // VIP 视频解析接口（name 解析名称 / url 解析地址，需包含 ?url= 拼接前缀）
+  vip_jx: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '解析接口项必须是对象';
+      it.name = String(it.name || '').trim();
+      it.url = String(it.url || '').trim();
+      if (!it.name) return '解析接口名称不能为空';
+      if (!/^https?:\/\//i.test(it.url)) return '解析地址必须以 http(s):// 开头';
+      return null;
+    },
+  },
 };
 // 环境变量兜底提示（仅回是否已设置，不回值）
 const ENV_HINTS = {
@@ -154,7 +176,7 @@ async function handleAdminConfig(request, _url, context) {
     }
 
     // 对象型模块：网站主题 / APP页 / 播放页 / 福利页 / 其他（对象；空对象 = 清除）
-    for (const key of ['theme', 'app_page', 'play_page', 'other']) {
+    for (const key of ['theme', 'app_page', 'play_page', 'other', 'first_popup']) {
       if (!(key in body)) continue;
       let o = body[key];
       if (typeof o === 'string') {

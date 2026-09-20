@@ -671,7 +671,7 @@ export async function handleConfig(request, url, context) {
   else if (env.NAV_LINKS) {
     try { const p = JSON.parse(env.NAV_LINKS); if (cleanNav(p).length) nav = cleanNav(p); } catch (_) { /* 配置非法时回退默认 */ }
   }
-  const res = json({ code: 1, nav, stats_code: cfg.stats_code || '' });
+  const res = json({ code: 1, nav, stats_code: cfg.stats_code || '', vip_jx: Array.isArray(cfg.vip_jx) ? cfg.vip_jx : [], first_popup: (cfg.first_popup && typeof cfg.first_popup === 'object') ? cfg.first_popup : null });
   res.headers.set('Cache-Control', 'public, s-maxage=300, max-age=300, stale-while-revalidate=3600');
   return res;
 }
@@ -736,7 +736,17 @@ export async function handleImgProxy(request, url) {
 
 // ── 友链列表 ──
 export async function handleFriendList(request, url, context) {
-  const data = await loadZhuiju(await resolveEnv(context));
+  const env = await resolveEnv(context);
+  // 后台「其他设置 → 友链」优先（运营随时增删，无需改上游数据）
+  const cfg = env._siteCfg || await loadSiteConfig(env, true);
+  if (Array.isArray(cfg.links) && cfg.links.length) {
+    const list = cfg.links
+      .map(l => ({ name: String(l.name || '').trim(), url: String(l.url || '').trim() }))
+      .filter(l => l.name && l.url);
+    if (list.length) return json({ code: 1, list });
+  }
+  // 兜底：回退上游追剧数据里的 friend-list
+  const data = await loadZhuiju(env);
   if (!data) return jsonErr('数据加载失败', 502);
   const list = Array.isArray(data['friend-list']) ? data['friend-list'] : [];
   return json({ code: 1, list });
