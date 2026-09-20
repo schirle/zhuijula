@@ -217,6 +217,11 @@ const DEFAULT_NAV_LINKS = [
 const renderNav = async () => {
   const root = document.getElementById('top-nav');
   if (!root) return;
+  // 注入后台配置的统计代码（analytics 等），<script> 需重建以执行
+  try {
+    const r = await fetch('/api/config');
+    if (r.ok) { const d = await r.json(); if (d && d.stats_code) injectStats(d.stats_code); }
+  } catch (_) {}
   const page = document.body.dataset.page || '';
   const cfg = NAV_PAGES[page] || {};
 
@@ -269,6 +274,23 @@ const renderNav = async () => {
     }
     navActions.insertAdjacentHTML('beforeend', html);
   }
+};
+
+// 注入统计代码：把后台粘贴的 HTML（通常含 <script>）插入到页面底部，脚本会真正执行
+const injectStats = (html) => {
+  if (!html || !html.trim()) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  tmp.querySelectorAll('script').forEach(s => {
+    const ns = document.createElement('script');
+    if (s.src) ns.src = s.src;
+    if (s.type) ns.type = s.type;
+    if (s.async) ns.async = true;
+    ns.textContent = s.textContent;
+    (document.body || document.documentElement).appendChild(ns);
+    s.remove();
+  });
+  while (tmp.firstChild) (document.body || document.documentElement).appendChild(tmp.firstChild);
 };
 
 const initThemeToggle = () => {

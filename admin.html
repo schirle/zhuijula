@@ -111,11 +111,9 @@
   <aside class="sidebar">
     <div class="brand"><i class="bi bi-play-btn-fill"></i><div>免费追剧<small>站点后台管理</small></div></div>
     <nav class="nav" id="side-nav">
-      <a class="active" data-section="theme"><i class="bi bi-palette"></i><span class="txt">网站主题设置</span></a>
-      <a data-section="sources"><i class="bi bi-hdd-network"></i><span class="txt">播放源设置</span></a>
-      <a data-section="carousel"><i class="bi bi-images"></i><span class="txt">首页轮播设置</span></a>
-      <a data-section="app"><i class="bi bi-phone"></i><span class="txt">APP页设置</span></a>
-      <a data-section="play"><i class="bi bi-collection-play"></i><span class="txt">播放页设置</span></a>
+      <a class="active" data-section="basic"><i class="bi bi-sliders"></i><span class="txt">基础设置</span></a>
+      <a data-section="play"><i class="bi bi-collection-play"></i><span class="txt">播放设置</span></a>
+      <a data-section="app"><i class="bi bi-phone"></i><span class="txt">APP设置</span></a>
       <a data-section="welfare"><i class="bi bi-gift"></i><span class="txt">福利页设置</span></a>
       <a data-section="other"><i class="bi bi-gear"></i><span class="txt">其他设置</span></a>
     </nav>
@@ -124,7 +122,7 @@
 
   <div class="main">
     <div class="topbar">
-      <h2 id="sec-title">网站主题设置</h2>
+      <h2 id="sec-title">基础设置</h2>
       <div class="d-flex align-items-center gap-3">
         <span class="kv" id="kv-status">检查 KV…</span>
         <button class="btn btn-sm btn-outline-secondary" id="logout-btn">退出</button>
@@ -133,10 +131,10 @@
 
     <div class="content">
 
-      <!-- 1. 网站主题设置 -->
-      <section class="section active" id="sec-theme">
+      <!-- 1. 基础设置 -->
+      <section class="section active" id="sec-basic">
         <div class="card-box">
-          <h3><i class="bi bi-type"></i>站点基础信息</h3>
+          <h3><i class="bi bi-info-circle"></i>站点基础信息</h3>
           <div class="tip">名称与描述用于浏览器标题、首页品牌与 meta 信息。</div>
           <div class="mb-3"><label class="form-label small fw-semibold">网站名称</label><input type="text" id="f-site_name" class="form-control" placeholder="免费追剧"></div>
           <div class="mb-3"><label class="form-label small fw-semibold">网站描述</label><input type="text" id="f-site_desc" class="form-control" placeholder="无广告，免会员，全网影视免费在线观看"></div>
@@ -150,29 +148,37 @@
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">页脚文案</label><input type="text" id="m-theme-footer_text" class="form-control" placeholder="免费追剧 · 仅供学习交流"></div>
           </div>
         </div>
-      </section>
-
-      <!-- 2. 播放源设置 -->
-      <section class="section" id="sec-sources">
-        <div class="card-box">
-          <h3><i class="bi bi-hdd-network"></i>播放源（影视接口）</h3>
-          <div class="tip">搜索时使用的影视解析接口。增删改后保存即生效；留空则回退上游数据源。</div>
-          <div id="m-sources"></div>
-          <button class="btn-add" id="btn-add-sources">＋ 添加播放源</button>
-        </div>
-      </section>
-
-      <!-- 3. 首页轮播设置 -->
-      <section class="section" id="sec-carousel">
         <div class="card-box">
           <h3><i class="bi bi-images"></i>首页轮播图</h3>
           <div class="tip">打开方式：「搜索关键词」点击后站内搜索；「打开外链」新窗口打开。</div>
           <div id="m-carousel"></div>
           <button class="btn-add" id="btn-add-carousel">＋ 添加轮播</button>
         </div>
+        <div class="card-box">
+          <h3><i class="bi bi-list"></i>顶部导航</h3>
+          <div class="tip">每个导航项填：显示文字 / 链接（如 /app）/ 图标 class（Font Awesome，如 fa-download）。无需再填 JSON。</div>
+          <div id="m-nav"></div>
+          <button class="btn-add" id="btn-add-nav">＋ 添加导航</button>
+        </div>
       </section>
 
-      <!-- 4. APP页设置 -->
+      <!-- 2. 播放设置 -->
+      <section class="section" id="sec-play">
+        <div class="card-box">
+          <h3><i class="bi bi-hdd-network"></i>播放源（影视接口）</h3>
+          <div class="tip">搜索时使用的影视解析接口。增删改后保存即生效；留空则回退上游数据源。</div>
+          <div id="m-sources"></div>
+          <button class="btn-add" id="btn-add-sources">＋ 添加播放源</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-collection-play"></i>播放页配置</h3>
+          <div class="tip">解析接口与广告位（前端接入后生效）。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">解析接口地址</label><input type="text" id="m-play_page-parse_api" class="form-control" placeholder="https://..."></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">广告代码（HTML，可空）</label><textarea id="m-play_page-ad_code" class="form-control" style="min-height:90px" placeholder="<script>...</script>"></textarea></div>
+        </div>
+      </section>
+
+      <!-- 3. APP设置 -->
       <section class="section" id="sec-app">
         <div class="card-box">
           <h3><i class="bi bi-info-circle"></i>页面信息</h3>
@@ -195,17 +201,7 @@
         </div>
       </section>
 
-      <!-- 5. 播放页设置 -->
-      <section class="section" id="sec-play">
-        <div class="card-box">
-          <h3><i class="bi bi-collection-play"></i>播放页配置</h3>
-          <div class="tip">解析接口与广告位（前端接入后生效）。</div>
-          <div class="mb-3"><label class="form-label small fw-semibold">解析接口地址</label><input type="text" id="m-play_page-parse_api" class="form-control" placeholder="https://..."></div>
-          <div class="mb-3"><label class="form-label small fw-semibold">广告代码（HTML，可空）</label><textarea id="m-play_page-ad_code" class="form-control" style="min-height:90px" placeholder="<script>...</script>"></textarea></div>
-        </div>
-      </section>
-
-      <!-- 6. 福利页设置 -->
+      <!-- 4. 福利页设置 -->
       <section class="section" id="sec-welfare">
         <div class="card-box">
           <h3><i class="bi bi-info-circle"></i>页面信息</h3>
@@ -222,7 +218,7 @@
         </div>
       </section>
 
-      <!-- 7. 其他设置 -->
+      <!-- 5. 其他设置 -->
       <section class="section" id="sec-other">
         <div class="card-box">
           <h3><i class="bi bi-cpu"></i>AI / 接口</h3>
@@ -232,15 +228,11 @@
             <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">AI Base URL<span class="env-badge" data-env="AI_BASE_URL" style="display:none">环境变量已设</span></label><input type="text" id="f-ai_base_url" class="form-control" placeholder="https://api.siliconflow.cn/v1"></div>
           </div>
           <div class="row">
-            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">TMDB Key<span class="env-badge" data-env="TMDB_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-tmdb_key" class="form-control"></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设</span></label><input type="text" id="f-daily_api" class="form-control" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">网盘搜索接口<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设</span></label><input type="text" id="f-wp_api_host" class="form-control" placeholder="so.252035.xyz/api/search"></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设</span></label><input type="text" id="f-pdlist" class="form-control" placeholder="1322205,278539,..."></div>
           </div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-web3forms_access_key" class="form-control"></div>
-            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设</span></label><input type="text" id="f-pdlist" class="form-control" placeholder="1322205,278539,..."></div>
-          </div>
-          <div class="mb-3"><label class="form-label small fw-semibold">追剧数据源 URL<span class="env-badge" data-env="ZUIJU_URL" style="display:none">环境变量已设</span></label><input type="text" id="f-zhuiju_url" class="form-control" placeholder="https://www.1dfx.com/api.html?type=zhuiju"></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-web3forms_access_key" class="form-control"></div>
         </div>
         <div class="card-box">
           <h3><i class="bi bi-key"></i>网盘转存凭据</h3>
@@ -254,12 +246,9 @@
           <div class="mb-3"><label class="form-label small fw-semibold">百度目标目录<span class="env-badge" data-env="BAIDU_DIR" style="display:none">环境变量已设</span></label><input type="text" id="f-baidu_dir" class="form-control" placeholder="/网盘搜索"></div>
         </div>
         <div class="card-box">
-          <h3><i class="bi bi-link-45deg"></i>导航与站点</h3>
-          <div class="mb-3"><label class="form-label small fw-semibold">顶部导航链接（JSON 数组）</label><textarea id="f-nav_links" class="form-control" style="min-height:80px" placeholder='[{"key":"app","href":"/app","icon":"bi-download","label":"APP下载"}]'></textarea></div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">联系邮箱</label><input type="text" id="m-other-contact_email" class="form-control" placeholder="admin@example.com"></div>
-            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">备案号</label><input type="text" id="m-other-icp" class="form-control" placeholder="京ICP备..."></div>
-          </div>
+          <h3><i class="bi bi-graph-up"></i>统计代码</h3>
+          <div class="tip">粘贴统计 / analytics 代码（如 Google Analytics、百度统计、CNZZ 的 &lt;script&gt; 片段），将自动注入到所有站点页面底部。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">统计代码（HTML）</label><textarea id="f-stats_code" class="form-control" style="min-height:90px" placeholder="<script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-XXXX&quot;></script>"></textarea></div>
         </div>
         <div class="card-box">
           <h3><i class="bi bi-bar-chart"></i>搜索排行榜</h3>
@@ -289,15 +278,14 @@
   const DEV_BYPASS_LOGIN = true;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
-  const SEC_TITLES = { theme:'网站主题设置', sources:'播放源设置', carousel:'首页轮播设置', app:'APP页设置', play:'播放页设置', welfare:'福利页设置', other:'其他设置' };
+  const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', welfare:'福利页设置', other:'其他设置' };
 
-  const FIELD_KEYS = ['ai_api_key','ai_model','ai_base_url','tmdb_key','daily_api','wp_api_host',
-    'web3forms_access_key','pdlist','zhuiju_url','nav_links','site_name','site_desc',
-    'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir'];
-  const ENV_OF = { ai_api_key:'AI_API_KEY', ai_model:'AI_MODEL', ai_base_url:'AI_BASE_URL', tmdb_key:'TMDB_KEY',
+  const FIELD_KEYS = ['ai_api_key','ai_model','ai_base_url','daily_api','wp_api_host',
+    'web3forms_access_key','pdlist','site_name','site_desc',
+    'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir','stats_code'];
+  const ENV_OF = { ai_api_key:'AI_API_KEY', ai_model:'AI_MODEL', ai_base_url:'AI_BASE_URL',
     daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
-    pdlist:'PDlist', zhuiju_url:'ZUIJU_URL', nav_links:'NAV_LINKS',
-    quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
+    pdlist:'PDlist', quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
     baidu_cookie:'BAIDU_COOKIE', baidu_dir:'BAIDU_DIR' };
 
   // 列表型模块定义
@@ -310,6 +298,7 @@
   ];
   const WEL_FIELDS = [{ key:'title', ph:'标题', cls:'re-w20' }, { key:'desc', ph:'描述' },
     { key:'icon', ph:'图标 class', cls:'re-w15' }, { key:'url', ph:'链接', cls:'re-w25' }];
+  const NAV_FIELDS = [{ key:'label', ph:'显示文字，如 APP下载', cls:'re-w20' }, { key:'href', ph:'链接 / 路径，如 /app', cls:'re-w35' }, { key:'icon', ph:'图标 class，如 fa-download' }];
   const MODULE_FIELDS = { app_page:['title','desc'], play_page:['parse_api','ad_code'], welfare_page:['title','desc'] };
   const MODULE_LISTS = { welfare_page:{ cards:WEL_FIELDS } };
 
@@ -425,14 +414,13 @@
     // 列表
     renderList('m-sources', PS_FIELDS, cfg.play_sources);
     renderList('m-carousel', CS_FIELDS, cfg.carousels);
+    renderList('m-nav', NAV_FIELDS, cfg.nav_links);
     // 对象模块
     fillObj('app_page', cfg.app_page);
     renderAndroid(cfg.android_apps);
     renderIos(cfg.ios_apps);
     fillObj('play_page', cfg.play_page);
     fillObj('welfare_page', cfg.welfare_page);
-    const ot = (cfg.other && typeof cfg.other==='object') ? cfg.other : {};
-    setVal('#m-other-contact_email', ot.contact_email); setVal('#m-other-icp', ot.icp);
     refreshEnvBadges();
   };
   const collect = () => {
@@ -442,14 +430,11 @@
     body.carousels = collectList('m-carousel', CS_FIELDS);
     body.android_apps = collectAndroid();
     body.ios_apps = collectIos();
+    body.nav_links = collectList('m-nav', NAV_FIELDS);
     body.theme = collectTheme();
     body.app_page = collectObj('app_page');
     body.play_page = collectObj('play_page');
     body.welfare_page = collectObj('welfare_page');
-    const other = {};
-    const ce = getVal('#m-other-contact_email'), ic = getVal('#m-other-icp');
-    if (ce) other.contact_email = ce; if (ic) other.icp = ic;
-    body.other = other;
     return body;
   };
   const refreshEnvBadges = () => {
@@ -525,6 +510,7 @@
   // ── 添加按钮 ──
   $('#btn-add-sources').addEventListener('click', () => $('#m-sources').appendChild(buildRow(PS_FIELDS, {})));
   $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
+  $('#btn-add-nav').addEventListener('click', () => $('#m-nav').appendChild(buildRow(NAV_FIELDS, {})));
   $('#btn-add-android').addEventListener('click', () => $('#m-android-apps').appendChild(buildAndroidApp({ name:'', image:'', methods:[{ type:'uc', url:'' }] })));
   $('#btn-add-ios').addEventListener('click', () => $('#m-ios-apps').appendChild(buildIosApp({ name:'', image:'', link:'', copy:'', text:'' })));
   $('#btn-add-cards').addEventListener('click', () => $('#m-welfare-cards').appendChild(buildRow(WEL_FIELDS, {})));

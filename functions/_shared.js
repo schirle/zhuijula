@@ -683,34 +683,35 @@ export async function handleRank(request, url, context) {
   return res;
 }
 
-// ── 站点配置（顶部导航链接由 Cloudflare 环境变量 NAV_LINKS(JSON) 驱动，便于免改代码增删改）──
+// ── 站点配置（顶部导航优先取后台 KV 配置的 nav_links，其次 Cloudflare 环境变量 NAV_LINKS(JSON)，最后回退默认）──
 // 示例 NAV_LINKS：[{"key":"app","href":"/app","icon":"fa-download","label":"APP下载"},{"key":"vip","href":"/vip","icon":"fa-bolt","label":"VIP视频解析"}]
 export async function handleConfig(request, url, context) {
+  const env = await resolveEnv(context);
+  let cfg = {};
+  try { cfg = await loadSiteConfig(env, true); } catch (_) {}
   const DEFAULT_NAV = [
     { key: 'app', href: '/app', icon: 'fa-download', label: 'APP下载' },
     { key: 'vip', href: '/vip', icon: 'fa-bolt', label: 'VIP视频解析' },
   ];
   let nav = DEFAULT_NAV;
-  const env = await resolveEnv(context);
-  const raw = env.NAV_LINKS;
-  if (raw && raw.trim()) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const cleaned = parsed
-          .filter(it => it && typeof it === 'object')
-          .map(it => ({
-            key: String(it.key || '').trim(),
-            href: String(it.href || '#').trim(),
-            icon: String(it.icon || 'fa-link').trim(),
-            label: String(it.label || '').trim(),
-          }))
-          .filter(it => it.key && it.label);
-        if (cleaned.length) nav = cleaned;
-      }
-    } catch (_) { /* 配置非法时回退默认 */ }
+  const cleanNav = (arr) => (Array.isArray(arr) ? arr : [])
+    .filter(it => it && typeof it === 'object')
+    .map(it => {
+      const href = String(it.href || '#').trim();
+      const key = String(it.key || '').trim() || href.replace(/^\//, '').split('/')[0] || '';
+      return {
+        key,
+        href,
+        icon: String(it.icon || 'fa-link').trim(),
+        label: String(it.label || '').trim(),
+      };
+    })
+    .filter(it => it.label && it.href);
+  if (cleanNav(cfg.nav_links).length) nav = cleanNav(cfg.nav_links);
+  else if (env.NAV_LINKS) {
+    try { const p = JSON.parse(env.NAV_LINKS); if (cleanNav(p).length) nav = cleanNav(p); } catch (_) { /* 配置非法时回退默认 */ }
   }
-  const res = json({ code: 1, nav });
+  const res = json({ code: 1, nav, stats_code: cfg.stats_code || '' });
   res.headers.set('Cache-Control', 'public, s-maxage=300, max-age=300, stale-while-revalidate=3600');
   return res;
 }

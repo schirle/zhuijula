@@ -4,10 +4,10 @@ export const onRequest = makeRoute(handleAdminConfig);
 
 // 后台配置读写：GET 返回 KV 配置 + 环境变量兜底情况（布尔，不泄露值）；POST 白名单字段保存
 const STR_FIELDS = [
-  'ai_api_key', 'ai_model', 'ai_base_url', 'nav_links', 'pdlist', 'wp_api_host',
+  'ai_api_key', 'ai_model', 'ai_base_url', 'pdlist', 'wp_api_host',
   'quark_cookie', 'quark_dir', 'baidu_cookie', 'baidu_dir', 'jjsou_api_key',
-  'web3forms_access_key', 'tmdb_key', 'daily_api', 'zhuiju_url',
-  'site_name', 'site_desc',
+  'web3forms_access_key', 'daily_api',
+  'site_name', 'site_desc', 'stats_code',
 ];
 const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'src';
 
@@ -71,15 +71,26 @@ const LIST_FIELDS = {
       return null;
     },
   },
+  nav_links: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '导航项必须是对象';
+      it.label = String(it.label || '').trim();
+      it.href = String(it.href || '').trim();
+      it.icon = String(it.icon || '').trim();
+      if (!it.label) return '导航显示文字不能为空';
+      if (!it.href) return '导航链接不能为空';
+      return null;
+    },
+  },
 };
 // 环境变量兜底提示（仅回是否已设置，不回值）
 const ENV_HINTS = {
   AI_API_KEY: 'ai_api_key', AI_MODEL: 'ai_model', AI_BASE_URL: 'ai_base_url',
-  NAV_LINKS: 'nav_links', PDlist: 'pdlist', WP_API_HOST: 'wp_api_host',
+  PDlist: 'pdlist', WP_API_HOST: 'wp_api_host',
   QUARK_COOKIE: 'quark_cookie', QUARK_DIR: 'quark_dir',
   BAIDU_COOKIE: 'baidu_cookie', BAIDU_DIR: 'baidu_dir',
   JJSOU_API_KEY: 'jjsou_api_key', WEB3FORMS_ACCESS_KEY: 'web3forms_access_key',
-  TMDB_KEY: 'tmdb_key', DAILY_API: 'daily_api', ZUIJU_URL: 'zhuiju_url',
+  DAILY_API: 'daily_api',
 };
 
 async function handleAdminConfig(request, _url, context) {
@@ -110,17 +121,6 @@ async function handleAdminConfig(request, _url, context) {
       const v = body[k];
       if (v == null) { delete cfg[k]; continue; }
       let s = String(v).trim();
-      if (k === 'nav_links' && s) {
-        // 导航链接必须是合法 JSON 数组
-        try {
-          const arr = JSON.parse(s);
-          if (!Array.isArray(arr)) throw new Error('not array');
-          s = JSON.stringify(arr);
-        } catch (_) { return json({ code: 0, msg: '「导航链接」必须是合法的 JSON 数组' }, 400); }
-      }
-      if (k === 'zhuiju_url' && s && !/^https?:\/\//i.test(s)) {
-        return json({ code: 0, msg: '「追剧数据源 URL」必须以 http(s):// 开头' }, 400);
-      }
       if (s) cfg[k] = s; else delete cfg[k];
     }
 
