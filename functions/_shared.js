@@ -217,7 +217,7 @@ export async function asyncPool(limit, items, fn) {
 const isErr = v => v && typeof v === 'object' && v._error;
 
 // ── 通用 fetch（超时 + 重试 + 指数退避）──
-async function fetchWithRetry(url, { timeout = 12000, retries = 1, headers = BROWSER_HEADERS, asJson = false } = {}) {
+export async function fetchWithRetry(url, { timeout = 12000, retries = 1, headers = BROWSER_HEADERS, asJson = false } = {}) {
   let lastErr;
   for (let i = 0; i <= retries; i++) {
     const ctrl = new AbortController();
