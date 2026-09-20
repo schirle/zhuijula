@@ -285,8 +285,8 @@
 <script>
 (() => {
   'use strict';
-  // ★ 临时开关：true = 跳过登录直接进面板（先把设置功能做好）；设置功能完成后改回 false 恢复登录
-  const DEV_BYPASS_LOGIN = true;
+  // ★ 临时开关：true = 跳过登录直接进面板（调界面用）；正常部署请保持 false，走真实登录
+  const DEV_BYPASS_LOGIN = false;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
   const SEC_TITLES = { theme:'网站主题设置', sources:'播放源设置', carousel:'首页轮播设置', app:'APP页设置', play:'播放页设置', welfare:'福利页设置', other:'其他设置' };
