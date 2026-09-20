@@ -278,8 +278,22 @@
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设</span></label><input type="text" id="f-daily_api" class="form-control" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">网盘搜索接口<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设</span></label><input type="text" id="f-wp_api_host" class="form-control" placeholder="so.252035.xyz/api/search"></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设</span></label><input type="text" id="f-pdlist" class="form-control" placeholder="1322205,278539,..."></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">追剧/福利数据源（ZUIJU_URL）<span class="env-badge" data-env="ZUIJU_URL" style="display:none">环境变量已设</span></label><input type="text" id="f-zhuiju_url" class="form-control" placeholder="https://你的数据源/api.html?type=zhuiju"></div>
           </div>
           <div class="mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-web3forms_access_key" class="form-control"></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="bi bi-megaphone"></i>首页文字广告</h3>
+          <div class="tip">显示在首页频道筛选行右侧（醒目渐变胶囊，带发光动画）。启用且填写文案后才展示，留空则不显示。</div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="m-promo_ad-enabled" role="switch">
+            <label class="form-check-label small fw-semibold" for="m-promo_ad-enabled">启用首页文字广告</label>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">广告文案</label><input type="text" id="m-promo_ad-text" class="form-control" placeholder="限时免费 · 海量热播剧每日更新"></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">点击链接</label><input type="text" id="m-promo_ad-link" class="form-control" placeholder="https://... 或 /page/xxx（留空仅展示）</label></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">左侧图标 class</label><input type="text" id="m-promo_ad-icon" class="form-control" placeholder="fa-fire（FontAwesome，留空则用火焰图标）"></label></div>
+          </div>
         </div>
         <div class="card-box">
           <h3><i class="bi bi-key"></i>网盘转存凭据</h3>
@@ -339,10 +353,10 @@
   const $$ = (s) => document.querySelectorAll(s);
   const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', pages:'新建页面', other:'其他设置' };
 
-  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','pdlist','site_name','site_desc',
+  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','pdlist','zhuiju_url','site_name','site_desc',
     'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir','stats_code'];
   const ENV_OF = { daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
-    pdlist:'PDlist', quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
+    pdlist:'PDlist', zhuiju_url:'ZUIJU_URL', quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
     baidu_cookie:'BAIDU_COOKIE', baidu_dir:'BAIDU_DIR' };
 
   // 列表型模块定义
@@ -460,6 +474,12 @@
     setVal('#m-first_popup-content', fp.content);
     setVal('#m-first_popup-btn_text', fp.btn_text);
     setVal('#m-first_popup-btn_link', fp.btn_link);
+    // 文字广告
+    const pa = (cfg.promo_ad && typeof cfg.promo_ad === 'object') ? cfg.promo_ad : {};
+    const paChk = $('#m-promo_ad-enabled'); if (paChk) paChk.checked = !!pa.enabled;
+    setVal('#m-promo_ad-text', pa.text);
+    setVal('#m-promo_ad-link', pa.link);
+    setVal('#m-promo_ad-icon', pa.icon);
     // 列表
     renderList('m-sources', PS_FIELDS, cfg.play_sources);
     renderList('m-carousel', CS_FIELDS, cfg.carousels);
@@ -496,6 +516,14 @@
       btn_link: getVal('#m-first_popup-btn_link'),
     };
     body.first_popup = (fp.title || fp.content || fp.btn_text || fp.btn_link) ? fp : {};
+    const paChk = $('#m-promo_ad-enabled');
+    const pa = {
+      enabled: !!(paChk && paChk.checked),
+      text: getVal('#m-promo_ad-text'),
+      link: getVal('#m-promo_ad-link'),
+      icon: getVal('#m-promo_ad-icon'),
+    };
+    body.promo_ad = (pa.enabled && pa.text) ? pa : {};
     body.app_page = collectObj('app_page');
     body.play_page = collectObj('play_page');
     body.custom_pages = collectList('m-custom-pages', CP_FIELDS);

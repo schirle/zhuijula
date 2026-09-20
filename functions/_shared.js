@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════
 
 export const CFG = {
-  ZUIJU_API: 'https://www.1dfx.com/api.html?type=zhuiju',
+  ZUIJU_API: '', // 追剧/福利数据源改由后台提供：Cloudflare 环境变量 ZUIJU_URL 或后台「追剧自定义数据」，不再内置第三方默认地址
   TIMEOUT_MS: 12000,
   CACHE_TTL_SEC: 600,
   MAX_RETRIES: 2,
@@ -349,7 +349,8 @@ async function loadZhuiju(env) {
   if (!_zhuijuData && (now - _zhuijuFailTs) < CFG.FAIL_BACKOFF_SEC * 1000) return null;
   if (_zhuijuRunning) return await _zhuijuRunning;
 
-  const zUrl = (env && env.ZUIJU_URL) || CFG.ZUIJU_API;
+  const zUrl = (env && env.ZUIJU_URL) ? String(env.ZUIJU_URL).trim() : '';
+  if (!zUrl) { _zhuijuFailTs = now; return null; } // 未配置数据源（需后台设置 ZUIJU_URL），不请求内置默认地址
 
   _zhuijuRunning = (async () => {
     try {
@@ -671,7 +672,7 @@ export async function handleConfig(request, url, context) {
   else if (env.NAV_LINKS) {
     try { const p = JSON.parse(env.NAV_LINKS); if (cleanNav(p).length) nav = cleanNav(p); } catch (_) { /* 配置非法时回退默认 */ }
   }
-  const res = json({ code: 1, nav, stats_code: cfg.stats_code || '', vip_jx: Array.isArray(cfg.vip_jx) ? cfg.vip_jx : [], first_popup: (cfg.first_popup && typeof cfg.first_popup === 'object') ? cfg.first_popup : null });
+  const res = json({ code: 1, nav, stats_code: cfg.stats_code || '', vip_jx: Array.isArray(cfg.vip_jx) ? cfg.vip_jx : [], first_popup: (cfg.first_popup && typeof cfg.first_popup === 'object') ? cfg.first_popup : null, promo_ad: (cfg.promo_ad && typeof cfg.promo_ad === 'object') ? cfg.promo_ad : null });
   res.headers.set('Cache-Control', 'public, s-maxage=300, max-age=300, stale-while-revalidate=3600');
   return res;
 }
@@ -764,14 +765,17 @@ export async function handleFuli(request, url, context) {
     list = override['fuli-list'];
   }
   if (!list) {
-    try {
-      const fresh = await fetchWithRetry(env.ZUIJU_URL || CFG.ZUIJU_API, { timeout: CFG.TIMEOUT_MS, retries: 1 });
-      if (!isErr(fresh)) {
-        const parsed = extractBalancedJson(fresh, 'fuli-list');
-        if (Array.isArray(parsed)) list = parsed;
-        else if (parsed && Array.isArray(parsed['fuli-list'])) list = parsed['fuli-list'];
-      }
-    } catch (_) {}
+    const zUrl = (env && env.ZUIJU_URL) ? String(env.ZUIJU_URL).trim() : '';
+    if (zUrl) {
+      try {
+        const fresh = await fetchWithRetry(zUrl, { timeout: CFG.TIMEOUT_MS, retries: 1 });
+        if (!isErr(fresh)) {
+          const parsed = extractBalancedJson(fresh, 'fuli-list');
+          if (Array.isArray(parsed)) list = parsed;
+          else if (parsed && Array.isArray(parsed['fuli-list'])) list = parsed['fuli-list'];
+        }
+      } catch (_) {}
+    }
   }
   // 兜底：回退到已加载的追剧全量缓存
   if (!list) {

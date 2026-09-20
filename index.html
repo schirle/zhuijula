@@ -48,8 +48,15 @@
     </section>
 
     <main class="main-container">
-        <!-- 频道筛选 -->
-        <nav class="chips" id="chips" aria-label="频道筛选"></nav>
+        <!-- 频道筛选 + 文字广告（广告文案/链接在此修改） -->
+        <div class="chips-bar">
+            <nav class="chips" id="chips" aria-label="频道筛选"></nav>
+            <a class="promo-ad" href="#" target="_blank" rel="noopener">
+                <i class="fas fa-fire promo-icon"></i>
+                <span class="promo-text">限时免费 · 海量热播剧每日更新</span>
+                <i class="fas fa-bolt"></i>
+            </a>
+        </div>
 
         <!-- 继续观看（有记录才显示） -->
         <div class="rail-wrap" id="rail-continue" style="display:none">
@@ -72,9 +79,7 @@
             <div class="sk"><div class="skeleton-img"></div><div class="skeleton-text"></div></div>
             <div class="sk"><div class="skeleton-img"></div><div class="skeleton-text"></div></div>
         </div>
-        <div class="feed-more-wrap">
-            <button class="feed-more" id="feed-more" style="display:none">展开更多 <i class="fas fa-chevron-down"></i></button>
-        </div>
+        <nav class="feed-pager" id="feed-pager"></nav>
 
         <section class="friend-links" id="friend-links" style="display:none">
             <div class="section-header"><span class="section-title"><i class="fas fa-link"></i> 友情链接</span><span class="section-more" id="fl-more" style="display:none" onclick="location.href='links.html'">查看全部 ›</span></div>

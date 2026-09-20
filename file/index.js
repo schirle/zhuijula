@@ -53,7 +53,7 @@
 
         /* ══════════ 频道筛选 + 推荐网格 ══════════ */
         const feedCache = {};
-        const shownCount = {};
+        const feedPage = {};
         let curType = '热门';
 
         function renderChips() {
@@ -71,7 +71,7 @@
                     curType = t.key;
                     box.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
                     b.classList.add('active');
-                    loadFeed(false);
+                    loadFeed(1);
                 });
                 frag.appendChild(b);
             });
@@ -112,13 +112,11 @@
             return out;
         }
 
-        async function loadFeed(append) {
+        async function loadFeed(page) {
             const grid = document.getElementById('feed-grid');
-            const more = document.getElementById('feed-more');
             if (!grid) return;
             const type = curType;
-            if (!append) grid.innerHTML = '<div class="sk"><div class="skeleton-img"></div><div class="skeleton-text"></div></div>'.repeat(12);
-            if (more) { more.style.display = 'none'; more.disabled = true; }
+            grid.innerHTML = '<div class="sk"><div class="skeleton-img"></div><div class="skeleton-text"></div></div>'.repeat(12);
             try {
                 if (!feedCache[type]) {
                     const r = await fetch('/api/douban-hot?type=' + encodeURIComponent(type) + '&limit=50');
@@ -128,15 +126,16 @@
                 }
                 if (type !== curType) return; // 已切到其它频道，丢弃过期结果
                 const list = dedupe(feedCache[type]);
-                if (!list.length) { grid.innerHTML = '<div class="feed-error">暂无内容，稍后再来看看</div>'; return; }
-                if (append) shownCount[type] = (shownCount[type] || FEED_BATCH) + FEED_BATCH;
-                const shown = shownCount[type] || (shownCount[type] = FEED_BATCH);
-                if (!append) grid.innerHTML = '';
+                if (!list.length) { grid.innerHTML = '<div class="feed-error">暂无内容，稍后再来看看</div>'; renderFeedPager(0, 0); return; }
+                const totalPages = Math.max(1, Math.ceil(list.length / FEED_BATCH));
+                const cur = Math.min(Math.max(1, page || feedPage[type] || 1), totalPages);
+                feedPage[type] = cur;
+                grid.innerHTML = '';
                 const frag = document.createDocumentFragment();
-                for (const m of list.slice(append ? shown - FEED_BATCH : 0, shown)) frag.appendChild(feedCard(m));
+                for (const m of list.slice((cur - 1) * FEED_BATCH, cur * FEED_BATCH)) frag.appendChild(feedCard(m));
                 grid.appendChild(frag);
                 observeImages(grid);
-                if (more) { more.style.display = list.length > shown ? '' : 'none'; more.disabled = false; }
+                renderFeedPager(cur, totalPages);
             } catch (e) {
                 if (type !== curType) return;
                 grid.innerHTML = '';
@@ -146,13 +145,33 @@
                 const retry = document.createElement('button');
                 retry.className = 'feed-retry';
                 retry.textContent = '重新加载';
-                retry.addEventListener('click', () => { shownCount[type] = FEED_BATCH; loadFeed(false); });
+                retry.addEventListener('click', () => loadFeed(1));
                 err.appendChild(retry);
                 grid.appendChild(err);
             }
         }
 
-        /* ══════════ 轮播 banner（静态大图，不再使用 1dfx 数据） ══════════ */
+        /* 列表页码切换（每页 FEED_BATCH 条） */
+        function renderFeedPager(cur, total) {
+            const pager = document.getElementById('feed-pager');
+            if (!pager) return;
+            if (!total || total <= 1) { pager.innerHTML = ''; return; }
+            let html = '<button class="pg-btn" data-pg="prev" aria-label="上一页"' + (cur === 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left"></i></button>';
+            for (let n = 1; n <= total; n++) html += '<button class="pg-btn' + (n === cur ? ' active' : '') + '" data-pg="' + n + '">' + n + '</button>';
+            html += '<button class="pg-btn" data-pg="next" aria-label="下一页"' + (cur === total ? ' disabled' : '') + '><i class="fas fa-chevron-right"></i></button>';
+            pager.innerHTML = html;
+            pager.onclick = e => {
+                const b = e.target.closest('.pg-btn');
+                if (!b || b.disabled) return;
+                const v = b.getAttribute('data-pg');
+                const np = v === 'prev' ? cur - 1 : v === 'next' ? cur + 1 : parseInt(v, 10);
+                loadFeed(np);
+                const chips = document.getElementById('chips');
+                if (chips) window.scrollTo({ top: chips.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+            };
+        }
+
+        /* ══════════ 轮播 banner（大图由后台「首页轮播」配置，未配置则用默认图） ══════════ */
         const BANNER_ITEMS = [
             { pic: 'https://pic1.iqiyipic.com/jisu/20260918/74/3c/47319ce6c735c70f54f87c9b8ba2e06c_2260_744.avif', link: '' }
         ];
@@ -253,6 +272,27 @@
             window.addEventListener('pagehide', stop, { once: true });
         }
 
+        /* ══════════ 首页文字广告（后台可配置） ══════════ */
+        async function loadPromoAd() {
+            const el = document.querySelector('.promo-ad');
+            if (!el) return;
+            try {
+                const r = await fetch('/api/config');
+                const d = await r.json().catch(() => ({}));
+                const pa = d && d.promo_ad;
+                if (!pa) return; // 后台未配置 → 保留默认展示
+                if (!(pa.enabled && pa.text)) { el.style.display = 'none'; return; }
+                const textEl = el.querySelector('.promo-text');
+                if (textEl) textEl.textContent = pa.text;
+                const ic = el.querySelector('.promo-icon');
+                if (ic) ic.className = 'fas ' + String(pa.icon || 'fa-fire').replace(/^fa[sb]?\s+/, '');
+                el.setAttribute('href', pa.link ? String(pa.link).trim() : '#');
+                if (!pa.link) { el.removeAttribute('target'); el.removeAttribute('rel'); }
+                else { el.target = '_blank'; el.rel = 'nofollow noopener'; }
+                el.style.display = '';
+            } catch (_) { /* 接口异常时保留默认展示 */ }
+        }
+
         /* ══════════ 继续观看 ══════════ */
         const makeContinueCard = it => {
             const href = playHref(it.id || '', it.form || 'xg');
@@ -332,18 +372,12 @@
         /* ══════════ 初始化 ══════════ */
         const init = () => {
             renderChips();
-            loadFeed(false);
+            loadFeed(1);
             wireHomeSearch();
             loadCarousel();
+            loadPromoAd();
             loadContinueWatching();
             loadFriendLinks();
-
-            document.getElementById('feed-more')?.addEventListener('click', function () {
-                if (this.disabled) return;
-                this.disabled = true;
-                this.innerHTML = '加载中…';
-                loadFeed(true).then(() => { this.innerHTML = '展开更多 <i class="fas fa-chevron-down"></i>'; });
-            });
 
             $$('.rail-arrow').forEach(btn => {
                 btn.addEventListener('click', () => {
