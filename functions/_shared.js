@@ -828,6 +828,25 @@ export async function handleZhuiju(request, url, context) {
     }
     if (cfg.site_name) out.site_name = cfg.site_name;
     if (cfg.site_desc) out.site_desc = cfg.site_desc;
+    // 后台「APP页」结构化配置优先于上游 android-list / ios-list
+    if (Array.isArray(cfg.android_apps) && cfg.android_apps.length) {
+      out['android-list'] = cfg.android_apps.map(a => ({
+        name: String(a.name || ''),
+        pic: String(a.image || ''),
+        methods: (Array.isArray(a.methods) ? a.methods : [])
+          .filter(m => m && m.url)
+          .map(m => ({ type: String(m.type || ''), url: String(m.url || '') })),
+      })).filter(a => a.name);
+    }
+    if (Array.isArray(cfg.ios_apps) && cfg.ios_apps.length) {
+      out['ios-list'] = cfg.ios_apps.map(a => ({
+        name: String(a.name || ''),
+        pic: String(a.image || ''),
+        link: String(a.link || ''),
+        copy: String(a.copy || ''),
+        text: String(a.text || ''),
+      })).filter(a => a.name);
+    }
   }
   if (!out || !Object.keys(out).length) return jsonErr('数据加载失败，请稍后刷新重试', 502);
   const res = json(out);

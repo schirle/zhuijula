@@ -15,12 +15,13 @@
   const PAN_DISK = {
     icons: {
       uc: 'https://pp.myapp.com/ma_icon/0/icon_10936_1787015999/96',
-      bd: 'https://pp.myapp.com/ma_icon/0/icon_116071_1789549946/96',
-      kk: 'https://pp.myapp.com/ma_icon/0/icon_42375936_1789644866/96',
-      xl: 'https://pp.myapp.com/ma_icon/0/icon_113692_1775128288/96',
+      baidu: 'https://pp.myapp.com/ma_icon/0/icon_116071_1789549946/96',
+      quark: 'https://pp.myapp.com/ma_icon/0/icon_42375936_1789644866/96',
+      thunder: 'https://pp.myapp.com/ma_icon/0/icon_113692_1775128288/96',
+      other: 'https://pp.myapp.com/ma_icon/0/icon_116071_1789549946/96',
     },
-    labels: { uc: 'UC 网盘', bd: '百度网盘', kk: '夸克网盘', xl: '迅雷网盘' },
-    order: ['uc', 'bd', 'kk', 'xl'],
+    labels: { uc: 'UC网盘', baidu: '百度网盘', quark: '夸克网盘', thunder: '迅雷网盘', other: '其他网盘' },
+    order: ['uc', 'quark', 'baidu', 'thunder', 'other'],
   };
 
   let data = null;
@@ -159,14 +160,16 @@
   const buildDownloadContent = (category, info) => {
     let html = '';
     if (category === 'android') {
-      const links = PAN_DISK.order
-        .filter((k) => info[k])
-        .map(
-          (k) =>
-            `<a href="${esc(info[k])}" target="_blank" rel="nofollow noopener" class="download-link-item"><img src="${esc(
-              PAN_DISK.icons[k]
-            )}" alt="" loading="lazy" onerror="window.imgFallback(this)"><span>${esc(PAN_DISK.labels[k])}</span></a>`
-        )
+      let methods = Array.isArray(info.methods) ? info.methods.filter((m) => m && m.url) : [];
+      if (!methods.length) methods = PAN_DISK.order.filter((k) => info[k]).map((k) => ({ type: k, url: info[k] }));
+      const links = methods
+        .map((m) => {
+          const icon = PAN_DISK.icons[m.type] || PAN_DISK.icons.other;
+          const label = PAN_DISK.labels[m.type] || '下载';
+          return `<a href="${esc(m.url)}" target="_blank" rel="nofollow noopener" class="download-link-item"><img src="${esc(
+            icon
+          )}" alt="" loading="lazy" onerror="window.imgFallback(this)"><span>${esc(label)}</span></a>`;
+        })
         .join('');
       html += links
         ? `<div class="download-title">选择下载方式</div><div class="download-links-container">${links}</div>`

@@ -41,10 +41,18 @@ const LIST_FIELDS = {
       if (!it || typeof it !== 'object') return '安卓APP项必须是对象';
       it.name = String(it.name || '').trim();
       it.image = String(it.image || '').trim();
-      it.method = String(it.method || '').trim();
       if (!it.name) return 'APP名称不能为空';
       if (!it.image) return 'APP图片地址不能为空';
-      if (!['uc','quark','baidu','thunder','other'].includes(it.method)) return '请选择下载方式（UC/夸克/百度/迅雷/其他网盘）';
+      const allowed = ['uc', 'quark', 'baidu', 'thunder', 'other'];
+      const methods = Array.isArray(it.methods)
+        ? it.methods.map(m => ({ type: String(m && m.type || '').trim(), url: String(m && m.url || '').trim() })).filter(m => m.url)
+        : [];
+      for (const m of methods) {
+        if (!allowed.includes(m.type)) return '下载方式未识别，请重新选择（UC/夸克/百度/迅雷/其他网盘）';
+        if (!/^https?:\/\//i.test(m.url)) return '下载链接必须以 http(s):// 开头';
+      }
+      it.methods = methods;
+      if (!it.methods.length) return '请至少添加一个下载链接';
       return null;
     },
   },
@@ -53,10 +61,13 @@ const LIST_FIELDS = {
       if (!it || typeof it !== 'object') return '苹果APP项必须是对象';
       it.name = String(it.name || '').trim();
       it.image = String(it.image || '').trim();
-      it.method = String(it.method || '').trim();
+      it.link = String(it.link || '').trim();
+      it.copy = String(it.copy || '').trim();
+      it.text = String(it.text || '').trim();
       if (!it.name) return 'APP名称不能为空';
       if (!it.image) return 'APP图片地址不能为空';
-      if (!['uc','quark','baidu','thunder','other'].includes(it.method)) return '请选择下载方式（UC/夸克/百度/迅雷/其他网盘）';
+      if (!it.link) return '商城ID不能为空';
+      if (!it.copy) return '「需要复制的内容」不能为空';
       return null;
     },
   },

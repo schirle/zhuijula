@@ -20,7 +20,7 @@
   .brand{padding:20px 22px;font-weight:800;font-size:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
   .brand i{color:var(--primary);font-size:20px}
   .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
-  .nav{flex:1;overflow-y:auto;padding:12px 12px}
+  .nav{flex:1;display:block;overflow-y:auto;padding:12px 12px}
   .nav a{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;margin-bottom:4px;cursor:pointer}
   .nav a i{font-size:17px;color:var(--muted);width:20px;text-align:center}
   .nav a:hover{background:#f3f6fb}
@@ -52,6 +52,11 @@
   .row-editor .re-w15{flex:0 0 15%}.row-editor .re-w20{flex:0 0 20%}.row-editor .re-w25{flex:0 0 25%}.row-editor .re-w40{flex:0 0 40%}
   .ri-del{flex:0 0 auto;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--err);border-radius:9px;padding:8px 14px;cursor:pointer;font-size:13px}
   .ri-del:hover{background:rgba(239,68,68,.18)}
+  .app-card-edit{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+  .app-card-edit > .methods-box{background:#fff;border:1px dashed var(--border);border-radius:10px;padding:10px;margin:4px 0 10px}
+  .methods-box .method-row{margin-bottom:8px}
+  .methods-box .method-row:last-child{margin-bottom:0}
+  .app-card-edit .btn-add{display:inline-block}
   .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
   .login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:380px;max-width:100%;box-shadow:0 10px 30px rgba(16,24,40,.08)}
   .login-card h2{font-size:18px;margin:0 0 4px}
@@ -178,13 +183,13 @@
         </div>
         <div class="card-box">
           <h3><i class="bi bi-android2"></i>安卓 APP</h3>
-          <div class="tip">下载方式：UC网盘 / 夸克网盘 / 百度网盘 / 迅雷网盘 / 其他网盘。</div>
+          <div class="tip">每项填：APP名称 / 图片地址；并点击「添加下载方式」添加多个下载渠道（UC / 夸克 / 百度 / 迅雷 / 其他网盘 + 对应链接）。</div>
           <div id="m-android-apps"></div>
           <button class="btn-add" id="btn-add-android">＋ 添加安卓APP</button>
         </div>
         <div class="card-box">
           <h3><i class="bi bi-apple"></i>苹果 APP</h3>
-          <div class="tip">下载方式同上。</div>
+          <div class="tip">每项填：APP名称 / 图片地址 / 商城ID（如 id6448311234）/ 需要复制的内容 / 相关说明。无需填写下载方式。</div>
           <div id="m-ios-apps"></div>
           <button class="btn-add" id="btn-add-ios">＋ 添加苹果APP</button>
         </div>
@@ -299,12 +304,14 @@
   const PS_FIELDS = [{ key:'name', ph:'播放源名称，如 暴风资源', cls:'re-w30' }, { key:'url', ph:'接口地址 https://...' }];
   const CS_FIELDS = [{ key:'pic', ph:'图片链接 https://...', cls:'re-w38' }, { key:'link', ph:'搜索关键词 或 外链 URL' },
     { key:'mode', type:'select', options:[{ value:'search', label:'搜索关键词' }, { value:'external', label:'打开外链' }] }];
-  const APP_FIELDS = [{ key:'name', ph:'APP名称', cls:'re-w25' }, { key:'image', ph:'图片地址 https://...', cls:'re-w35' },
-    { key:'method', type:'select', options:[{ value:'uc', label:'UC网盘' }, { value:'quark', label:'夸克网盘' }, { value:'baidu', label:'百度网盘' }, { value:'thunder', label:'迅雷网盘' }, { value:'other', label:'其他网盘' }] }];
+  const METHOD_OPTS = [
+    { value:'uc', label:'UC网盘' }, { value:'quark', label:'夸克网盘' },
+    { value:'baidu', label:'百度网盘' }, { value:'thunder', label:'迅雷网盘' }, { value:'other', label:'其他网盘' }
+  ];
   const WEL_FIELDS = [{ key:'title', ph:'标题', cls:'re-w20' }, { key:'desc', ph:'描述' },
     { key:'icon', ph:'图标 class', cls:'re-w15' }, { key:'url', ph:'链接', cls:'re-w25' }];
   const MODULE_FIELDS = { app_page:['title','desc'], play_page:['parse_api','ad_code'], welfare_page:['title','desc'] };
-  const MODULE_LISTS = { app_page:{ android_apps:APP_FIELDS, ios_apps:APP_FIELDS }, welfare_page:{ cards:WEL_FIELDS } };
+  const MODULE_LISTS = { welfare_page:{ cards:WEL_FIELDS } };
 
   let ENV_SET = {};
 
@@ -335,6 +342,63 @@
     const o={}; fields.forEach(f => { o[f.key] = (row.querySelector('[data-k="'+f.key+'"]')?.value||'').trim(); }); return o;
   });
 
+  // ── 安卓 / 苹果 APP 编辑器 ──
+  const inputEl = (cls, ph, val) => { const e=document.createElement('input'); e.type='text'; e.className=cls; e.placeholder=ph||''; e.value=val!=null?val:''; return e; };
+  const delBtn = (fn) => { const b=document.createElement('button'); b.type='button'; b.className='ri-del'; b.textContent='删除'; b.addEventListener('click', fn); return b; };
+  const buildMethodRow = (m) => {
+    const row = document.createElement('div'); row.className='row-editor method-row';
+    const sel = document.createElement('select'); sel.className='ri'; sel.dataset.k='type';
+    METHOD_OPTS.forEach(o => { const op=document.createElement('option'); op.value=o.value; op.textContent=o.label; sel.appendChild(op); });
+    if (m && m.type) sel.value = m.type;
+    const url = inputEl('ri', '下载链接 https://...', m && m.url); url.dataset.k='url';
+    row.appendChild(sel); row.appendChild(url); row.appendChild(delBtn(() => row.remove()));
+    return row;
+  };
+  const buildAndroidApp = (it) => {
+    it = it || {};
+    const card = document.createElement('div'); card.className='app-card-edit';
+    const top = document.createElement('div'); top.className='row-editor';
+    const name = inputEl('ri re-w20', 'APP名称', it.name); name.dataset.k='name';
+    const pic = inputEl('ri', '图片地址 https://...', it.image); pic.dataset.k='image';
+    top.appendChild(name); top.appendChild(pic); top.appendChild(delBtn(() => card.remove()));
+    card.appendChild(top);
+    const mbox = document.createElement('div'); mbox.className='methods-box';
+    const methods = Array.isArray(it.methods) ? it.methods : [];
+    (methods.length ? methods : [{ type:'uc', url:'' }]).forEach(m => mbox.appendChild(buildMethodRow(m)));
+    card.appendChild(mbox);
+    const addBtn = document.createElement('button'); addBtn.type='button'; addBtn.className='btn-add'; addBtn.textContent='＋ 添加下载方式';
+    addBtn.addEventListener('click', () => mbox.appendChild(buildMethodRow({ type:'uc', url:'' })));
+    card.appendChild(addBtn);
+    return card;
+  };
+  const buildIosApp = (it) => {
+    it = it || {};
+    const card = document.createElement('div'); card.className='app-card-edit';
+    const top = document.createElement('div'); top.className='row-editor';
+    const name = inputEl('ri re-w20', 'APP名称', it.name); name.dataset.k='name';
+    const pic = inputEl('ri', '图片地址 https://...', it.image); pic.dataset.k='image';
+    top.appendChild(name); top.appendChild(pic); top.appendChild(delBtn(() => card.remove()));
+    card.appendChild(top);
+    const r2 = document.createElement('div'); r2.className='row-editor';
+    const link = inputEl('ri re-w20', '商城ID（如 id6448311234）', it.link); link.dataset.k='link';
+    const copy = inputEl('ri', '需要复制的内容', it.copy); copy.dataset.k='copy';
+    r2.appendChild(link); r2.appendChild(copy); card.appendChild(r2);
+    const r3 = document.createElement('div'); r3.className='row-editor';
+    const text = inputEl('ri', '相关说明', it.text); text.dataset.k='text';
+    r3.appendChild(text); card.appendChild(r3);
+    return card;
+  };
+  const renderAndroid = (arr) => { const box=$('#m-android-apps'); box.innerHTML=''; (Array.isArray(arr)?arr:[]).forEach(it=>box.appendChild(buildAndroidApp(it))); };
+  const renderIos = (arr) => { const box=$('#m-ios-apps'); box.innerHTML=''; (Array.isArray(arr)?arr:[]).forEach(it=>box.appendChild(buildIosApp(it))); };
+  const collectAndroid = () => Array.from($('#m-android-apps').querySelectorAll('.app-card-edit')).map(card => ({
+    name: (card.querySelector('[data-k="name"]').value||'').trim(),
+    image: (card.querySelector('[data-k="image"]').value||'').trim(),
+    methods: Array.from(card.querySelectorAll('.method-row')).map(r => ({ type:(r.querySelector('[data-k="type"]').value||'').trim(), url:(r.querySelector('[data-k="url"]').value||'').trim() })).filter(m => m.url),
+  }));
+  const collectIos = () => Array.from($('#m-ios-apps').querySelectorAll('.app-card-edit')).map(card => {
+    const o = {}; ['name','image','link','copy','text'].forEach(k => o[k] = (card.querySelector('[data-k="'+k+'"]').value||'').trim()); return o;
+  });
+
   // ── 对象型模块 ──
   const collectObj = (mod) => {
     const o = {};
@@ -363,6 +427,8 @@
     renderList('m-carousel', CS_FIELDS, cfg.carousels);
     // 对象模块
     fillObj('app_page', cfg.app_page);
+    renderAndroid(cfg.android_apps);
+    renderIos(cfg.ios_apps);
     fillObj('play_page', cfg.play_page);
     fillObj('welfare_page', cfg.welfare_page);
     const ot = (cfg.other && typeof cfg.other==='object') ? cfg.other : {};
@@ -374,6 +440,8 @@
     for (const k of FIELD_KEYS) body[k] = getVal('#f-'+k);
     body.play_sources = collectList('m-sources', PS_FIELDS);
     body.carousels = collectList('m-carousel', CS_FIELDS);
+    body.android_apps = collectAndroid();
+    body.ios_apps = collectIos();
     body.theme = collectTheme();
     body.app_page = collectObj('app_page');
     body.play_page = collectObj('play_page');
@@ -457,8 +525,8 @@
   // ── 添加按钮 ──
   $('#btn-add-sources').addEventListener('click', () => $('#m-sources').appendChild(buildRow(PS_FIELDS, {})));
   $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
-  $('#btn-add-android').addEventListener('click', () => $('#m-android-apps').appendChild(buildRow(APP_FIELDS, { method:'uc' })));
-  $('#btn-add-ios').addEventListener('click', () => $('#m-ios-apps').appendChild(buildRow(APP_FIELDS, { method:'uc' })));
+  $('#btn-add-android').addEventListener('click', () => $('#m-android-apps').appendChild(buildAndroidApp({ name:'', image:'', methods:[{ type:'uc', url:'' }] })));
+  $('#btn-add-ios').addEventListener('click', () => $('#m-ios-apps').appendChild(buildIosApp({ name:'', image:'', link:'', copy:'', text:'' })));
   $('#btn-add-cards').addEventListener('click', () => $('#m-welfare-cards').appendChild(buildRow(WEL_FIELDS, {})));
 
   // ── 搜索排行榜 ──
