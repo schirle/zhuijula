@@ -256,6 +256,8 @@
 <script>
 (() => {
   'use strict';
+  // ★ 临时开关：true = 跳过登录直接进面板（先把设置功能做好）；设置功能完成后改回 false 恢复登录
+  const DEV_BYPASS_LOGIN = true;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
   const SEC_TITLES = { theme:'网站主题设置', sources:'播放源设置', carousel:'首页轮播设置', app:'APP页设置', play:'播放页设置', welfare:'福利页设置', other:'其他设置' };
@@ -392,7 +394,7 @@
   async function init() {
     try {
       const r = await fetch('/api/admin/config');
-      if (r.status===401) { $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
+      if (r.status===401 && !DEV_BYPASS_LOGIN) { $('#main-view').style.display='none'; $('#login-view').style.display=''; return; }
       const d = await r.json();
       if (d.code===1) {
         fill(d.cfg||{}, d.env_set||{});
@@ -400,9 +402,10 @@
         $('#login-view').style.display='none'; $('#main-view').style.display='';
         return;
       }
-      toast(d.msg || '配置加载失败', false);
-    } catch(_) { /* 初始加载接口不通（如本地/预览环境无 Functions）时静默，仅显示登录框 */ }
-    $('#login-view').style.display='';
+      if (!DEV_BYPASS_LOGIN) toast(d.msg || '配置加载失败', false);
+    } catch(_) { /* 接口不通（本地/预览环境无 Functions）时静默 */ }
+    if (DEV_BYPASS_LOGIN) { $('#login-view').style.display='none'; $('#main-view').style.display=''; }
+    else $('#login-view').style.display='';
   }
 
   // ── 侧边导航 ──
@@ -417,6 +420,7 @@
 
   // ── 保存 ──
   $('#save-btn').addEventListener('click', async () => {
+    if (DEV_BYPASS_LOGIN) { toast('登录功能临时关闭中，保存暂不可用；界面调好后再恢复', false); return; }
     const btn=$('#save-btn'), st=$('#save-status'); btn.disabled=true; st.textContent='保存中…';
     try {
       const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) });
