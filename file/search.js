@@ -381,16 +381,9 @@
             a.className = 'side-today-card';
             a.href = '/search?key=' + encodeURIComponent(m.title);
             a.addEventListener('click', e => { e.preventDefault(); doSearch(m.title); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-            const meta = [m.year, m.region, m.genres].filter(Boolean).join(' / ');
-            let metaHtml = '';
-            if (meta) metaHtml = '<div class="side-today-meta">' + (m.rating ? '<span class="side-today-rate">★ ' + Number(m.rating).toFixed(1) + '</span> · ' : '') + esc(meta) + '</div>';
-            else if (m.rating) metaHtml = '<div class="side-today-meta"><span class="side-today-rate">★ ' + Number(m.rating).toFixed(1) + '</span></div>';
             a.innerHTML = (m.pic ? '<img class="side-today-pic" src="' + esc('/api/img?u=' + encodeURIComponent(m.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<div class="side-today-pic"></div>')
                 + '<div class="side-today-info">'
                 + '<div class="side-today-name">' + esc(m.title) + '</div>'
-                + metaHtml
-                + (m.desc ? '<div class="side-today-desc">' + esc(m.desc) + '</div>' : '')
-                + (m.word ? '<div class="side-today-word">每日一词 · ' + esc(m.word) + '</div>' : '')
                 + '</div>';
             container.appendChild(a);
         }

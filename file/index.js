@@ -152,39 +152,16 @@
             }
         }
 
-        /* ══════════ 轮播（大图 + 缩略图条 + 左右箭头 + 自动播放） ══════════ */
-        let _zhuijuCache = null;
-        async function getZhuijuData() {
-            if (_zhuijuCache) return _zhuijuCache;
-            try {
-                const r = await fetch('/api/zhuiju');
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                _zhuijuCache = await r.json();
-            } catch (e) { _zhuijuCache = {}; }
-            return _zhuijuCache;
-        }
-        function applySiteMeta(d) {
-            if (d && d.site_name) {
-                const n = d.site_name;
-                document.title = n;
-                const ot = document.querySelector('meta[property="og:title"]'); if (ot) ot.content = n;
-            }
-            if (d && d.site_desc) {
-                const m = document.querySelector('meta[name="description"]'); if (m) m.content = d.site_desc;
-                const od = document.querySelector('meta[property="og:description"]'); if (od) od.content = d.site_desc;
-            }
-        }
-
+        /* ══════════ 轮播 banner（静态大图，不再使用 1dfx 数据） ══════════ */
+        const BANNER_ITEMS = [
+            { pic: 'https://pic1.iqiyipic.com/jisu/20260918/74/3c/47319ce6c735c70f54f87c9b8ba2e06c_2260_744.avif', link: '' }
+        ];
         async function loadCarousel() {
             const track = document.getElementById('hc-track');
             const carouselEl = document.getElementById('hero-carousel');
             const heroSection = document.getElementById('hero-section');
             if (!track || !carouselEl) return;
-            let items = [];
-            let data = {};
-            try { data = await getZhuijuData(); } catch (_) {}
-            applySiteMeta(data);
-            items = (data && Array.isArray(data['carousel-list'])) ? data['carousel-list'] : [];
+            const items = BANNER_ITEMS;
             if (!items.length) { if (heroSection) heroSection.style.display = 'none'; return; }
             track.innerHTML = '';
 
