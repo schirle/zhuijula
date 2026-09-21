@@ -193,7 +193,7 @@ const _downloadFile = (url, filename) => {
   if (typeof showToast === 'function') showToast('已开始下载「' + filename + '」，按提示安装即可使用');
 };
 
-const installExtension = () => _downloadFile('file/zhuiju.crx', 'zhuiju.crx');
+const installExtension = () => _downloadFile('file/zhuiju-extension.crx', 'zhuiju-extension.crx');
 const installUserScript = () => _downloadFile('file/zhuiju-douban.user.js', 'zhuiju-douban.user.js');
 window.installExtension = installExtension;
 window.installUserScript = installUserScript;
