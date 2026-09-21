@@ -408,12 +408,16 @@
             a.className = 'side-today-card';
             a.href = '/search?key=' + encodeURIComponent(m.title);
             a.addEventListener('click', e => { e.preventDefault(); doSearch(m.title); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-            const metaParts = [m.year, m.region, m.director, m.genres].filter(Boolean);
+            const rows = [
+                ['地区', m.region],
+                ['年份', m.year],
+                ['导演', m.director],
+                ['类型', m.genres],
+            ].filter(r => r[1]);
             a.innerHTML = (m.pic ? '<img class="side-today-pic" src="' + esc('/api/img?u=' + encodeURIComponent(m.pic)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<div class="side-today-pic"></div>')
               + '<div class="side-today-info">'
               + '<div class="side-today-name">' + esc(m.title) + (m.rating ? ' <span class="side-today-rate">' + esc(m.rating) + '</span>' : '') + '</div>'
-              + (metaParts.length ? '<div class="side-today-meta">' + metaParts.map(esc).join(' · ') + '</div>' : '')
-              + (m.word ? '<div class="side-today-word">' + esc(m.word) + '</div>' : '')
+              + rows.map(r => '<div class="side-today-row"><span class="side-today-label">' + r[0] + '：</span><span class="side-today-val">' + esc(r[1]) + '</span></div>').join('')
               + '</div>';
             container.appendChild(a);
         }

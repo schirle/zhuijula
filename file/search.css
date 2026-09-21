@@ -309,10 +309,11 @@
 .side-today-pic { width: 62px; height: 88px; border-radius: 9px; object-fit: cover; flex-shrink: 0; background: var(--surface); box-shadow: 0 4px 12px rgba(0,0,0,0.32); }
 .side-today-info { flex: 1; min-width: 0; }
 .side-today-name { font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.side-today-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-today-row { font-size: 11.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.45; display: flex; gap: 4px; min-width: 0; }
+.side-today-label { color: var(--text-muted); flex-shrink: 0; }
+.side-today-val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side-today-rate { color: #fbbf24; font-weight: 800; }
 .side-today-desc { font-size: 11.5px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.side-today-word { font-size: 11px; color: var(--primary-strong); margin-top: 6px; font-weight: 600; }
 .side-today-loading { font-size: 12.5px; color: var(--text-muted); padding: 6px 0; }
 
 /* ── 插件推荐 / APP下载（静态卡片） ── */
