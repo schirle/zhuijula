@@ -2,7 +2,7 @@
   'use strict';
 
   const RANK_MAX = 30;            // 排行榜最多展示条数
-  const DEFAULT_RANGE = 'all';    // 进入页面默认展示「总榜」（全部累计）
+  const DEFAULT_RANGE = 'day';    // 进入页面默认展示「日榜」
   let curRange = DEFAULT_RANGE;
 
   const goSearch = word => { location.href = '/search?key=' + encodeURIComponent(word); };
