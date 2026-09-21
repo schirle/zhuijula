@@ -208,6 +208,7 @@
             <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">跳转链接</label><input type="text" id="m-promo_ad-link" class="form-control" placeholder="https://...（留空则不可点击）"></div>
             <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图标（Font Awesome 类名）</label><input type="text" id="m-promo_ad-icon" class="form-control" placeholder="fa-fire，默认 fa-fire"></div>
           </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">背景颜色</label><input type="text" id="m-promo_ad-bg_color" class="form-control" placeholder="#ff4757（留空用默认渐变）"></div>
         </div>
         <div class="card-box">
           <h3><i class="bi bi-brush"></i>外观</h3>
@@ -314,7 +315,6 @@
           <div class="row">
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设</span></label><input type="text" id="f-daily_api" class="form-control" placeholder="https://www.cikeee.cc/api?app_key=..."></div>
             <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">网盘搜索接口<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设</span></label><input type="text" id="f-wp_api_host" class="form-control" placeholder="so.252035.xyz/api/search"></div>
-            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">精选片单 ID（PDlist）<span class="env-badge" data-env="PDlist" style="display:none">环境变量已设</span></label><input type="text" id="f-pdlist" class="form-control" placeholder="1322205,278539,..."></div>
           </div>
           <div class="mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="password" id="f-web3forms_access_key" class="form-control"></div>
         </div>
@@ -330,6 +330,7 @@
             <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">点击链接</label><input type="text" id="m-promo_ad-link" class="form-control" placeholder="https://...（留空仅展示）</label></div>
             <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">左侧图标 class</label><input type="text" id="m-promo_ad-icon" class="form-control" placeholder="fa-fire（FontAwesome，留空则用火焰图标）"></label></div>
           </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">背景颜色</label><input type="text" id="m-promo_ad-bg_color" class="form-control" placeholder="#ff4757（留空用默认渐变）"></div>
         </div>
         <div class="card-box">
           <h3><i class="bi bi-key"></i>网盘转存凭据</h3>
@@ -354,7 +355,7 @@
           <button class="btn-add" id="btn-add-links">＋ 添加友链</button>
         </div>
         <div class="card-box">
-          <h3><i class="bi bi-bolt"></i>VIP 视频解析接口</h3>
+          <h3><i class="bi bi-lightning-charge"></i>VIP 视频解析接口</h3>
           <div class="tip">VIP 视频页（/vip）的解析接口列表。每条填：解析名称 / 解析地址（需含拼接前缀，如 https://jiexi.xxx.com/?url=）。留空则使用页面内置默认接口。</div>
           <div id="m-vip-jx"></div>
           <button class="btn-add" id="btn-add-vip-jx">＋ 添加解析接口</button>
@@ -395,10 +396,10 @@
   const $$ = (s) => document.querySelectorAll(s);
   const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', other:'其他设置' };
 
-  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','pdlist','site_name','site_desc',
+  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','site_name','site_desc',
     'quark_cookie','quark_dir','jjsou_api_key','baidu_cookie','baidu_dir','stats_code'];
   const ENV_OF = { daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
-    pdlist:'PDlist', quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
+    quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR', jjsou_api_key:'JJSOU_API_KEY',
     baidu_cookie:'BAIDU_COOKIE', baidu_dir:'BAIDU_DIR' };
 
   // 列表型模块定义
@@ -590,6 +591,7 @@
     setVal('#m-promo_ad-text', pa.text);
     setVal('#m-promo_ad-link', pa.link);
     setVal('#m-promo_ad-icon', pa.icon);
+    setVal('#m-promo_ad-bg_color', pa.bg_color);
     // 列表
     renderList('m-sources', PS_FIELDS, cfg.play_sources);
     renderList('m-carousel', CS_FIELDS, cfg.carousels);
@@ -632,6 +634,7 @@
       text: getVal('#m-promo_ad-text'),
       link: getVal('#m-promo_ad-link'),
       icon: getVal('#m-promo_ad-icon'),
+      bg_color: getVal('#m-promo_ad-bg_color'),
     };
     body.promo_ad = (pa.enabled && pa.text) ? pa : {};
     body.app_page = collectObj('app_page');

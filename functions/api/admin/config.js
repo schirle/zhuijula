@@ -4,7 +4,7 @@ export const onRequest = makeRoute(handleAdminConfig);
 
 // 后台配置读写：GET 返回 KV 配置 + 环境变量兜底情况（布尔，不泄露值）；POST 白名单字段保存
 const STR_FIELDS = [
-  'pdlist', 'wp_api_host',
+  'wp_api_host',
   'quark_cookie', 'quark_dir', 'baidu_cookie', 'baidu_dir', 'jjsou_api_key',
   'web3forms_access_key', 'daily_api',
   'site_name', 'site_desc', 'stats_code',

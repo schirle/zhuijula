@@ -46,7 +46,7 @@ export const jsonErr = (msg, status = 502) => json({ code: 0, msg }, status);
 // KV 站点配置 + 后台鉴权
 // 绑定一个 KV 命名空间即可（变量名 KV 或 SEARCH_KV 均可识别）。
 // CF Pages 环境变量只保留 ADMIN_USER / ADMIN_PASS（后台登录账号），
-// 其余全部动态配置（AI、网盘转存、片单、导航、追剧数据源等）都在后台页维护，
+// 其余全部动态配置（AI、网盘转存、导航、追剧数据源等）都在后台页维护，
 // 存于 KV 的 site_config；环境变量作为兜底（后台留空的项自动回退环境变量）。
 // ════════════════════════════════════════════════
 // 进程内内存 KV 兜底：仅在本地 wrangler pages dev 且未绑定真实 KV 时启用，
@@ -94,7 +94,6 @@ export function cfgVal(cfg, env, kvKey, envKey) {
 // 后台可维护的配置项 → 兼容的环境变量名（老部署不变也能跑）
 const CONFIG_ENV_MAP = {
   nav_links: 'NAV_LINKS',
-  pdlist: 'PDlist',
   wp_api_host: 'WP_API_HOST',
   quark_cookie: 'QUARK_COOKIE',
   quark_dir: 'QUARK_DIR',
@@ -725,7 +724,46 @@ export async function handleImgProxy(request, url) {
   finally { clearTimeout(timer); }
 }
 
-// ── 友链列表 ──
+// ── 友链列表（每日自检：探测可访问性 + 回链检测，结果缓存 1 天）──
+const FRIEND_UA = 'Mozilla/5.0 (compatible; FreeTV-LinkCheck/1.0; +https://' + (typeof location !== 'undefined' ? location.host : '') + ')';
+
+// 探测单个友链：不可访问(404/超时) → 标记 unreachable；可访问但页面不含本站域名 → 标记 nolinkback；探测异常 → 保守保留
+async function checkFriendLink(item, siteHost, deadline) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 7000);
+  try {
+    const r = await fetch(item.url, {
+      method: 'GET', redirect: 'follow', signal: ctrl.signal,
+      headers: { 'User-Agent': FRIEND_UA, 'Accept': 'text/html,application/xhtml+xml,*/*', 'Accept-Language': 'zh-CN,zh;q=0.9' },
+    });
+    if (r.status === 404) return { ...item, _bad: 'unreachable' };
+    if (r.status >= 500) return item; // 对方服务器抖动，保守保留
+    const text = await r.text().catch(() => '');
+    if (siteHost && text && !text.toLowerCase().includes(siteHost.toLowerCase())) return { ...item, _bad: 'nolinkback' };
+    return item;
+  } catch (_) {
+    return item; // 网络/超时异常保守保留，避免误删
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// 并发自检，受全局 deadline 保护；超时未检完的链接保守保留；剔除命中 _bad 的项
+async function checkFriendLinks(list, siteHost, deadline) {
+  const out = [];
+  let idx = 0;
+  const LIMIT = 8;
+  async function worker() {
+    while (idx < list.length) {
+      if (deadline.signal.aborted) { out.push(list[idx++]); continue; }
+      const i = idx++;
+      out.push(await checkFriendLink(list[i], siteHost, deadline).catch(() => list[i]));
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(LIMIT, list.length) }, worker));
+  return out.filter(l => !l._bad).map(({ _bad, ...rest }) => rest);
+}
+
 export async function handleFriendList(request, url, context) {
   const env = await resolveEnv(context);
   // 后台「其他设置 → 友链」优先（运营随时增删，无需改上游数据）
@@ -735,13 +773,20 @@ export async function handleFriendList(request, url, context) {
     const list = cfg.links
       .map(l => ({ name: String(l.name || '').trim(), url: String(l.url || '').trim() }))
       .filter(l => l.name && l.url);
-    if (list.length) return cachedJson(cacheKey, { code: 1, list }, { smax: 300, maxAge: 300, stale: 3600 });
+    if (list.length) {
+      const deadline = new AbortController();
+      const timer = setTimeout(() => deadline.abort(), 15000);
+      let checked;
+      try { checked = await checkFriendLinks(list, url.host, deadline); }
+      finally { clearTimeout(timer); }
+      return cachedJson(cacheKey, { code: 1, list: checked, checked: true }, { smax: 86400, maxAge: 3600, stale: 86400 });
+    }
   }
-  // 兜底：回退上游追剧数据里的 friend-list
+  // 兜底：回退上游追剧数据里的 friend-list（非后台托管，不主动清理）
   const data = await loadZhuiju(env);
   if (!data) return jsonErr('数据加载失败', 502);
   const list = Array.isArray(data['friend-list']) ? data['friend-list'] : [];
-  return cachedJson(cacheKey, { code: 1, list }, { smax: 300, maxAge: 300, stale: 3600 });
+  return cachedJson(cacheKey, { code: 1, list }, { smax: 86400, maxAge: 3600, stale: 86400 });
 }
 
 // ── 追剧全数据 ──

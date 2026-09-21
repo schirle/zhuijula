@@ -5,7 +5,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "minify:js": "esbuild file/app.js file/common.js file/index.js file/links.js file/list.js file/play.js file/vip.js file/search.js file/rank.js file/wechat-tip.js file/app.css file/common.css file/index.css file/links.css file/list.css file/play.css file/vip.css file/search.css file/rank.css file/plugin.css --minify --outbase=file --outdir=file --out-extension:.js=.min.js --out-extension:.css=.min.css --allow-overwrite",
+    "minify:js": "esbuild file/app.js file/common.js file/index.js file/links.js file/play.js file/vip.js file/search.js file/rank.js file/wechat-tip.js file/app.css file/common.css file/index.css file/links.css file/play.css file/vip.css file/search.css file/rank.css file/plugin.css --minify --outbase=file --outdir=file --out-extension:.js=.min.js --out-extension:.css=.min.css --allow-overwrite",
     "minify:html": "node minify-html.mjs",
     "build": "npm run minify:js && npm run minify:html",
     "dev": "wrangler pages dev . --port 8788"
