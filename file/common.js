@@ -1,20 +1,9 @@
-
-
-
-
 'use strict';
-
-
 const $ = (sel, ctx) => (ctx || document).querySelector(sel);
 const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
-
-
 const esc = str => String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 window.esc = esc;
-
-
 let _toastTimer = null, _toastEl = null;
-
 const showToast = (msg, type = '', duration = 2000) => {
   if (!_toastEl) {
     _toastEl = document.getElementById('toast') || (() => {
@@ -30,39 +19,32 @@ const showToast = (msg, type = '', duration = 2000) => {
       return el;
     })();
   }
-
   _toastEl.textContent = msg;
   _toastEl.style.opacity = '1';
   _toastEl.style.borderColor = type === 'error' ? 'rgba(239,68,68,0.4)' : '';
   _toastEl.style.color = type === 'error' ? '#fca5a5' : '';
-
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { _toastEl.style.opacity = '0'; }, duration);
 };
 window.showToast = showToast;
 const Toast = { show: showToast, error: (msg, d) => showToast(msg, 'error', d) };
 window.Toast = Toast;
-
-
 const lsGet = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
 const lsGetJson = k => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch (_) { return []; } };
 const lsSetJson = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
-
-
-// 终极兜底：自有 /api/img 代理（带防盗链，缓存15天）。不使用占位图。
-// 图片加载策略：浏览器直连（本站 no-referrer，豆瓣等图床对空 Referer 通常放行，且无代理延迟）
-// 失败链路：直连 onerror → imgFallback → 自有 /api/img（服务端代理，带合法 Referer）→ error.jpg
-// 注意：百度 gimg 代理已失效（返回空白占位 GIF 且不触发 onerror，封面会静默空白），不再使用
 const proxyImg = url => String(url || '').trim();
-
-// 终极兜底占位图（本地，任意来源均可访问）
+// 站外链接统一过一遍：只放行 http/https，挡掉 javascript: / data: 这类可执行协议
+// （友链、广告位、网盘分享链接都来自接口或后台，不能直接塞进 href / window.open）
+const safeUrl = (url) => {
+  const s = String(url == null ? '' : url).trim();
+  return /^https?:\/\//i.test(s) ? s : '';
+};
+window.safeUrl = safeUrl;
 const ERROR_JPG = (location.origin || '') + '/file/error.jpg';
-// 图片加载失败：百度 gimg 代理 → 自有 /api/img（仅兜底豆瓣图）→ 本地 error.jpg；其余封面（走 gimg 的非豆瓣）失败则保持
 const imgFallback = img => {
   const cur = img.getAttribute('src') || '';
   if (cur.indexOf('/api/img') !== -1) {
-    // 已是终极代理仍失败：使用本地 error.jpg 占位，避免长期空白（不重复回退）
     if (!img.dataset.errjpg) {
       img.dataset.errjpg = '1';
       img.onerror = null;
@@ -81,15 +63,12 @@ const imgFallback = img => {
     original = cur;
   }
   if (original) {
-    // 任意图（含非豆瓣）都回退到自有 /api/img 代理；仍失败则落到 error.jpg，避免破图
     img.dataset.guarded = '';
     img.src = '/api/img?u=' + encodeURIComponent(original);
     guardImg(img, 6000);
   }
 };
 window.imgFallback = imgFallback;
-
-// 加载超时守卫：首跳（gimg/直连）在 ms 内未加载完，主动切到更快的 /api/img 兜底，避免长期空白
 const guardImg = (img, ms = 4000) => {
   if (!img || img.dataset.guarded === '1') return;
   img.dataset.guarded = '1';
@@ -101,47 +80,76 @@ const guardImg = (img, ms = 4000) => {
   img.addEventListener('error', clear, { once: true });
 };
 window.guardImg = guardImg;
-
-
-const fetchWithTimeout = async (url, options = {}, timeoutMs = 10000) => {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+// 站点配置：内存缓存 60 秒 + sessionStorage 缓存 3 分钟。
+// 目的：访客在一次浏览里翻多个页面时不再重复请求 /api/config ——
+// Cloudflare Pages 免费额度按 Functions 调用次数计（每天 10 万次），省一次是一次。
+const CFG_SESSION_KEY = 'ftv_cfg_v1';
+const readSession = (key, ttlMs) => {
   try {
-    return await fetch(url, { ...options, signal: ctrl.signal });
-  } finally {
-    clearTimeout(timer);
-  }
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const j = JSON.parse(raw);
+    if (j && j.ts && (Date.now() - j.ts) < ttlMs && j.data) return j.data;
+  } catch (_) { /* 隐私模式等场景忽略即可 */ }
+  return null;
 };
-
-// 统一站点配置读取：全站共享一份（内存 5 分钟缓存）；并发调用共享同一请求（单例 Promise），
-// 避免 /api/config 被导航、弹窗、广告等多模块在 DOMContentLoaded 同时触发时重复请求
+const writeSession = (key, data) => {
+  try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (_) { }
+};
 let _cfgCache = null, _cfgTs = 0, _cfgPromise = null;
 const getSiteConfig = async (force = false) => {
-  // 命中内存缓存（5 分钟内）直接返回，不发起新请求
-  if (!force && _cfgCache && (Date.now() - _cfgTs) < 300000) return _cfgCache;
-  // 进行中的请求：并发调用复用同一 Promise，避免重复 fetch
+  if (!force && _cfgCache && (Date.now() - _cfgTs) < 60000) return _cfgCache;
   if (!force && _cfgPromise) return _cfgPromise;
+  if (!force) {
+    const cached = readSession(CFG_SESSION_KEY, 120000);   // 2 分钟：够覆盖一次连续浏览，又不至于改了后台半天不生效
+    if (cached) { _cfgCache = cached; _cfgTs = Date.now(); return cached; }
+  }
   _cfgPromise = (async () => {
     try {
       const r = await fetch('/api/config');
       if (!r.ok) { if (_cfgCache) return _cfgCache; throw new Error('HTTP ' + r.status); }
       const d = await r.json();
       _cfgCache = d; _cfgTs = Date.now();
+      writeSession(CFG_SESSION_KEY, d);
       return d;
     } catch (e) {
       if (_cfgCache) return _cfgCache;
       throw e;
     } finally {
-      _cfgPromise = null; // 完成后清空，下次走缓存或重新拉取
+      _cfgPromise = null;
     }
   })();
   return _cfgPromise;
 };
 window.getSiteConfig = getSiteConfig;
-// 当前站点名称（后台「站点基础信息」可配置，未配置回退默认值）
 window.getSiteName = () => (_cfgCache && _cfgCache.site_name) || '免费追剧';
-
-// 复制到剪贴板：优先 Clipboard API，降级到 execCommand；供各页面共用（app/search 等）
+// 侧栏小部件（搜索排行 + 今日推荐）：合并成一次请求，并做 2 分钟会话缓存。
+// 搜索页原来要打 2~3 个接口（排行 / 今日推荐 / 封面图），现在合起来只需 1 个。
+const WD_SESSION_KEY = 'ftv_widgets_v1';
+let _wdCache = null, _wdTs = 0, _wdPromise = null;
+const getWidgets = async () => {
+  if (_wdCache && (Date.now() - _wdTs) < 120000) return _wdCache;
+  if (_wdPromise) return _wdPromise;
+  const cached = readSession(WD_SESSION_KEY, 120000);
+  if (cached) { _wdCache = cached; _wdTs = Date.now(); return cached; }
+  _wdPromise = (async () => {
+    try {
+      const r = await fetch('/api/widgets?range=day');
+      if (!r.ok) { if (_wdCache) return _wdCache; throw new Error('HTTP ' + r.status); }
+      const d = await r.json();
+      _wdCache = d; _wdTs = Date.now();
+      writeSession(WD_SESSION_KEY, d);
+      return d;
+    } catch (e) {
+      if (_wdCache) return _wdCache;
+      throw e;
+    } finally {
+      _wdPromise = null;
+    }
+  })();
+  return _wdPromise;
+};
+window.getWidgets = getWidgets;
 const fallbackCopy = (text) =>
   new Promise((resolve, reject) => {
     try {
@@ -162,46 +170,49 @@ const copyText = (text) => {
   return fallbackCopy(text);
 };
 window.copyText = copyText;
-
-// 统一的 DOM 就绪回调，收敛各页面重复的 readyState 样板
 window.onReady = (fn) => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
   else fn();
 };
-
-
 const isMobile = () => window.innerWidth <= 768;
-
 const getParam = name => new URLSearchParams(location.search).get(name);
-
-// 播放页参数（id/form），form 默认 'xg'
 const getPlayParams = () => {
   const sp = new URLSearchParams(location.search);
   return { id: sp.get('id'), form: sp.get('form') || 'xg' };
 };
-// 构造播放页链接
 const playHref = (id, form = 'xg') => `/play?id=${encodeURIComponent(id || '')}&form=${encodeURIComponent(form || 'xg')}`;
-
-
-
-// 追剧插件（豆瓣找资源）：直接使用 file/ 下的静态文件，不再前端生成
-// zhuiju.crx 为 Chrome 扩展；zhuiju-douban.user.js 为 Tampermonkey 用户脚本
 const _downloadFile = (url, filename) => {
   const a = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   if (typeof showToast === 'function') showToast('已开始下载「' + filename + '」，按提示安装即可使用');
 };
-
-const installExtension = () => _downloadFile('file/zhuiju-extension.crx', 'zhuiju-extension.crx');
-const installUserScript = () => _downloadFile('file/zhuiju-douban.user.js', 'zhuiju-douban.user.js');
+const installExtension = async () => {
+  const cfg = await getSiteConfig().catch(() => ({}));
+  // 下载地址完全由后台「插件设置 → Chrome 扩展」决定：
+  // 没填就不下载（以前这里写死了 file/zhuiju-extension.crx，后台没配也会去下这个不存在的文件）
+  const url = String((cfg && cfg.crx_url) || '').trim();
+  if (!url) {
+    if (typeof showToast === 'function') showToast('扩展下载暂未开放，敬请期待', false);
+    return;
+  }
+  // 下载时保存的文件名直接从地址里取（取不到才用通用名），不再单独配置一项
+  let name = '';
+  try {
+    name = decodeURIComponent(url.split('?')[0].split('#')[0].split('/').pop() || '');
+  } catch (_) { name = url.split('/').pop() || ''; }
+  name = String(name).replace(/[\\/:*?"<>|]/g, '').trim() || 'extension.crx';
+  _downloadFile(url, name);
+};
+const installUserScript = async () => {
+  const cfg = await getSiteConfig().catch(() => ({}));
+  const n = String((cfg && cfg.userscript_name) || '').trim().replace(/[\\/]/g, '') || 'zhuiju.user.js';
+  location.href = '/api/' + n;
+};
 window.installExtension = installExtension;
 window.installUserScript = installUserScript;
-
-
 window.getPlayParams = getPlayParams;
 window.playHref = playHref;
-
 const initLazyImages = (rootMargin = '300px') => {
   const observed = new WeakSet();
   const ob = new IntersectionObserver(entries => {
@@ -216,23 +227,18 @@ const initLazyImages = (rootMargin = '300px') => {
         img.removeAttribute('data-src');
         guardImg(img, 4000);
       } else {
-        // 无图：隐藏加载动画，避免一直转圈（不再用占位图）
         img.parentElement && img.parentElement.classList.add('loaded');
       }
       ob.unobserve(img);
     }
   }, { rootMargin });
-
   const observe = el => {
     $$('img[data-src]', el).forEach(img => {
       if (!observed.has(img)) { observed.add(img); ob.observe(img); }
     });
   };
-
   return { observer: ob, observe };
 };
-
-
 const initBackToTop = () => {
   const btn = document.getElementById('back-to-top');
   if (!btn) return;
@@ -246,8 +252,6 @@ const initBackToTop = () => {
   toggle();
 };
 onReady(initBackToTop);
-
-// ===== 统一顶部导航：自动渲染、移除福利入口、当前页高亮 =====
 const NAV_PAGES = {
   home:  { title: '' },
   app:   { title: 'APP下载', back: true, active: 'app' },
@@ -258,40 +262,26 @@ const NAV_PAGES = {
   links: { title: '友情链接', back: true },
   plugin:{ title: '追剧插件', back: true, active: 'plugin' },
 };
-
-// 顶部导航：品牌/主题/返回按钮同步渲染；链接按钮完全由后台「顶部导航」配置（nav_links）驱动，无配置则显示空导航
 const renderNav = async () => {
   const root = document.getElementById('top-nav');
   if (!root) return;
   const data = await getSiteConfig().catch(() => ({}));
-  // 注入后台配置的统计代码（analytics 等），<script> 需重建以执行
-  if (data && data.stats_code) injectStats(data.stats_code);
-  // 站点基础信息：描述写入 meta description，名称用于品牌与首页标题
-  if (data && data.site_desc) {
-    let m = document.querySelector('meta[name="description"]');
-    if (!m) { m = document.createElement('meta'); m.name = 'description'; document.head.appendChild(m); }
-    m.setAttribute('content', data.site_desc);
-  }
   const page = document.body.dataset.page || '';
   const cfg = NAV_PAGES[page] || {};
   const siteName = (data && data.site_name) || '免费追剧';
   if (page === 'home') document.title = siteName;
-
   const brand =
     '<a class="nav-brand" href="/">' +
-      '<div class="nav-logo"><img src="file/zhuiju.png" alt="' + esc(siteName) + '"></div>' +
+      '<div class="nav-logo"><img src="' + esc((data && data.site_icon) || 'file/zhuiju.png') + '" alt="' + esc(siteName) + '"></div>' +
       (page === 'home' ? '<div class="nav-title">' + esc(siteName) + '</div>' : '') +
       (page !== 'home' && cfg.title ? '<span class="nav-page-title"' + (cfg.titleId ? ' id="' + cfg.titleId + '"' : '') + '>' + esc(cfg.title) + '</span>' : '') +
     '</a>';
-
   let actions = '';
   if (['home', 'search', 'play'].includes(page)) actions += '<button id="nav-history" class="nav-btn" type="button" title="观看历史"><i class="fas fa-clock-rotate-left"></i></button>';
   actions += '<button id="theme-toggle" class="nav-btn" type="button" title="切换深色 / 浅色"><i class="fas fa-moon"></i></button>';
   root.innerHTML = brand + '<div class="nav-actions">' + actions + '</div>';
-
   initThemeToggle();
   if (['home', 'search', 'play'].includes(page)) initHistoryPanel();
-
   const links = Array.isArray(data.nav_links) ? data.nav_links : [];
   const navActions = root.querySelector('.nav-actions');
   if (navActions) {
@@ -305,8 +295,6 @@ const renderNav = async () => {
     navActions.insertAdjacentHTML('beforeend', html);
   }
 };
-
-// 注入统计代码：把后台粘贴的 HTML（通常含 <script>）插入到页面底部，脚本会真正执行
 const injectStats = (html) => {
   if (!html || !html.trim()) return;
   const tmp = document.createElement('div');
@@ -322,7 +310,83 @@ const injectStats = (html) => {
   });
   while (tmp.firstChild) (document.body || document.documentElement).appendChild(tmp.firstChild);
 };
+const renderPluginPage = (data) => {
+  // 插件功能没开启：前台不展示任何插件内容
+  //（服务端也会把 /plugin 跳回首页，这里是缓存 / 直连静态文件时的兜底）
+  if (!data.plugin_enabled) {
+    const main = document.querySelector('.plugin-main');
+    if (main) {
+      main.innerHTML = '<section class="plugin-section" style="text-align:center;padding:56px 20px;opacity:.75;font-size:14px">该功能暂未开放</section>';
+    }
+    return;
+  }
+  const steps = Array.isArray(data.plugin_steps) ? data.plugin_steps : [];
+  const faq = Array.isArray(data.plugin_faq) ? data.plugin_faq : [];
+  const feats = Array.isArray(data.plugin_feats) ? data.plugin_feats : [];
+  // 插件页大标题跟随后台站名（没填站名就用中性标题）
+  const hero = document.getElementById('plugin-hero-title');
+  if (hero && data.site_name) hero.textContent = data.site_name + ' 插件';
+  // 三块内容都只在后台填了才显示（页面里不再留任何写死的示例文案）
+  const show = (id, html) => {
+    const sec = document.getElementById(id);
+    if (!sec) return;
+    if (!html) { sec.style.display = 'none'; return; }
+    const body = sec.querySelector('ol, .feat-grid, .faq-list');
+    if (body) body.innerHTML = html;
+    sec.style.display = '';
+  };
+  show('sec-plugin-steps', steps.filter(s => s && s.title).map((s, i) =>
+    '<li><span class="step-num">' + (i + 1) + '</span><div><b>' + esc(s.title) + '</b>'
+    + (s.desc ? '<p>' + esc(s.desc) + '</p>' : '') + '</div></li>'
+  ).join(''));
+  show('sec-plugin-feats', feats.filter(f => f && f.title).map((f) =>
+    '<div class="feat-card"><div class="feat-ico"><i class="fas ' + esc(f.icon || 'fa-star') + '"></i></div>'
+    + '<div class="feat-title">' + esc(f.title) + '</div>'
+    + (f.desc ? '<p>' + esc(f.desc) + '</p>' : '') + '</div>'
+  ).join(''));
+  show('sec-plugin-faq', faq.filter(f => f && f.q).map((f) =>
+    '<details class="faq-item"><summary>' + esc(f.q) + '</summary><p>' + esc(f.a || '') + '</p></details>'
+  ).join(''));
+};
+const initSiteMeta = async () => {
+  if (window.__ftvSiteMetaDone) return;
+  window.__ftvSiteMetaDone = true;
+  const data = await getSiteConfig().catch(() => null);
+  if (!data) return;
+  const serverInjected = !!document.querySelector('meta[name="ftv-stats"]');
+  if (!serverInjected && data.stats_code) injectStats(data.stats_code);
+  const name = data.site_name || '免费追剧';
+  const page = document.body.dataset.page || '';
+  // 与服务端中间件保持同一套写法（页面前缀 + 站名 / 描述），免得地址栏和搜索结果两套标题
+  const TITLE_SUFFIX = {
+    home: '', search: '影视搜索', rank: '搜索排行', links: '友情链接',
+    play: '在线播放', plugin: '浏览器插件', vip: 'VIP 视频解析', app: '应用下载',
+  };
+  const suffix = TITLE_SUFFIX[page];
+  if (suffix !== undefined) {
+    const desc = String(data.site_desc || '').trim();
+    document.title = suffix
+      ? suffix + (name ? ' - ' + name : '')
+      : (desc ? name + ' - ' + desc : name);
+    let mDesc = document.querySelector('meta[name="description"]');
+    const descText = suffix ? [suffix, desc].filter(Boolean).join('｜') : desc;
+    if (descText) {
+      if (!mDesc) { mDesc = document.createElement('meta'); mDesc.name = 'description'; document.head.appendChild(mDesc); }
+      mDesc.setAttribute('content', descText);
+    }
+  }
+  document.querySelectorAll('[data-site-footer]').forEach((el) => {
+    el.textContent = data.site_desc ? (name + ' · ' + data.site_desc) : name;
+  });
+  if (data.site_icon) {
+    ['link[rel="icon"]', 'link[rel="shortcut icon"]', 'link[rel="apple-touch-icon"]']
+      .forEach((sel) => document.querySelectorAll(sel).forEach((l) => l.setAttribute('href', data.site_icon)));
+    document.querySelectorAll('.nav-logo img').forEach((img) => { img.src = data.site_icon; });
+  }
 
+  // 插件页的「安装步骤 / 常见问题」由后台编辑决定（后台为空则保留页面里的默认内容）
+  if (page === 'plugin') renderPluginPage(data);
+};
 const initThemeToggle = () => {
   const b = document.getElementById('theme-toggle');
   if (!b) return;
@@ -338,10 +402,7 @@ const initThemeToggle = () => {
     apply(c);
   });
 };
-
-// ── 首页观看历史面板（顶部导航「历史」按钮 → 页面右上角下拉表）──
 const CONTINUE_KEY = 'ftv_continue';
-
 const initHistoryPanel = () => {
   const btn = document.getElementById('nav-history');
   if (!btn) return;
@@ -386,7 +447,6 @@ const initHistoryPanel = () => {
     if (row && row.dataset.href) location.href = row.dataset.href;
   });
 };
-
 const renderHistoryPanel = () => {
   const panel = document.getElementById('nav-history-panel');
   if (!panel) return;
@@ -408,11 +468,9 @@ const renderHistoryPanel = () => {
       '<button class="nhp-del" type="button" title="删除" data-idx="' + i + '"><i class="fas fa-xmark"></i></button></div>';
   }).join('');
 };
-
-// 首次打开弹窗：后台「基础设置 → 首次弹窗」配置，访客首次访问（或内容变更后）弹出一次
 const initFirstPopup = () => {
   try {
-    if (location.pathname.includes('admin')) return; // 后台页不弹
+    if (location.pathname.includes('admin') || location.pathname.includes('console') || location.pathname === '/c' || location.pathname.startsWith('/c/')) return;
     const KEY = 'ftv_firstpopup_v1';
     const seen = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
     const mark = v => { try { localStorage.setItem(KEY, v); } catch (e) {} };
@@ -420,7 +478,7 @@ const initFirstPopup = () => {
     getSiteConfig().then(d => {
       const fp = d && d.code === 1 ? d.first_popup : null;
       if (!fp || !fp.enabled || !fp.title) return;
-      if (seen() === hash(fp)) return; // 已看过该版本
+      if (seen() === hash(fp)) return;
       if (!document.getElementById('ftv-popup-style')) {
         const st = document.createElement('style'); st.id = 'ftv-popup-style';
         st.textContent = '.ftv-pop{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:0 16px;background:rgba(15,23,42,.55);opacity:0;transition:opacity .25s}.ftv-pop.show{opacity:1}.ftv-pop *{box-sizing:border-box}.ftv-card{width:100%;max-width:420px;background:var(--bg-card,#fff);color:var(--text,#1e293b);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.35);transform:translateY(10px);transition:transform .25s;position:relative}.ftv-pop.show .ftv-card{transform:none}.ftv-card h3{margin:0 0 12px;font-size:18px;font-weight:800}.ftv-card p{margin:0 0 18px;font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--text-secondary,#475569)}.ftv-pop .close{position:absolute;top:14px;right:16px;border:none;background:none;font-size:18px;color:var(--text-muted,#94a3b8);cursor:pointer}.ftv-pop .ftv-btn{display:block;width:100%;text-align:center;padding:12px;border-radius:12px;background:var(--grad-primary,linear-gradient(135deg,#3b82f6,#2563eb));color:#fff;font-weight:700;text-decoration:none;font-size:14px}';
@@ -440,6 +498,6 @@ const initFirstPopup = () => {
     }).catch(() => {});
   } catch (e) {}
 };
-
 onReady(renderNav);
+onReady(initSiteMeta);
 onReady(initFirstPopup);

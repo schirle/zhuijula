@@ -1,10 +1,7 @@
-﻿(function(){
+(function(){
   'use strict';
-
   const STORAGE_KEY = 'videoHistory';
-
   document.addEventListener('DOMContentLoaded', function() {
-    // VIP 解析接口完全由后台「其他设置 → VIP解析接口」提供；后台未配置则不显示任何默认源
     let apiList = [];
     window.getSiteConfig().then(function(d){
       if (d && d.code === 1 && Array.isArray(d.vip_jx) && d.vip_jx.length) {
@@ -15,7 +12,6 @@
       }
     }).catch(function(){}).finally(function(){ initVip(apiList); });
   });
-
   function initVip(API_LIST) {
     const dom = {
       apiSelect:   $('#api-select'),
@@ -34,30 +30,29 @@
       toastIcon:   $('#toast i'),
       tabNav:      $('.tab-nav')
     };
-
-    // 后台未配置任何解析接口：给出提示并禁用解析，避免展示写死的默认源
     if (!API_LIST.length) {
-      if (dom.apiSelect) {
-        dom.apiSelect.innerHTML = '<option value="">— 后台未配置解析接口 —</option>';
-        dom.apiSelect.disabled = true;
+      // 后台没配置解析接口 → 解析功能整块不显示（不留"未配置"这类后台字样给访客看）
+      const bar = document.querySelector('.control-bar');
+      const playerBox = document.querySelector('.player-box');
+      if (bar) bar.style.display = 'none';
+      if (playerBox) playerBox.style.display = 'none';
+      const holder = document.querySelector('.vp-container');
+      if (holder && !document.getElementById('vp-empty-tip')) {
+        const tip = document.createElement('div');
+        tip.id = 'vp-empty-tip';
+        tip.style.cssText = 'padding:22px 16px;text-align:center;font-size:14px;opacity:.75';
+        tip.innerHTML = '<i class="fas fa-circle-info"></i> 解析功能暂未开放，敬请期待';
+        holder.insertBefore(tip, holder.firstChild);
       }
-      if (dom.parseBtn) dom.parseBtn.disabled = true;
-      if (dom.status) dom.status.innerHTML = '<i class="fas fa-info-circle"></i> 请到后台「其他设置 → VIP解析接口」添加解析源';
       renderHistory(); updateTime();
       return;
     }
-
     dom.apiSelect.innerHTML = API_LIST.map(function(a){
       return '<option value="'+esc(a.v)+'">'+esc(a.t)+'</option>';
     }).join('');
-
     const savedApi = lsGet('PLAY_VIP_API');
     if(savedApi && API_LIST.some(function(a){ return a.v===savedApi; })) dom.apiSelect.value = savedApi;
-
     let history = lsGetJson(STORAGE_KEY);
-
-    
-
     const extractTitle = url => {
       try{
         const paths = new URL(url).pathname.split('/').filter(Boolean);
@@ -65,12 +60,10 @@
         return last.replace(/\.[^.]+$/,'') || new URL(url).hostname;
       }catch(_){ return url; }
     };
-
     const normalizeUrl = raw => {
       raw = (raw||'').trim();
       return raw && !/^https?:\/\//i.test(raw) ? 'https://' + raw : raw;
     };
-
     const renderHistory = () => {
       dom.historyList.innerHTML = '';
       if(!history.length){
@@ -79,28 +72,23 @@
         return;
       }
       dom.histCount.textContent = history.length;
-
       const frag = document.createDocumentFragment();
       history.forEach(function(item, idx){
         const li = document.createElement('li');
         li.setAttribute('data-idx', idx);
-
         const span = document.createElement('span');
         span.className = 'url-text';
         span.title = item.url || '';
         span.textContent = item.dramaName || item.url;
-
         const btn = document.createElement('button');
         btn.className = 'act-icon';
         btn.title = '播放此视频';
         btn.innerHTML = '<i class="fas fa-play"></i>';
-
         li.appendChild(span); li.appendChild(btn);
         frag.appendChild(li);
       });
       dom.historyList.appendChild(frag);
     };
-
     const showToast = (msg, type) => {
       dom.toastMsg.textContent = msg;
       dom.toast.className = 'toast '+(type||'success')+' show';
@@ -108,14 +96,10 @@
       clearTimeout(dom.toast._t);
       dom.toast._t = setTimeout(function(){ dom.toast.classList.remove('show'); }, 2800);
     };
-
     const updateTime = () => {
       const n = new Date();
       dom.lastUpdated.textContent = ('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
     };
-
-    
-
     const parseVideo = url => {
       url = normalizeUrl(url);
       if(!url){ showToast('请输入视频链接','error'); return; }
@@ -124,7 +108,6 @@
       saveToHistory(url);
       showToast('开始解析，请稍候...');
     };
-
     const saveToHistory = url => {
       const name = extractTitle(url);
       const dup = history.findIndex(function(h){ return h.url===url; });
@@ -141,43 +124,32 @@
       renderHistory();
       updateTime();
     };
-
-    
-
     dom.player.addEventListener('load', function(){
       dom.status.innerHTML = '<i class="fas fa-play-circle"></i> 视频播放中';
       showToast('解析成功！开始播放');
     });
-
     dom.player.addEventListener('error', function(){
       dom.status.innerHTML = '<i class="fas fa-exclamation-circle"></i> 加载失败，请尝试其他接口';
       showToast('加载失败，请切换解析接口重试', 'error');
     });
-
     dom.fullBtn.addEventListener('click', function(){
       const fn = dom.player.requestFullscreen || dom.player.mozRequestFullScreen
             || dom.player.webkitRequestFullscreen || dom.player.msRequestFullscreen;
       if(fn) fn.call(dom.player).catch(function(){});
     });
-
     dom.apiSelect.addEventListener('change', function(){
       lsSet('PLAY_VIP_API', dom.apiSelect.value || '');
     });
-
     dom.refreshBtn.addEventListener('click', function(){
       const src = dom.player.src;
       if(!src){ showToast('请先解析视频','error'); return; }
       dom.player.src = '';
       requestAnimationFrame(function(){ dom.player.src = src; showToast('播放器已刷新'); });
     });
-
     dom.parseBtn.addEventListener('click', function(){ parseVideo(dom.videoUrl.value); });
-
     dom.videoUrl.addEventListener('keydown', function(e){
       if(e.key==='Enter'){ e.preventDefault(); parseVideo(this.value); }
     });
-
-    
     dom.tabNav.addEventListener('click', function(e){
       const btn = e.target.closest('.tab-btn');
       if(!btn) return;
@@ -187,8 +159,6 @@
       btn.classList.add('active');
       $('#'+target+'-panel').classList.add('active');
     });
-
-    
     dom.historyList.addEventListener('click', function(e){
       const btn = e.target.closest('.act-icon');
       if(!btn) return;
@@ -199,7 +169,6 @@
       if(item.apiUrl) dom.apiSelect.value = item.apiUrl;
       parseVideo(item.url);
     });
-
     dom.clearBtn.addEventListener('click', function(){
       if(!confirm('确定要清除所有历史记录吗？')) return;
       history = [];
@@ -207,11 +176,8 @@
       renderHistory();
       showToast('历史记录已清除');
     });
-
-    
     renderHistory();
     updateTime();
-
     if(history.length){
       dom.videoUrl.value = history[0].url;
       if(history[0].apiUrl && API_LIST.some(function(a){ return a.v===history[0].apiUrl; })){
@@ -220,5 +186,3 @@
     }
   }
 })();
-
-

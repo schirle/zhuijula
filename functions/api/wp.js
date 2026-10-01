@@ -1,28 +1,7 @@
-// 网盘资源搜索接口（整合自 iyuns 的 wpysso 接口）
-//   /api/wp?word=关键词   →   请求 iyuns 的 wpysso 接口
-//
-// 通过 cloud_types 区分网盘平台：baidu=百度 quark=夸克 uc=UC xunlei=迅雷
-// 返回 JSON（非流式），结构示例：
-// {
-//   "code": 0, "message": "success",
-//   "data": {
-//     "total": 19,
-//     "merged_by_type": {
-//       "baidu": [ { "url": "...", "password": "8888", "note": "...", "datetime": "...", "source": "...", "images": ["..."] } ]
-//     }
-//   },
-//   "request_id": "..."
-// }
-//
-// 接口地址前缀通过 Pages 环境变量 WP_API_HOST 配置（必须配置，无默认值），
-// 形如 api.iyuns.com/api/wpysso（含路径，不要带协议头，也不要带尾部斜杠）。
-// 实际请求 = https://{WP_API_HOST}?cloud_types=...&kw=...，路径变更只需改变量。
-import { makeRoute, resolveEnv, fetchWithRetry, CORS } from '../_shared.js';
+import { makeRoute, resolveEnv, fetchWithRetry, CORS, bannedHit, getClientIP, checkRateLimit, jsonErr } from '../_shared.js';
 
-// 支持的平台：作为 cloud_types 逐个请求（与示例格式 cloud_types=baidu 一致，最稳妥）
 const TYPES = ['baidu', 'quark', 'uc', 'xunlei'];
 
-// 复用共享 fetchWithRetry（超时 + 失败归一 _error），去除重复的 AbortController 样板
 async function fetchType(word, type, host) {
   const apiUrl = `https://${host}?cloud_types=${encodeURIComponent(type)}&kw=${encodeURIComponent(word)}`;
   const r = await fetchWithRetry(apiUrl, {
@@ -36,7 +15,7 @@ async function fetchType(word, type, host) {
     },
   });
   if (!r || r._error) return [];
-  // 兼容：data.merged_by_type[type] 或 data.results[type]
+
   const bucket = r?.data?.merged_by_type?.[type] || r?.data?.results?.[type] || [];
   return Array.isArray(bucket) ? bucket : [];
 }
@@ -53,12 +32,13 @@ function normalize(items, type) {
       title: (it.note || '网盘资源').toString().trim(),
       link,
       type,
+
+      code: (it.password || it.pwd || it.code || '').toString().trim(),
     });
   }
   return out;
 }
 
-// 资源有效性：打开链接后页面含以下任一标记即视为「无资源/已失效」，不进入列表
 const DEAD_MARKERS = [
   '已失效', '你来晚了', '来晚一步', '分享已删除', '分享已被删除',
   '该分享已', '该分享不存在', '链接已失效', '此链接已失效', '已取消分享',
@@ -67,7 +47,6 @@ const DEAD_MARKERS = [
   '分享已不存在', '该分享已取消', '资源已失效',
 ];
 
-// 轻量探测单个分享链接是否失效；网络/超时/被拦截等异常一律视为“有效”以保守保留
 async function checkLinkDead(link) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
@@ -82,7 +61,7 @@ async function checkLinkDead(link) {
         'Accept-Language': 'zh-CN,zh;q=0.9',
       },
     });
-    // 仅 404 明确判定失效；403 多为网盘风控拦截，保守视为有效，避免误删真实资源
+
     if (r.status === 404) return true;
     const text = await r.text();
     return DEAD_MARKERS.some((m) => text.includes(m));
@@ -93,21 +72,21 @@ async function checkLinkDead(link) {
   }
 }
 
-// 并发探测并剔除失效链接；受 deadline 控制，超时后剩余链接保守保留，避免拖垮函数
 async function filterDeadLinks(items, deadline) {
-  const out = [];
+
+  const keep = new Array(items.length).fill(false);
   let idx = 0;
   const LIMIT = 12;
   async function worker() {
     while (idx < items.length) {
-      if (deadline.signal.aborted) { out.push(items[idx++]); continue; }
       const i = idx++;
+      if (deadline.signal.aborted) { keep[i] = true; continue; }
       const dead = await checkLinkDead(items[i].link).catch(() => false);
-      if (!dead) out.push(items[i]);
+      keep[i] = !dead;
     }
   }
   await Promise.all(Array.from({ length: Math.min(LIMIT, items.length) }, worker));
-  return out;
+  return items.filter((_, i) => keep[i]);
 }
 
 async function searchWord(word, host) {
@@ -115,9 +94,9 @@ async function searchWord(word, host) {
     TYPES.map((t) => fetchType(word, t, host).then((list) => normalize(list, t)).catch(() => []))
   );
   const items = results.flat();
-  // 资源有效性校验：打开链接有资源=有效，失效/无资源=剔除，不进入网盘列表
+
   const deadline = new AbortController();
-  const timer = setTimeout(() => deadline.abort(), 15000);
+  const timer = setTimeout(() => deadline.abort(), 10000);
   let valid;
   try {
     valid = await filterDeadLinks(items, deadline);
@@ -138,19 +117,27 @@ function json(data, status = 200) {
   });
 }
 
-async function handleWp(_request, url, context) {
+async function handleWp(request, url, context) {
+  // 网盘搜索同样要限流（原来这个接口完全没有限制，可被脚本猛刷）
+  if (!checkRateLimit(getClientIP(request), 30, 'wp')) return jsonErr('搜索太频繁，请稍后再试', 429);
   const word = (url.searchParams.get('word') || '').trim();
   if (!word) return json({ error: '缺少关键词' }, 400);
   const env = await resolveEnv(context);
-  // 去掉可能的协议头与尾部斜杠，使得变量填 "https://api.iyuns.com/api/wpysso/" 也能正常工作
+
+  if (bannedHit(env, word)) {
+    return json({ error: '无法搜索该关键词，请更换关键词后再试', total: 0, results: [] });
+  }
+
   const host = (env.WP_API_HOST || '').toString().trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-  if (!host) return json({ error: '服务端未配置网盘搜索接口（WP_API_HOST，后台或环境变量）' }, 500);
+  if (!host) return json({ error: '站点尚未开通「网盘」搜索（请到后台「网盘设置」填写搜索接口）' }, 500);
   try {
     const results = await searchWord(word, host);
     const safe = results.slice(0, 60);
     return json({ keyword: word, type: word, total: safe.length, results: safe });
   } catch (e) {
-    return json({ error: '搜索失败：' + (e?.message || e), total: 0, results: [] }, 500);
+    // 具体原因只进服务器日志，页面上给一句通用提示
+    try { console.warn('[wp] 网盘搜索失败：' + (e?.message || e)); } catch (_) { /* 忽略 */ }
+    return json({ error: '搜索服务暂时不可用，请稍后再试', total: 0, results: [] }, 500);
   }
 }
 

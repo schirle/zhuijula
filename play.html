@@ -5,19 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="referrer" content="no-referrer">
     <meta name="description" content="免费追剧 - 在线播放">
-    <title>免费追剧</title>
+    <title></title>
     <meta name="theme-color" content="#0f0f17">
-    <meta property="og:title" content="免费追剧 - 在线观看">
-    <meta property="og:description" content="无广告，免会员，全网影视免费在线观看">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="免费追剧">
-    <meta name="twitter:card" content="summary">
     <link rel="icon" href="file/zhuiju.png">
     <link rel="stylesheet" href="file/common.css">
     <link rel="stylesheet" href="file/index.css">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" href="file/fontawesome/css/all.min.css">
     <script>
 (function(){try{var t=localStorage.getItem('ftv_theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
@@ -26,8 +19,6 @@
     <script async src="https://static.addtoany.com/menu/page.js"></script>
     <link rel="dns-prefetch" href="//unpkg.byted-static.com">
     <link rel="preconnect" href="//unpkg.byted-static.com" crossorigin>
-    <link rel="dns-prefetch" href="//sdk.51.la">
-    <link rel="preconnect" href="https://sdk.51.la" crossorigin>
     <link rel="preconnect" href="https://gimg0.baidu.com" crossorigin>
 
     <link rel="stylesheet" href="file/play.css">
@@ -46,6 +37,7 @@
     </div>
 
     <div class="page-wrapper" id="app" style="display:none">
+        <a class="play-ad" id="play-ad" href="javascript:void(0)" target="_blank" rel="noopener nofollow" style="display:none"><img id="play-ad-img" src="" alt="广告" loading="lazy"></a>
         <section class="video-section" id="video-section">
             <div class="now-ep-label" id="now-ep-label"></div>
             <div class="video-container">
@@ -202,6 +194,5 @@
         </div>
     </div>
     <script defer src="file/play.js"></script>
-    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
 </body>
 </html>

@@ -1,21 +1,13 @@
-/* ============================================================
-   免费追剧 · 搜索排行榜页（rank.css）
-   单栏：标题 + 总/日/周/月 Tab + 榜单列表（最多 30 条）
-   ============================================================ */
-
 @media (min-width: 768px) {
   :root { --container-max: 1240px; --container-padding: 24px; }
 }
 @media (min-width: 1400px) {
   :root { --container-max: 1480px; }
 }
-
 .main-container {
   margin: 0 auto; width: 100%; max-width: var(--container-max);
   padding: 0 var(--container-padding) 3rem;
 }
-
-/* ── 顶部导航（common.js 注入，复用搜索页导航样式） ── */
 .top-nav {
   position: sticky; top: 0; z-index: 60;
   display: flex; align-items: center; gap: 18px;
@@ -47,7 +39,7 @@
 .nav-btn.active { background: var(--primary-dim); color: var(--primary-strong); cursor: default; }
 @media (max-width: 640px) { .nav-btn span { display: none; } .nav-btn { padding: 0 12px; } }
 
-/* ── 标题区 ── */
+/* ===== 页头 ===== */
 .rank-head { margin-top: 26px; text-align: center; }
 .rank-page-title {
   font-size: 24px; font-weight: 800; color: var(--text);
@@ -56,7 +48,23 @@
 .rank-page-title i.fas { color: #f97316; background: linear-gradient(135deg, #fb923c, #ef4444); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .rank-page-sub { margin: 8px 0 0; font-size: 13px; color: var(--text-muted); }
 
-/* ── Tab ── */
+/* 统计条 */
+.rank-stats {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+  margin: 18px auto 0; max-width: 760px;
+}
+.rank-stat {
+  flex: 1 1 150px; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-radius: var(--radius);
+  background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+}
+.rank-stat > i.fas { font-size: 16px; color: var(--primary-light); flex-shrink: 0; }
+.rank-stat .rs-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.rank-stat .rs-text b { font-size: 16px; font-weight: 800; color: var(--text); }
+.rank-stat .rs-text span { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+
+/* 榜单切换 */
 .rank-tabs { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 20px 0 18px; flex-wrap: wrap; }
 .rank-tab {
   position: relative; background: none; border: none; cursor: pointer;
@@ -71,15 +79,77 @@
 }
 @media (max-width: 560px) { .rank-tabs { gap: 14px; } .rank-tab { font-size: 14.5px; } }
 
-/* ── 榜单卡片 + 列表 ── */
+/* ===== 领奖台（前 3 名）===== */
+.rank-podium {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  max-width: 760px; margin: 0 auto 16px;
+}
+.pod-item {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 18px 12px 16px; border-radius: var(--radius-lg); cursor: pointer;
+  background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-card);
+  font-family: inherit; text-align: center; transition: all var(--transition);
+}
+.pod-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--primary-glow); }
+.pod-medal {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center; color: #fff; font-size: 16px;
+  background: var(--grad-primary);
+}
+.pod-rank {
+  position: absolute; top: 10px; left: 12px;
+  font-size: 11px; font-weight: 800; color: var(--text-muted);
+}
+.pod-word {
+  max-width: 100%; font-size: 15px; font-weight: 800; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pod-count { font-size: 12px; color: var(--text-muted); }
+.pod-item.rank-1 { border-color: rgba(245, 158, 11, 0.45); }
+.pod-item.rank-1 .pod-medal { background: linear-gradient(135deg, #fbbf24, #ef4444); box-shadow: 0 6px 20px rgba(245,158,11,0.35); }
+.pod-item.rank-1 .pod-count { color: #f59e0b; font-weight: 700; }
+.pod-item.rank-2 .pod-medal { background: linear-gradient(135deg, #cbd5e1, #64748b); }
+.pod-item.rank-3 .pod-medal { background: linear-gradient(135deg, #f0b47a, #b45309); }
+/* 桌面端把第 1 名放中间、并抬高一点 */
+@media (min-width: 640px) {
+  .pod-item.rank-1 { order: 2; padding-top: 24px; padding-bottom: 22px; }
+  .pod-item.rank-2 { order: 1; }
+  .pod-item.rank-3 { order: 3; }
+}
+
+/* ===== 榜单主体 ===== */
+.rank-layout { display: grid; grid-template-columns: minmax(0, 1fr); }
 .rank-box {
   max-width: 760px; margin: 0 auto;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 10px 18px; box-shadow: var(--shadow-card);
 }
+/* PC：榜单占主栏、热词云靠右，填满两侧留白；词云没有数据时榜单占满整行 */
+@media (min-width: 1024px) {
+  .rank-layout {
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-areas: 'list side' 'foot side';
+    gap: 16px 22px; align-items: start;
+  }
+  .rank-layout > .rank-box:not(.rank-cloud-box) { grid-area: list; }
+  .rank-cloud-box { grid-area: side; margin-top: 0; }
+  .rank-layout.no-side { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'list' 'foot'; }
+  .rank-box { max-width: none; margin: 0; }
+  .rank-stats { max-width: 1000px; }
+  .rank-podium { max-width: 1000px; }
+  .rank-list li { padding: 13px 12px; font-size: 15.5px; gap: 14px; }
+  .rk-word { font-size: 15.5px; }
+}
+.rank-box-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 12px; border-bottom: 1px solid var(--border);
+}
+.rbh-title { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; color: var(--text); }
+.rbh-title i.fas { color: var(--primary-light); font-size: 14px; }
+.rbh-note { margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
 .rank-list { list-style: none; margin: 0; padding: 0; counter-reset: rk; }
 .rank-list li {
-  counter-increment: rk; display: flex; align-items: center; gap: 14px;
+  counter-increment: rk; position: relative; display: flex; align-items: center; gap: 12px;
   padding: 12px 8px; border-bottom: 1px solid var(--border); cursor: pointer;
   transition: background .15s; font-size: 15px; color: var(--text);
 }
@@ -94,10 +164,87 @@
 .rank-list li.top1::before { color: #fff; background: linear-gradient(135deg, #f59e0b, #ef4444); }
 .rank-list li.top2::before { color: #fff; background: linear-gradient(135deg, #94a3b8, #64748b); }
 .rank-list li.top3::before { color: #fff; background: linear-gradient(135deg, #d97706, #b45309); }
-.rank-word { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; transition: color .15s; }
-.rank-count { flex: 0 0 auto; font-size: 12px; color: var(--text-muted); }
-.rank-list li.top1 .rk-count, .rank-list li.top2 .rk-count, .rank-list li.top3 .rk-count { color: #f97316; font-weight: 700; }
-.rank-loading, .rank-empty { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 40px 0; color: var(--text-muted); font-size: 14px; cursor: default; }
+.rk-word { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; transition: color .15s; }
+.rk-count { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.rank-list li.top1 .rk-count, .rank-list li.top2 .rk-count, .rank-list li.top3 .rk-count { color: #f97316; }
+/* 行内热度条：宽度按相对第一名的比例 */
+.rk-heat {
+  position: absolute; left: 0; bottom: -1px; height: 2px; border-radius: 2px;
+  background: var(--grad-primary); opacity: 0.45;
+}
+.rank-list li:hover .rk-heat { opacity: 0.85; }
+/* 趋势徽标 */
+.rk-trend {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 7px; border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 700; line-height: 1.5;
+}
+.rk-trend i.fas { font-size: 11px; }
+.rk-trend.new { color: #dc2626; background: rgba(220, 38, 38, 0.10); }
+.rk-trend.up { color: var(--success); background: rgba(5, 150, 105, 0.12); }
+.rk-trend.down { color: var(--text-muted); background: var(--surface); }
+.pod-item .rk-trend { margin-top: 2px; }
+@media (max-width: 480px) {
+  .rk-trend { display: none; }          /* 小屏先保证词条不挤 */
+  .rk-count { font-size: 12.5px; }
+  .rank-list li { font-size: 14.5px; gap: 10px; }
+}
+.rank-loading, .rank-empty {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 40px 0; color: var(--text-muted); font-size: 14px; cursor: default;
+}
 .rank-loading:hover, .rank-empty:hover { background: none; }
+.rank-empty i.fas { font-size: 15px; }
+.rank-loading::before, .rank-empty::before { content: none; }   /* 状态行不显示序号 */
+/* 骨架屏 */
+.rank-skeleton {
+  height: 46px; border-bottom: 1px solid var(--border); cursor: default;
+  background: linear-gradient(90deg, transparent 0%, var(--surface) 45%, transparent 90%);
+  background-size: 220% 100%; animation: rk-shimmer 1.3s infinite linear;
+}
+.rank-skeleton::before { content: none; }
+.rank-skeleton:hover { background: linear-gradient(90deg, transparent 0%, var(--surface) 45%, transparent 90%); background-size: 220% 100%; }
+@keyframes rk-shimmer { 0% { background-position: 120% 0; } 100% { background-position: -60% 0; } }
+.rank-retry {
+  background: var(--grad-primary); color: #fff; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: var(--radius-pill);
+  font-family: inherit;
+}
 
+/* ===== 热词云 ===== */
+.rank-cloud-box { margin-top: 16px; }
+.rank-cloud {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 8px 10px; padding: 18px 10px 14px;
+}
+.cloud-tag {
+  padding: 6px 13px; border-radius: var(--radius-pill); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-secondary); font-family: inherit; line-height: 1.4;
+  transition: all var(--transition);
+}
+.cloud-tag:hover { color: #fff; background: var(--grad-primary); border-color: transparent; transform: translateY(-2px); }
+
+.rank-foot { max-width: 760px; margin: 14px auto 0; text-align: center; font-size: 11.5px; color: var(--text-muted); opacity: .85; }
 .footer { text-align: center; padding: 2rem 0 0.5rem; font-size: 12px; color: var(--text-muted); opacity: 0.6; }
+
+/* PC 端说明文字放在右栏（热词云）下方，放文件末尾以覆盖上面的基础规则 */
+@media (min-width: 1024px) {
+  .rank-foot {
+    grid-area: foot; max-width: none; margin: 0;
+    text-align: left; padding: 2px 4px 8px;
+  }
+  .rank-layout.no-side .rank-foot { text-align: center; }
+}
+
+@media (max-width: 600px) {
+  .rank-head { margin-top: 18px; }
+  .rank-stats { gap: 8px; }
+  .rank-stat { flex: 1 1 calc(50% - 4px); padding: 10px 12px; }
+  .rank-stat .rs-text b { font-size: 15px; }
+  .rank-box { padding: 8px 12px; border-radius: 14px; }
+  .rank-podium { gap: 8px; }
+  .pod-item { padding: 14px 8px 12px; }
+  .pod-word { font-size: 13.5px; }
+  .rank-cloud { padding: 14px 6px 12px; }
+}

@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>后台管理</title>
+<link href="file/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="file/fontawesome/css/all.min.css">
+<style>
+  :root{
+    --bg:#f5f7fb; --sidebar:#ffffff; --sidebar-active:#eef4ff; --text:#1e293b; --muted:#7b8aa0;
+    --card:#ffffff; --border:#e6eaf1; --border-strong:#d9e1ec; --primary:#3b82f6; --primary-d:#2563eb;
+    --primary-soft:#eef4ff; --ring:rgba(59,130,246,.16);
+    --ok:#16a34a; --err:#ef4444; --warn:#f59e0b;
+    --radius:14px; --radius-sm:10px;
+    --shadow-1:0 1px 2px rgba(16,24,40,.05);
+    --shadow-2:0 6px 20px rgba(16,24,40,.07);
+    --t:.18s cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--primary-soft)}
+  .content::-webkit-scrollbar,.nav::-webkit-scrollbar,.app-preview::-webkit-scrollbar{width:8px;height:8px}
+  .content::-webkit-scrollbar-thumb,.nav::-webkit-scrollbar-thumb{background:#cfd8e6;border-radius:99px}
+  .content::-webkit-scrollbar-thumb:hover,.nav::-webkit-scrollbar-thumb:hover{background:#b9c5d8}
+  .admin{display:flex;min-height:100vh}
+  .sidebar{width:250px;background:var(--sidebar);border-right:1px solid var(--border);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;z-index:20}
+  .brand{padding:18px 20px;font-weight:800;font-size:15.5px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--border);letter-spacing:.2px}
+  .brand > i{color:var(--primary);font-size:15px;width:34px;height:34px;display:grid;place-items:center;background:var(--primary-soft);border-radius:11px;flex:0 0 auto}
+  .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:1px}
+  .nav{flex:1;display:block;overflow-y:auto;padding:12px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:var(--radius-sm);color:var(--text);text-decoration:none;font-weight:600;margin-bottom:4px;cursor:pointer;position:relative;transition:background var(--t),color var(--t)}
+  .nav a i{font-size:15px;color:var(--muted);width:20px;text-align:center;transition:color var(--t)}
+  .nav a:hover{background:#f3f6fb}
+  .nav a.active{background:var(--sidebar-active);color:var(--primary-d)}
+  .nav a.active i{color:var(--primary)}
+  .nav-group{padding:14px 14px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);opacity:.85}
+  .nav-group:first-child{padding-top:4px}
+  .nav a.active::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:0 3px 3px 0;background:var(--primary)}
+  .side-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);line-height:1.5}
+  .main{margin-left:250px;flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{height:64px;background:rgba(255,255,255,.86);backdrop-filter:saturate(1.6) blur(10px);-webkit-backdrop-filter:saturate(1.6) blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:10}
+  .topbar h2{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
+  #db-status{font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;background:#f1f5fb;color:var(--muted);border:1px solid var(--border);white-space:nowrap}
+  .content{padding:26px 24px 40px;max-width:1020px;width:100%}
+  .section{display:none}
+  .section.active{display:block;animation:fade .22s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 22px 20px;margin-bottom:18px;box-shadow:var(--shadow-1);transition:box-shadow var(--t),border-color var(--t)}
+  .card-box:hover{box-shadow:var(--shadow-2);border-color:var(--border-strong)}
+  .card-box h3{font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:10px;letter-spacing:.2px}
+  .card-box h3 > i{color:var(--primary);font-size:14px;width:30px;height:30px;display:grid;place-items:center;background:var(--primary-soft);border-radius:9px;flex:0 0 auto}
+  .card-box .tip{color:var(--muted);font-size:12.5px;line-height:1.7;margin:0 0 18px 40px}
+  .card-box .f-tip{color:var(--muted);font-size:12px;line-height:1.65;margin:6px 0 14px}
+  .wp-hr{border:none;border-top:1px dashed var(--border);margin:4px 0 18px}
+  .f-tip a,.card-box .tip a{color:var(--primary-d);font-weight:600;text-decoration:none;border-bottom:1px dashed #b9d0ff}
+  .f-tip a:hover,.card-box .tip a:hover{color:var(--primary);border-bottom-color:var(--primary)}
+  .form-label{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px;letter-spacing:.2px}
+  .form-control,.form-select{height:40px;padding:8px 12px;font-size:13.5px;color:var(--text);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-sm);box-shadow:none;transition:border-color var(--t),box-shadow var(--t)}
+  textarea.form-control{height:auto;line-height:1.65}
+  .form-control::placeholder{color:#a9b6c8}
+  .form-control:focus,.form-select:focus{border-color:var(--primary);box-shadow:0 0 0 3.5px var(--ring);outline:none}
+  .form-control:disabled{background:#f7f9fc;color:var(--muted)}
+  .btn-save{background:var(--primary);border:none;color:#fff;font-weight:700;font-size:13.5px;padding:10px 26px;border-radius:var(--radius-sm);transition:background var(--t),transform var(--t),box-shadow var(--t);box-shadow:0 1px 2px rgba(37,99,235,.28)}
+  .btn-save:hover{background:var(--primary-d)}
+  .btn-save:active{transform:translateY(1px)}
+  .btn-save:disabled{opacity:.6;cursor:not-allowed}
+  .btn-add{background:var(--primary-soft);color:var(--primary-d);border:1px solid #d6e4ff;font-weight:600;font-size:13px;padding:8px 15px;border-radius:var(--radius-sm);transition:background var(--t),border-color var(--t)}
+  .btn-add:hover{background:#e2edff;border-color:#bfd6ff}
+  .btn-outline-secondary{--bs-btn-color:var(--muted);--bs-btn-border-color:var(--border-strong);--bs-btn-hover-bg:#f1f5fb;--bs-btn-hover-color:var(--text);--bs-btn-hover-border-color:var(--border-strong);--bs-btn-active-bg:#e8eef8;--bs-btn-active-color:var(--text);--bs-btn-active-border-color:var(--border-strong);--bs-btn-padding-x:.85rem;--bs-btn-padding-y:.42rem;--bs-btn-font-size:13px;--bs-btn-border-radius:10px}
+  .save-bar{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 72%,rgba(245,247,251,0));backdrop-filter:blur(4px);padding:16px 0 6px;display:flex;gap:10px;align-items:center;margin-top:6px}
+  button{cursor:pointer;font-family:inherit}
+  .btn-save:focus-visible,.btn-add:focus-visible,.ri-del:focus-visible,.as-btn:focus-visible,.rank-tab:focus-visible,.cap-refresh:focus-visible,.nav a:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+  #save-status{font-size:12.5px;color:var(--muted);margin-left:4px}
+  .row-editor{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+  .row-editor .ri{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:inherit}
+  .row-editor .ri:focus{border-color:var(--primary);box-shadow:0 0 0 3.5px var(--ring)}
+  .row-editor select.ri{flex:0 0 130px;cursor:pointer}
+  .row-editor .re-w15{flex:0 0 15%}.row-editor .re-w20{flex:0 0 20%}.row-editor .re-w25{flex:0 0 25%}.row-editor .re-w35{flex:0 0 35%}.row-editor .re-w40{flex:0 0 40%}.row-editor .re-w100{flex:0 0 100%}
+  .row-editor textarea.ri{min-height:110px;resize:vertical;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:inherit}
+  .row-editor textarea.ri:focus{border-color:var(--primary);box-shadow:0 0 0 3.5px var(--ring)}
+  .ri-del{flex:0 0 auto;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--err);border-radius:9px;padding:8px 14px;cursor:pointer;font-size:13px}
+  .ri-del:hover{background:rgba(239,68,68,.18)}
+  .app-card-edit{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+  .app-card-edit > .methods-box{background:#fff;border:1px dashed var(--border);border-radius:10px;padding:10px;margin:4px 0 10px}
+  .methods-box .method-row{margin-bottom:8px}
+  .methods-box .method-row:last-child{margin-bottom:0}
+  .app-card-edit .btn-add{display:inline-block}
+  .app-wrap{display:flex;gap:20px;align-items:stretch;margin-bottom:20px}
+  .app-form{flex:1;min-width:0;margin-bottom:0}
+  .app-pv-wrap{flex:0 0 320px;display:flex;flex-direction:column;min-width:0}
+  .app-search{width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none}
+  .app-search:focus{border-color:#3b82f6}
+  .app-search::placeholder{color:#64748b}
+  .app-preview{flex:1 1 auto;background:#0f172a;color:#cbd5e1;border-radius:14px;padding:16px 16px 8px;overflow-y:auto;max-height:500px;scrollbar-width:thin;scrollbar-color:#334155 transparent}
+  .app-preview::-webkit-scrollbar{width:6px}
+  .app-preview::-webkit-scrollbar-thumb{background:#334155;border-radius:999px}
+  .app-preview::-webkit-scrollbar-track{background:transparent}
+  .app-preview .pv-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:-16px;margin:-16px -16px 12px;padding:12px 16px;background:#0f172a;font-size:12.5px;color:#94a3b8;border-bottom:1px solid #1e293b;z-index:1}
+  .app-preview .pv-head b{color:#7dd3fc;font-size:13px}
+  .app-preview .pv-empty{color:#64748b;text-align:center;padding:70px 0;font-size:13px}
+  .app-preview img{max-width:110px;max-height:110px;border-radius:12px;display:block;margin:0 auto 10px;object-fit:contain}
+  .app-preview .pv-name{text-align:center;font-weight:700;color:#fff;font-size:15px;margin-bottom:12px}
+  .app-preview .pv-item{display:flex;gap:8px;font-size:12.5px;padding:8px 10px;background:#1e293b;border-radius:8px;margin-bottom:6px;word-break:break-all}
+  .app-preview .pv-item b{color:#7dd3fc;flex:0 0 auto}
+  .app-preview .pv-line{font-size:12.5px;padding:8px 10px;background:#1e293b;border-radius:8px;margin-bottom:6px;word-break:break-all}
+  .app-saved{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #1e293b;border-radius:12px;margin-bottom:10px;transition:border-color .15s,background .15s}
+  .app-saved:hover{border-color:#3b82f6;background:rgba(30,41,59,.6)}
+  .app-saved img{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;background:#1e293b}
+  .app-saved .as-info{flex:1;min-width:0;padding-right:76px}
+  .app-saved .as-name{color:#fff;font-weight:700;font-size:13.5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app-saved .as-sub{color:#94a3b8;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app-saved .as-acts{position:absolute;display:flex;gap:6px}
+  .app-saved{position:relative}
+  .app-saved .as-acts{right:10px;top:50%;transform:translateY(-50%);opacity:0;pointer-events:none;transition:opacity .15s}
+  .app-saved:hover .as-acts{opacity:1;pointer-events:auto}
+  .as-btn{border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .as-btn.edit{background:#3b82f6;color:#fff}
+  .as-btn.edit:hover{background:#2f6fdd}
+  .as-btn.del{background:rgba(239,68,68,.9);color:#fff}
+  .as-btn.del:hover{background:#dc2626}
+  .dl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .dl-label{flex:0 0 78px;font-weight:600;font-size:13px;color:var(--muted)}
+  .dl-row input{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:inherit}
+  .dl-row input:focus{border-color:var(--primary);box-shadow:0 0 0 3.5px var(--ring)}
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:radial-gradient(1100px 560px at 50% -12%,#e8f0ff 0%,var(--bg) 62%)}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:34px 30px 30px;width:392px;max-width:100%;box-shadow:0 18px 48px rgba(16,24,40,.10)}
+  .login-card h2{font-size:18px;margin:0 0 22px;display:flex;align-items:center;gap:11px;letter-spacing:.2px}
+  .login-card h2 i{font-size:15px;width:34px;height:34px;display:grid;place-items:center;background:var(--primary-soft);border-radius:11px;color:var(--primary);flex:0 0 auto}
+  .cap-row{display:flex;align-items:center;gap:8px}
+  .cap-q{flex:0 0 auto;min-width:100px;text-align:center;padding:9px 10px;border:1.5px dashed var(--border-strong);border-radius:var(--radius-sm);font-size:14px;font-weight:700;letter-spacing:1px;color:var(--text);user-select:none;background:#fbfcfe}
+  .cap-refresh{flex:0 0 auto;width:40px;height:40px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--muted);font-size:16px;cursor:pointer;transition:color var(--t),border-color var(--t),transform var(--t)}
+  .cap-refresh:hover{color:var(--primary);border-color:var(--primary);transform:rotate(90deg)}
+  .cap-row input{flex:1;min-width:0;height:40px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:border-color var(--t),box-shadow var(--t)}
+  .cap-row input:focus{border-color:var(--primary);box-shadow:0 0 0 3.5px var(--ring)}
+  .kv-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#eaf6ee;color:var(--ok);border:1px solid #bfe6cb}
+  .env-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--primary-soft);color:var(--primary-d);border:1px solid #cfe0ff;margin-left:6px;vertical-align:middle}
+  .ck-btn{font-size:11.5px;font-weight:600;margin-left:8px;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--primary-d);cursor:pointer;vertical-align:middle}
+  .ck-btn:hover{background:var(--primary-soft)}
+  .ck-btn:disabled{opacity:.6;cursor:default}
+  .ck-status{font-size:11.5px;font-weight:600;margin-left:8px;vertical-align:middle}
+  .ck-status.ok{color:var(--ok)}
+  .ck-status.bad{color:#dc2626}
+  .cron-box{margin:8px 0 14px;padding:14px 15px;border:1px solid var(--border);border-radius:12px;background:#fafbfe}
+  .cron-head{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px}
+  .cron-head > i{color:var(--primary)}
+  .cron-link{margin-left:auto;font-size:12px;font-weight:600;color:var(--primary-d);text-decoration:none;border:1px solid #d6e4ff;background:var(--primary-soft);padding:3px 11px;border-radius:999px}
+  .cron-link:hover{background:#e2edff}
+  .cron-url{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+  .cron-url code{flex:1;min-width:0;font-size:12px;color:var(--primary-d);word-break:break-all;background:transparent;padding:0}
+  .cron-steps{margin:0;padding-left:20px;font-size:12.5px;color:var(--muted);line-height:1.9}
+  .cron-steps b{color:var(--text);font-weight:600}
+  .cron-steps a{color:var(--primary-d);text-decoration:none;font-weight:600}
+  .cron-steps a:hover{text-decoration:underline}
+  .cron-note{margin-top:9px;font-size:11.5px;color:var(--muted);line-height:1.6}
+  .rank-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f7f9fc;border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+  .rank-no{flex:0 0 26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:800;background:#e9eef6;color:var(--muted);font-size:12px}
+  .rank-no.top{color:#fff;background:linear-gradient(135deg,#f59e0b,#ef4444)}
+  .rank-word{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rank-count{color:var(--muted);font-size:12px}
+  .rank-tab{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 13px;border-radius:9px;font-size:13px;cursor:pointer;transition:.15s}
+  .rank-tab:hover{color:var(--text)}
+  .rank-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .empty{text-align:center;color:var(--muted);padding:26px 0}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);padding:11px 22px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .toast.ok{background:#eaf6ee;color:var(--ok);border:1px solid #bfe6cb}
+  .toast.err{background:#fdeaea;color:var(--err);border:1px solid #f4c2c2}
+  @media(max-width:860px){
+    .sidebar{position:fixed;top:0;bottom:auto;left:0;right:0;width:100%;height:auto;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--border);z-index:30;overflow:visible;box-shadow:0 1px 8px rgba(16,24,40,.05)}
+    .brand{display:none}
+    .nav{flex:none;display:flex;flex-direction:row;gap:6px;padding:9px 12px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .nav::-webkit-scrollbar{display:none}
+    .nav a{margin-bottom:0;padding:8px 13px;flex:0 0 auto;font-size:13.5px}
+    .nav a.active::before{display:none}
+    .nav-group{display:none}   /* 手机上是一行横滑，不显示分组标题 */
+    .side-foot{display:none}
+    .main{margin-left:0;margin-top:58px}
+    .topbar{top:58px;padding:0 14px}
+    .content{padding:16px 14px 34px;max-width:100%}
+    .card-box{padding:18px 16px 16px}
+    .card-box .tip{margin-left:0}
+    .row-editor .ri, .row-editor select.ri{flex:1 1 100%}
+    .row-editor .ri-del{flex:1 1 100%}
+    .save-bar{left:0;right:0;padding:14px}
+    .app-wrap{flex-direction:column}
+    .app-pv-wrap{width:100%;flex:1 1 auto}
+  }
+  @media(max-width:520px){
+    .row{padding:0}
+    .col-md-4,.col-md-6{padding-left:0;padding-right:0}
+    .topbar h2{font-size:15px}
+    .card-box h3{font-size:14.5px}
+    .save-bar .btn-save{width:100%;justify-content:center}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+  /* 搜索防刷与配额：建议值表 */
+  .qs-sug{background:#f7f9fc;border:1px dashed var(--border-strong);border-radius:12px;padding:14px 16px;margin:0 0 18px}
+  .qs-sug-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin-bottom:10px}
+  .qs-sug-head > i{color:var(--primary);font-size:13px}
+  .qs-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff}
+  .qs-tbl th,.qs-tbl td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+  .qs-tbl tr:last-child th,.qs-tbl tr:last-child td{border-bottom:none}
+  .qs-tbl thead th{background:#f2f6fc;font-size:12px;font-weight:700}
+  .qs-tbl tbody th{font-weight:600;color:var(--muted);width:44%}
+  .qs-tbl td{font-weight:800;color:var(--primary-d);font-variant-numeric:tabular-nums}
+  .qs-tbl td.free{color:#0f766e}
+  .qs-tbl td.paid{color:#b45309}
+  .qs-formula{margin-top:10px;font-size:12.5px;line-height:1.8;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 13px}
+  .qs-formula b{color:var(--primary-d)}
+  .qs-btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .qs-btn-row .btn-add{font-size:12.5px;padding:7px 13px}
+  @media(max-width:520px){ .qs-tbl th,.qs-tbl td{padding:7px 9px} .qs-tbl tbody th{width:52%} .qs-btn-row .btn-add{flex:1 1 auto;text-align:center} }
+  /* 网盘文件管理 */
+  .pan-bar{display:flex;align-items:center;gap:12px;margin:0 0 10px;font-size:12.5px;flex-wrap:wrap}
+  .pan-all{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;cursor:pointer;margin:0}
+  .pan-all input{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+  .pan-count{color:var(--muted)}
+  .pan-list{max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff}
+  .pan-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;transition:background var(--t);margin:0}
+  .pan-row:last-child{border-bottom:none}
+  .pan-row:hover{background:#f7f9fc}
+  .pan-row input{width:16px;height:16px;accent-color:var(--primary);flex:0 0 auto;cursor:pointer}
+  .pan-ico{color:var(--muted);flex:0 0 auto;width:16px;text-align:center}
+  .pan-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .pan-meta{flex:0 0 auto;color:var(--muted);font-size:11.5px;white-space:nowrap}
+  @media(max-width:560px){ .pan-meta{font-size:11px} .pan-list{max-height:300px} }
+</style>
+</head>
+<body>
+
+<div id="login-view" class="login-wrap" style="display:none">
+  <div class="login-card">
+    <h2><i class="fas fa-shield-halved" style="color:var(--primary)"></i> 后台管理</h2>
+    <div class="mb-3"><label class="form-label small fw-semibold">账号</label><input type="text" id="login-user" class="form-control" autocomplete="username"></div>
+    <div class="mb-3"><label class="form-label small fw-semibold">密码</label><input type="password" id="login-pass" class="form-control" autocomplete="current-password"></div>
+    <div class="mb-3"><label class="form-label small fw-semibold">验证码</label>
+      <div class="cap-row">
+        <span id="login-cap-q" class="cap-q">加载中…</span>
+        <button type="button" id="login-cap-refresh" class="cap-refresh" title="换一题">↻</button>
+        <input type="text" id="login-cap" class="form-control" inputmode="numeric" placeholder="计算结果" autocomplete="off">
+      </div>
+    </div>
+    <button class="btn btn-save w-100" id="login-btn">登 录</button>
+  </div>
+</div>
+
+<div id="main-view" class="admin" style="display:none">
+  <aside class="sidebar">
+    <div class="brand"><i class="fas fa-circle-play"></i><div><span id="brand-name">后台管理</span><small>站点控制台</small></div></div>
+    <nav class="nav" id="side-nav">
+      <div class="nav-group">站点设置</div>
+      <a class="active" data-section="basic"><i class="fas fa-sliders"></i><span class="txt">基础设置</span></a>
+      <a data-section="play"><i class="fas fa-film"></i><span class="txt">播放设置</span></a>
+      <a data-section="app"><i class="fas fa-mobile-screen"></i><span class="txt">APP设置</span></a>
+      <a data-section="wp"><i class="fas fa-cloud"></i><span class="txt">网盘设置</span></a>
+      <div class="nav-group">扩展与运营</div>
+      <a data-section="plugin"><i class="fas fa-puzzle-piece"></i><span class="txt">插件设置</span></a>
+      <a data-section="rank"><i class="fas fa-chart-bar"></i><span class="txt">搜索排行</span></a>
+      <a data-section="other"><i class="fas fa-gear"></i><span class="txt">其他设置</span></a>
+    </nav>
+    <div class="side-foot">改完点底部「保存全部配置」即时生效</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h2 id="sec-title">基础设置</h2>
+      <div class="d-flex align-items-center gap-3">
+        <span class="kv" id="db-status">检查数据库…</span>
+        <button class="btn btn-sm btn-outline-secondary" id="logout-btn">退出</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <section class="section active" id="sec-basic">
+        <div class="card-box">
+          <h3><i class="fas fa-rocket"></i>快速上手</h3>
+          <div class="f-tip" style="line-height:2">
+            第一次使用，按这 4 步走一遍，站点就能正常用：<br>
+            <b>① 填网站信息</b> —— 在下面「站点基础信息」里填网站名称、描述、图标，保存后刷新前台就能看到效果。<br>
+            <b>② 添加播放源</b> —— 到「播放设置」添加影视接口。<b>必须添加才能搜索 / 播放</b>（站点不自带播放源），没有接口就去对接你购买或已有的影视接口。<br>
+            <b>③ 配网盘账号</b>（要用搜索页的「网盘」分类才需要）—— 到「网盘设置」填搜索接口和夸克 / 百度 / UC 的登录信息，访客就能把网盘资源转存后直接播放。<br>
+            <b>④ 配自动清理定时器</b> —— 「网盘设置 → 中转副本自动清理」里复制地址，到 cron-job.org 建一个每分钟执行的任务，转存的临时文件就会自动删除。<br>
+            每改完一块内容，记得点页面最下方的「<b>保存全部配置</b>」。
+          </div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-circle-info"></i>站点基础信息</h3>
+          <div class="f-tip">网站名称会显示在浏览器标签、页面左上角和页脚；网站描述用在搜索结果摘要和页脚，建议一句话写清站点定位。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">网站名称</label><input type="text" id="f-site_name" class="form-control" placeholder="例如：免费追剧"></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">网站描述</label><input type="text" id="f-site_desc" class="form-control" placeholder="例如：无广告，免会员，全网影视免费在线观看"></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">网站图标（logo）</label><input type="text" id="f-site_icon" class="form-control" placeholder="https://你的图片地址/logo.png"><div class="f-tip">填<b>图片的网络地址</b>（https:// 开头）。改图标只需改这一行，<b>不用替换任何文件</b>；留空则用默认图标。<br>图片哪里来：任选一个免费图床（如 <a href="https://imgurl.org/" target="_blank" rel="noopener">ImgURL ↗</a>、<a href="https://postimages.org/" target="_blank" rel="noopener">PostImages ↗</a>）上传 logo，再复制它给出的直链；也可以填自己的图片地址。<br>建议用 200×200 以上的<b>正方形</b>图片（png / jpg / ico 都可以）。它会同时作为浏览器标签图标和页面左上角 logo。</div></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-envelope-open"></i>首次打开弹窗</h3>
+          <div class="f-tip">访客第一次打开网站时弹出一次；修改了弹窗内容后会重新弹一次。关闭上面的开关即完全不显示。</div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="m-first_popup-enabled" role="switch">
+            <label class="form-check-label small fw-semibold" for="m-first_popup-enabled">启用首次弹窗</label>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">弹窗标题</label><input type="text" id="m-first_popup-title" class="form-control" placeholder="欢迎来到 免费追剧"></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">弹窗内容</label><textarea id="m-first_popup-content" class="form-control" style="min-height:90px" placeholder="在这里写欢迎语、公告或活动说明，支持换行"></textarea></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮文字</label><input type="text" id="m-first_popup-btn_text" class="form-control" placeholder="了解详情"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮链接</label><input type="text" id="m-first_popup-btn_link" class="form-control" placeholder="https://..."></div>
+          </div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-bullhorn"></i>首页文字广告</h3>
+          <div class="f-tip">显示在首页分类栏右侧的小广告位。只需填一句文案；跳转链接留空时只展示文字、点击无反应。</div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="m-promo_ad-enabled" role="switch">
+            <label class="form-check-label small fw-semibold" for="m-promo_ad-enabled">启用文字广告</label>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">广告文案</label><input type="text" id="m-promo_ad-text" class="form-control" placeholder="如：影视资源导航网（必填）"></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">跳转链接</label><input type="text" id="m-promo_ad-link" class="form-control" placeholder="https://...（留空则不可点击）"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图标（Font Awesome 类名）</label><input type="text" id="m-promo_ad-icon" class="form-control" placeholder="fa-fire，默认 fa-fire"></div>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">背景颜色</label><input type="text" id="m-promo_ad-bg_color" class="form-control" placeholder="#ff4757（留空用默认渐变）"></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-images"></i>首页轮播图</h3>
+          <div class="f-tip">每条填：图片地址 + 点击后的去向。<b>搜索关键词</b> = 点了直接用这个词搜本站；<b>打开外链</b> = 点了用新窗口打开你填的网址（需 https:// 开头）。</div>
+          <div id="m-carousel"></div>
+          <button class="btn-add" id="btn-add-carousel">＋ 添加轮播</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-list"></i>顶部导航</h3>
+          <div class="f-tip">每条填三样：<b>显示文字</b>、<b>点开的地址</b>（站内页面写成 <b>/app</b> 这样的路径，外部网址写完整 https:// 链接）、<b>图标</b>（不填则只显示文字）。<br>图标用 Font Awesome 的类名，如 <b>fa-download</b>、<b>fa-film</b>；想换图标可到 fontawesome.com 搜索后复制类名。</div>
+          <div id="m-nav"></div>
+          <button class="btn-add" id="btn-add-nav">＋ 添加导航</button>
+        </div>
+      </section>
+
+      <section class="section" id="sec-play">
+        <div class="card-box">
+          <h3><i class="fas fa-server"></i>播放源（影视接口）</h3>
+          <div class="f-tip">站内影片数据的来源接口。每条填一个接口的<b>名称</b>和<b>地址</b>，可以添加多条（搜索时会同时向多个接口取数据，越多越稳）。<br><b>必须至少添加一个</b>：一个都不填，前台就搜索不到任何片源（站点不提供内置播放源）。</div>
+          <div id="m-sources"></div>
+          <button class="btn-add" id="btn-add-sources">＋ 添加播放源</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-film"></i>播放页配置</h3>
+          <div class="f-tip">播放页顶部横幅：<b>图片链接</b>填横幅图片地址（留空则不显示横幅）；<b>链接地址广告</b>填点击横幅后打开的网址（留空则横幅不可点击）。</div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图片链接</label><input type="text" id="m-play_page-image_url" class="form-control" placeholder="https://.../banner.png"></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">链接地址广告</label><input type="text" id="m-play_page-ad_link" class="form-control" placeholder="https://.../ad 或落地页链接"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-app">
+        <div class="app-wrap">
+          <div class="card-box app-form">
+            <h3><i class="fab fa-android"></i>安卓 APP</h3>
+            <div class="f-tip">在左侧填好信息后点「保存」，就会加进右侧列表。<b>名称</b>和<b>图片</b>必填；各网盘下载链接可以只填其中一个，没填的渠道前台不会显示。<br>右侧列表：鼠标移到条目上可「修改 / 删除」；当天新增或改过的会在前台显示「新」角标。<br><b>没有添加任何安卓 APP，前台就不会出现「安卓APP」分类</b>（苹果同理）。</div>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">APP名称</label><input type="text" id="m-android-name" class="form-control" placeholder="影视APP"></div>
+              <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图片地址</label><input type="text" id="m-android-image" class="form-control" placeholder="https://.../icon.png"></div>
+            </div>
+            <label class="form-label small fw-semibold">下载方式</label>
+            <div class="dl-list">
+              <div class="dl-row"><span class="dl-label">UC网盘</span><input type="text" id="m-android-dl-uc" placeholder="下载链接 https://..."></div>
+              <div class="dl-row"><span class="dl-label">夸克网盘</span><input type="text" id="m-android-dl-quark" placeholder="下载链接 https://..."></div>
+              <div class="dl-row"><span class="dl-label">百度网盘</span><input type="text" id="m-android-dl-baidu" placeholder="下载链接 https://..."></div>
+              <div class="dl-row"><span class="dl-label">迅雷网盘</span><input type="text" id="m-android-dl-thunder" placeholder="下载链接 https://..."></div>
+              <div class="dl-row"><span class="dl-label">其他网盘</span><input type="text" id="m-android-dl-other" placeholder="下载链接 https://..."></div>
+            </div>
+            <button class="btn-save" id="android-save" style="margin-top:14px">💾 保存</button>
+            <button class="btn-add" id="android-cancel" style="margin-top:14px;display:none">取消编辑</button>
+          </div>
+          <div class="app-pv-wrap">
+            <input class="app-search" id="android-search" type="search" placeholder="🔍 搜索已添加的 APP…">
+            <div class="app-preview" id="android-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
+          </div>
+        </div>
+        <div class="app-wrap">
+          <div class="card-box app-form">
+            <h3><i class="fab fa-apple"></i>苹果 APP</h3>
+            <div class="f-tip">在左侧填好信息后点「保存」即加入右侧列表。<b>商城 ID</b> 指 App Store 链接里 id 后面那串数字（例如 id6448311234）；<b>需要复制的内容</b> 会在前台提供一键复制。<br>右侧列表：鼠标移到条目上可「修改 / 删除」；当天新增或改过的会在前台显示「新」角标。<br><b>没有添加任何苹果 APP，前台就不会出现「苹果APP」分类</b>。</div>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">APP名称</label><input type="text" id="m-ios-name" class="form-control" placeholder="影视APP"></div>
+              <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">图片地址</label><input type="text" id="m-ios-image" class="form-control" placeholder="https://.../icon.png"></div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">商城ID（如 id6448311234）</label><input type="text" id="m-ios-link" class="form-control"></div>
+              <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">需要复制的内容</label><input type="text" id="m-ios-copy" class="form-control"></div>
+            </div>
+            <div class="mb-3"><label class="form-label small fw-semibold">相关说明</label><input type="text" id="m-ios-text" class="form-control"></div>
+            <button class="btn-save" id="ios-save" style="margin-top:14px">💾 保存</button>
+            <button class="btn-add" id="ios-cancel" style="margin-top:14px;display:none">取消编辑</button>
+          </div>
+          <div class="app-pv-wrap">
+            <input class="app-search" id="ios-search" type="search" placeholder="🔍 搜索已添加的 APP…">
+            <div class="app-preview" id="ios-preview"><div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-wp">
+        <div class="card-box">
+          <h3><i class="fas fa-cloud"></i>网盘搜索设置</h3>
+          <div class="f-tip">这一块负责搜索页的「<b>网盘</b>」分类：先通过网络盘搜索接口找到资源，再用你自己的网盘账号把它转存一份，然后生成站内可直接播放的链接。<br>下面的账号信息<b>只保存在服务器上，不会展示给访客</b>，可以放心填写。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">网盘搜索接口<span class="env-badge" data-env="WP_API_HOST" style="display:none">环境变量已设</span></label><input type="text" id="f-wp_api_host" class="form-control" placeholder="你的接口域名/api/search"><div class="f-tip">填你的服务商提供的搜索接口地址（不带 http:// 也可以，系统会自动补）。留空则搜索页不显示「网盘」分类，其它功能不受影响。</div></div>
+          <hr class="wp-hr">
+          <div class="mb-3"><label class="form-label small fw-semibold">夸克网盘 Cookie<span class="env-badge" data-env="QUARK_COOKIE" style="display:none">环境变量已设</span><button type="button" class="ck-btn" data-check="quark"><i class="fas fa-heart-pulse"></i> 检测登录态</button><span class="ck-status" id="ck-quark"></span></label><textarea id="f-quark_cookie" class="form-control" style="min-height:64px" placeholder="粘贴夸克网盘的完整 Cookie"></textarea><div class="f-tip">填你自己的夸克网盘<b>登录状态</b>信息（Cookie），用于把资源转存到你的网盘。<br><b>怎么获取</b>：电脑浏览器登录夸克网盘 → 按 F12 打开开发者工具 → 切到 Network（网络）→ 刷新一下页面 → 随便点一条请求 → 在右侧找到 Cookie 一行，整段复制粘贴到这里。填完可点左边「检测登录态」确认是否有效。</div></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">夸克目标目录 ID<span class="env-badge" data-env="QUARK_DIR" style="display:none">环境变量已设</span></label><input type="text" id="f-quark_dir" class="form-control" placeholder="不确定就留空"><div class="f-tip">转存的文件要放在夸克网盘的哪个文件夹。这里填的是文件夹对应的<b>目录编号</b>，不是文件夹名字；<b>不确定就留空</b>，会存到根目录，不影响使用。</div></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">百度网盘 Cookie<button type="button" class="ck-btn" data-check="baidu"><i class="fas fa-heart-pulse"></i> 检测登录态</button><span class="ck-status" id="ck-baidu"></span></label><textarea id="f-baidu_cookie" class="form-control" style="min-height:64px" placeholder="粘贴百度网盘的完整 Cookie（需包含 BDUSS）"></textarea><div class="f-tip">填你自己百度网盘的<b>登录状态</b>信息（Cookie，需包含 <b>BDUSS</b> 这一段），获取方法与夸克相同：浏览器登录百度网盘 → F12 → Network → 刷新 → 复制任意请求里的 Cookie。不填则百度网盘资源无法转存，其它网盘不受影响。</div></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">百度目标目录</label><input type="text" id="f-baidu_dir" class="form-control" placeholder="/影视资源"><div class="f-tip">转存的文件要放在百度网盘的哪个文件夹，直接写文件夹路径（须是你网盘里已存在的文件夹，例如 <b>/影视资源</b>）；留空则存到根目录。</div></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">UC 网盘 Cookie<button type="button" class="ck-btn" data-check="uc"><i class="fas fa-heart-pulse"></i> 检测登录态</button><span class="ck-status" id="ck-uc"></span></label><textarea id="f-uc_cookie" class="form-control" style="min-height:64px" placeholder="粘贴 UC 网盘的完整 Cookie"></textarea><div class="f-tip">填你自己 UC 网盘的<b>登录状态</b>信息（Cookie），获取方法与夸克相同；不填则 UC 网盘资源无法转存。</div></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">UC 目标目录 ID</label><input type="text" id="f-uc_dir" class="form-control" placeholder="不确定就留空"><div class="f-tip">转存的文件要放在 UC 网盘的哪个文件夹，同样填<b>目录编号</b>而不是文件夹名字；<b>不确定就留空</b>，会存到根目录。</div></div>
+
+          <hr class="wp-hr">
+          <div class="mb-3"><label class="form-label small fw-semibold">中转副本清理<button type="button" class="ck-btn" id="btn-cleanup"><i class="fas fa-broom"></i> 立即清理</button><span class="ck-status" id="ck-cleanup"></span></label><div class="f-tip"><b>效果</b>：定时器每跑一次、或你点一次「立即清理」，就会把下面网盘的<b>转存目录整个清空</b> —— 不管里面的文件存了多久（不再是"等 10 分钟"）。<br><b>前提</b>：必须先在上面给对应网盘设置了「目标目录」（夸克 / UC 填目录 ID）。<b>没有设置目录的网盘会被自动跳过</b>，因为那等于清空你网盘的根目录，会把你自己的文件一起删掉 —— 如果你的转存目录就是根目录，请到下面「网盘文件管理」里勾选删除。<br><b>百度网盘不支持自动清理</b>（接口限制，删除会被风控拦截），转存到百度的文件请你自己到百度网盘里手动删除。</div><div class="mb-3"><label class="form-label small fw-semibold">转存后多少分钟内不清理</label><input type="text" id="f-purge_skip_min" class="form-control" placeholder="0"><div class="f-tip">填 <b>0（默认）</b>= 每次清扫都把目录里的东西全部删掉，一个不剩。<br>如果你发现「访客播到一半就断」，把这个数改成 <b>10～20</b>：最近这个时间内新增的文件会先留着不删，等下一轮再清。<b>数字越大，你的网盘占用越高，但播放越稳。</b></div></div><div class="cron-box"><div class="cron-head"><i class="fas fa-clock"></i>自动清理定时器<a class="cron-link" href="https://console.cron-job.org/jobs" target="_blank" rel="noopener">打开 cron-job.org ↗</a></div><div class="cron-url"><code id="ck-cron-url">（读取中…）</code><button type="button" class="ck-btn" id="btn-copy-cron" style="margin-left:0"><i class="fas fa-copy"></i> 复制</button></div><ol class="cron-steps"><li>点右上角「打开 cron-job.org」，用邮箱免费注册并登录</li><li>点 <b>CREATE CRONJOB</b>（新建任务）</li><li><b>Title</b>（任务名）随便填；<b>URL</b> 里粘贴上面复制的地址</li><li>执行频率选 <b>Every 1 minute</b>（每分钟一次），点 <b>CREATE</b> 保存</li><li>回到本页点一次「立即清理」，看到状态显示「定时器 1 分钟前 ✓」就说明配好了</li></ol><div class="cron-note">也可以不配：有人访问网站时会顺带清理一次；但没人访问时就不会删，建议还是花一分钟配上。</div></div><div class="f-tip" id="ck-cleanup-detail" style="white-space:pre-wrap;word-break:break-all"></div></div>
+
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-folder-open"></i>网盘文件管理（手动删除）</h3>
+          <div class="f-tip">上面那个「自动清理」只能删<b>系统自己转存进去的临时文件</b>（它靠转存记录认路，所以你从没播过网盘资源时队列就是空的）。<br>这一块不一样：<b>直接把转存目录里的文件列出来</b>，看清是什么再删 —— 用来清理以前测试留下的、或没被自动清掉的残留。<br>查看的就是上面填的「目标目录」（夸克 / UC = 目录 ID）；列表只是查看，<b>只有你勾选的项目才会被删</b>，不会碰其它文件。<br><b>百度网盘不支持在线管理</b>（接口限制），请到百度网盘 App / 网页里手动删除。</div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">要查看的网盘</label>
+              <select id="pan-type" class="form-select">
+                <option value="quark">夸克网盘（用上面填的目标目录 ID）</option>
+                <option value="uc">UC 网盘（用上面填的目标目录 ID）</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">&nbsp;</label><button type="button" class="btn-add" id="btn-pan-list" style="width:100%"><i class="fas fa-rotate"></i> 列出文件</button></div>
+          </div>
+          <div class="ck-status" id="pan-status" style="display:block"></div>
+          <div id="pan-wrap" style="display:none">
+            <div class="pan-bar">
+              <label class="pan-all"><input type="checkbox" id="pan-all"> 全选</label>
+              <span class="pan-count" id="pan-count"></span>
+              <button type="button" class="ri-del" id="btn-pan-del" style="margin-left:auto"><i class="fas fa-trash"></i> 删除选中</button>
+            </div>
+            <div class="pan-list" id="pan-list"></div>
+            <div class="f-tip" style="margin-top:10px">删除后无法恢复；文件夹也会连里面的内容一起删掉，请确认后再操作。</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-other">
+        <div class="card-box">
+          <h3><i class="fas fa-microchip"></i>接口 / 数据源</h3>
+          <div class="mb-3"><label class="form-label small fw-semibold">今日推荐 API<span class="env-badge" data-env="DAILY_API" style="display:none">环境变量已设</span></label><input type="text" id="f-daily_api" class="form-control" placeholder="https://你的接口地址/api?app_key=xxxx"><div class="f-tip">「今日推荐」的数据接口地址（含服务商提供的参数，整条粘贴进来）；<b>留空则搜索页侧栏不显示「今日推荐」</b>。</div></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">Web3Forms Key<span class="env-badge" data-env="WEB3FORMS_ACCESS_KEY" style="display:none">环境变量已设</span></label><input type="text" id="f-web3forms_access_key" class="form-control" placeholder="粘贴 Access Key"><div class="f-tip">用于接收访客提交的友链申请邮件。到 <a href="https://web3forms.com/" target="_blank" rel="noopener">web3forms.com ↗</a> 用邮箱免费注册，复制它给你的 Access Key 粘贴到这里即可（无需自己搭邮箱服务）；<b>留空则前台不显示「申请友链」表单</b>。</div></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-chart-line"></i>统计代码</h3>
+          <div class="f-tip">统计平台（如百度统计、Google Analytics）都会给一段统计代码，整段粘贴到下面，会<b>自动加到网站每个页面</b>；不需要统计就留空。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">统计代码（HTML）</label><textarea id="f-stats_code" class="form-control" style="min-height:90px" placeholder="粘贴统计平台给你的整段代码，例如：&#10;&lt;script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-XXXX&quot;&gt;&lt;/script&gt;"></textarea></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-link"></i>友链设置</h3>
+          <div class="f-tip">显示在「友情链接」页；每条填对方网站<b>名称</b>和<b>网址</b>。这里填的会排在其他来源的友链前面。</div>
+          <div class="mb-3"><label class="form-label small fw-semibold">友链申请说明</label><textarea id="f-link_reqs" class="form-control" style="min-height:120px" placeholder="每行一条，会显示在「友情链接」页的「友链申请要求」里。例如：&#10;须先添加本站为友链（**先链后审**），未添加的站点不予通过。&#10;网站日均独立 IP ≥ **3000**。&#10;网站建站时间 ≥ **1 年**。"></textarea><div class="f-tip">每行写一条；想让某几个字更显眼，用 <b>**文字**</b> 两边各加两个星号包起来。<b>留空则前台不显示「友链申请要求」这一块</b>。</div></div>
+          <div id="m-links"></div>
+          <button class="btn-add" id="btn-add-links">＋ 添加友链</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-bolt"></i>VIP 视频解析接口</h3>
+          <div class="f-tip">用于播放页的 VIP 视频解析。每条填：<b>接口名称</b> + <b>接口地址</b>，地址要带上拼接前缀（例如 <b>https://你的解析域名/?url=</b>，播放时会自动把视频地址接在后面）；可以添加多条供访客切换。<b>一条都不填，前台就不显示 VIP 解析功能</b>。</div>
+          <div id="m-vip-jx"></div>
+          <button class="btn-add" id="btn-add-vip-jx">＋ 添加解析接口</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-ban"></i>搜索违禁词</h3>
+          <div class="f-tip">访客搜索的词只要命中下面任意一个词，就会被直接拦截：不会去请求影片数据，也不会进入「搜索排行榜」和搜索历史。<br>匹配规则：不区分大小写、<b>包含即命中</b>（例如填「广告」，搜「广告电影」也会被拦）。留空 = 不拦截任何词。</div>
+          <div class="mb-3">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <button type="button" class="ck-btn" style="margin-left:0" id="btn-banned-default"><i class="fas fa-file-import"></i> 载入推荐词库</button>
+              <button type="button" class="ck-btn" style="margin-left:0" id="btn-banned-clear"><i class="fas fa-eraser"></i> 清空</button>
+              <span class="ck-status" id="ck-banned"></span>
+            </div>
+            <textarea id="f-search_banned" class="form-control" style="min-height:140px" placeholder="一行写一个词（也支持逗号 / 分号 / 空格分隔）&#10;例如：&#10;广告&#10;加微信&#10;办证"></textarea>
+            <div class="f-tip" style="line-height:1.95">
+              <b>怎么用</b><br>
+              · 一行写一个词，也可以用逗号 / 分号 / 空格分隔，随时可以增删；保存后约 1 分钟生效<br>
+              · 点「载入推荐词库」= 自动帮你填好一套常用词，填完还能继续修改、删除<br>
+              · 从别处整理好的词库（一行一个或逗号分隔的文本）可以整段粘贴进来，格式都兼容<br>
+              <b>小提示</b><br>
+              · 建议只填确实不该出现在站内的词；词太短、太常见容易误伤正常搜索<br>
+              · 如果某个影视剧名里正好含有你填的词，把这个词删掉就行<br>
+              · 只作用于「搜索关键词」，不会影响网站里的影片数据
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-rank">
+        <div class="card-box">
+          <h3><i class="fas fa-chart-bar"></i>搜索排行榜</h3>
+          <div class="f-tip">统计访客都搜了哪些词、各搜了多少次，用来了解站内热门内容。被违禁词拦截的搜索不会计入（词表见「其他设置 → 搜索违禁词」）。<br>切到总榜 / 日榜 / 周榜 / 月榜查看不同时间范围；「清理旧词」会一并清掉超过 30 天的旧记录。<br><b>防刷规则</b>：单字符（如「见」「的」「1」）、纯符号、同一个字重复、少于 4 位的纯数字，都不计入榜单；同一个 IP 短时间内重复搜同一个词，只计第一次。这些是固定的，正常访客碰不到。</div>
+          <div class="d-flex gap-2 mb-2 flex-wrap">
+            <button class="rank-tab active" data-range="all">总榜</button>
+            <button class="rank-tab" data-range="day">日榜</button>
+            <button class="rank-tab" data-range="week">周榜</button>
+            <button class="rank-tab" data-range="month">月榜</button>
+            <button class="btn-add ms-auto" id="rank-prune">🧹 清理旧词</button>
+          </div>
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn-add" id="rank-refresh">🔄 刷新</button>
+            <button class="ri-del" id="rank-clear" style="border-radius:10px">清空全部</button>
+            <span class="text-muted small align-self-center" id="rank-total"></span>
+          </div>
+          <div id="rank-list"><div class="empty">加载中…</div></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-shield-halved"></i>搜索防刷与配额</h3>
+          <div class="f-tip">搜索每被请求一次，都会消耗部署平台的一次接口调用额度（免费套餐一般是每天 10 万次）。下面这些数字用来防止有人把额度刷光：超出后前台只是让访客先过一道验证码，<b>正常访客一天的搜索是个位数，填多少都不影响他们</b>。</div>
+          <div class="qs-sug">
+            <div class="qs-sug-head"><i class="fas fa-lightbulb"></i>不确定填多少？照下面挑一套</div>
+            <table class="qs-tbl">
+              <thead>
+                <tr><th>项目</th><th>免费套餐建议</th><th>付费套餐建议</th></tr>
+              </thead>
+              <tbody>
+                <tr><th>全站每天搜索上限</th><td class="free">20000</td><td class="paid">100000</td></tr>
+                <tr><th>同一个 IP 每天搜索上限</th><td class="free">100</td><td class="paid">300</td></tr>
+                <tr><th>同一个 IP 每天硬上限</th><td class="free">200</td><td class="paid">600</td></tr>
+                <tr><th>每分钟搜索多少次开始验证码</th><td class="free">6</td><td class="paid">12</td></tr>
+                <tr><th>同一个词每天最多计入榜单</th><td class="free">100</td><td class="paid">300</td></tr>
+              </tbody>
+            </table>
+            <div class="qs-formula">
+              <b>懒人公式</b>：全站上限 ≈ 你套餐「每天接口调用额度」的 <b>20%</b>；单 IP 上限 = <b>免费 100 / 付费 300</b>，硬上限填它的 <b>2 倍</b>。<br>
+              <b>为什么</b>：免费套餐每天约 10 万次调用（只有 /api 接口算，页面文件不算），全站搜索压到 2 万次，剩下 8 万留给首页、详情、播放等其它接口；付费套餐每月 1000 万次（约每天 33 万次），搜索占三分之一更宽松。<br>
+              <b>懒得算</b>：直接留空，用系统默认值（40000 / 200 / 400 / 10 / 300）也不会出问题 —— 这些限制只在有人恶意刷的时候才会触发。
+            </div>
+            <div class="qs-btn-row">
+              <button type="button" class="btn-add" id="btn-qs-free"><i class="fas fa-wand-magic-sparkles"></i> 填入免费套餐建议值</button>
+              <button type="button" class="btn-add" id="btn-qs-paid"><i class="fas fa-wand-magic-sparkles"></i> 填入付费套餐建议值</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">全站每天搜索上限</label><input type="text" id="f-search_daily_all" class="form-control" placeholder="40000"><div class="f-tip">超过这个次数后，所有搜索都要先过验证码。<b>按上面表格填即可</b>（约为套餐每日调用额度的 20%，给首页、详情、播放等接口留出余量）；不确定就留空用 40000。</div></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">同一个 IP 每天搜索上限</label><input type="text" id="f-search_daily_ip" class="form-control" placeholder="200"><div class="f-tip">超过后该 IP 需要过验证码。留空用 200。</div></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">同一个 IP 每天硬上限</label><input type="text" id="f-search_daily_ip_hard" class="form-control" placeholder="400"><div class="f-tip">超过后该 IP 当天直接拒绝搜索（验证码也不放行）。应大于上面的上限；留空用 400。</div></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">每分钟搜索多少次开始验证码</label><input type="text" id="f-search_rate_min" class="form-control" placeholder="10"><div class="f-tip">一个人一分钟内连续搜索超过这个次数，就要过验证码（防脚本连点）。留空用 10。</div></div>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">同一个词每天最多计入榜单的次数</label><input type="text" id="f-hot_max_per_day" class="form-control" placeholder="300"><div class="f-tip">同一个关键词每天最多给榜单贡献这么多次，避免有人反复刷同一个词占榜。留空用 300。</div></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-plugin">
+        <div class="card-box">
+          <h3><i class="fas fa-toggle-on"></i>插件功能总开关</h3>
+          <div class="f-tip">开启后：前台搜索页侧栏出现「插件」入口，插件页可以正常打开，访客能下载 / 安装你的浏览器插件。<br><b>关闭（默认）</b>：前台不出现任何插件入口，<b>直接访问插件页也会被拦掉、自动跳回首页</b>，脚本安装地址同样不可下载。<br>不做浏览器插件就保持关闭；要预览插件页效果，先打开开关保存即可。</div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="m-plugin_enabled" role="switch">
+            <label class="form-check-label small fw-semibold" for="m-plugin_enabled">启用插件页（前台显示插件入口）</label>
+          </div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-puzzle-piece"></i>油猴脚本</h3>
+          <div class="f-tip">这是给豆瓣网页版加一个「找资源」按钮的浏览器脚本：访客在豆瓣电影页点该按钮，就能直接跳到本站搜索并播放。<br>下面填的是这个按钮的样式与文字，<b>改完保存即自动写进脚本</b>，访客在「插件设置」对应的前台页面点安装就能用。留空的项使用默认值。</div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">豆瓣跳转到的站点地址</label><input type="text" id="f-us_site" class="form-control" placeholder="留空 = 当前网站域名"><div class="f-tip">访客在豆瓣点按钮后跳转到哪个网站；留空则自动使用本站域名。</div></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">按钮文字</label><input type="text" id="f-us_text" class="form-control" placeholder="找资源"><div class="f-tip">按钮上显示的文字，默认「找资源」；可以带 emoji，如 🔍 找资源（最长 24 个字）。</div></div>
+          </div>
+          <div class="row">
+            <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">按钮起始色</label><input type="color" id="f-us_c1" class="form-control form-control-color" value="#7c3aed"><div class="f-tip">按钮渐变色的左半边。</div></div>
+            <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">按钮结束色</label><input type="color" id="f-us_c2" class="form-control form-control-color" value="#6d28d9"><div class="f-tip">按钮渐变色的右半边。</div></div>
+            <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">文字颜色</label><input type="color" id="f-us_color" class="form-control form-control-color" value="#ffffff"><div class="f-tip">按钮上文字的颜色。</div></div>
+            <div class="col-md-3 mb-3"><label class="form-label small fw-semibold">圆角</label><input type="text" id="f-us_radius" class="form-control" placeholder="20px"><div class="f-tip">按钮四角圆润程度：<b>20px</b> 更圆，<b>4px</b> 更方。</div></div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">内边距（控制宽高）</label><input type="text" id="f-us_padding" class="form-control" placeholder="4px 14px"><div class="f-tip">按钮内部留白，按「上下 左右」两段写，数值越大按钮越大，如 4px 14px。</div></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">字号</label><input type="text" id="f-us_fontsize" class="form-control" placeholder="13px"><div class="f-tip">按钮文字大小，如 13px / 14px。</div></div>
+            <div class="col-md-4 mb-3"><label class="form-label small fw-semibold">按钮预览</label><div id="us-preview" style="padding:6px 0"><a id="us-preview-btn" style="display:inline-block;padding:4px 14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;vertical-align:middle;cursor:pointer;white-space:nowrap">找资源</a></div></div>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">脚本文件名</label><input type="text" id="f-userscript_name" class="form-control" placeholder="zhuiju.user.js" oninput="document.getElementById('us-name-tip').textContent = (this.value||'zhuiju.user.js')"><div class="f-tip">访客下载 / 安装脚本时使用的文件名，前台的安装按钮也显示它；留空则用默认文件名 <b>zhuiju.user.js</b>。<br><b>注意：文件名必须保持以 .user.js 结尾</b>（油猴插件只认这种后缀），否则访客点安装只会看到脚本内容，需要手动新建再粘贴。</div></div>
+          <hr class="wp-hr">
+          <div class="f-tip">下面这些是<b>脚本安装后显示在油猴里的信息</b>（装过的人靠「版本号」判断要不要更新）。全部留空则按你的站点自动生成，一般不用改。</div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">脚本名称（@name）</label><input type="text" id="f-us_name" class="form-control" placeholder="留空 = 站名 - 豆瓣找资源"><div class="f-tip">油猴脚本列表里显示的名字。</div></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">脚本版本（@version）</label><input type="text" id="f-us_version" class="form-control" placeholder="留空 = 1.0.0"><div class="f-tip">只能用数字 / 字母 / 点 / 横线，如 <b>1.0.0</b>。<b>改了脚本内容就把它加一位</b>（如 1.0.1），老用户才会收到更新提示。</div></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">作者（@author）</label><input type="text" id="f-us_author" class="form-control" placeholder="留空 = 你的网站域名"><div class="f-tip">显示给安装脚本的人看，一般填站点域名。</div></div>
+            <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">命名空间（@namespace）</label><input type="text" id="f-us_namespace" class="form-control" placeholder="留空 = 你的网站地址"><div class="f-tip">脚本的唯一标识，防止和别人的脚本重名；填站点域名即可，一般不用改。</div></div>
+          </div>
+          <div class="mb-3"><label class="form-label small fw-semibold">脚本说明（@description）</label><input type="text" id="f-us_desc" class="form-control" placeholder="留空 = 在豆瓣电影页面一键跳转到本站搜索资源"><div class="f-tip">油猴列表里那句介绍，一句话说清这脚本干嘛用的。</div></div>
+        </div>
+        <div class="card-box" id="row-crx_url" style="display:none">
+          <h3><i class="fas fa-chrome"></i>Chrome 扩展</h3>
+          <div class="mb-3"><label class="form-label small fw-semibold">Chrome 扩展下载地址</label><input type="text" id="f-crx_url" class="form-control" placeholder="https://你的网盘或CDN/扩展文件.crx"><div class="f-tip">Chrome 扩展安装包的下载地址，前台「下载 Chrome 扩展」按钮就指向这里。</div></div>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-list-ol"></i>安装步骤</h3>
+          <div class="f-tip">前台插件页「安装步骤」里显示的内容。每条填：<b>步骤标题</b> + <b>详细说明</b>（纯文字即可，序号会自动生成）。<br>可以随意增加、删除、调整；<b>一条都不填，前台就不显示这一块</b>（插件页不会出现任何内置示例文案）。</div>
+          <div id="m-steps"></div>
+          <button class="btn-add" id="btn-add-steps">＋ 添加步骤</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-star"></i>功能亮点</h3>
+          <div class="f-tip">前台插件页「功能亮点」的四宫格卡片。每条填：<b>图标</b>（Font Awesome 类名，如 <b>fa-bolt</b>，留空用星形）+ <b>标题</b> + <b>说明</b>；建议 2~4 条。<b>全部留空则前台不显示这一块</b>。</div>
+          <div id="m-feats"></div>
+          <button class="btn-add" id="btn-add-feats">＋ 添加亮点</button>
+        </div>
+        <div class="card-box">
+          <h3><i class="fas fa-circle-question"></i>常见问题</h3>
+          <div class="f-tip">前台插件页「常见问题」里显示的内容。每条填：<b>问题</b> + <b>回答</b>，访客点击问题即可展开答案。<b>全部留空则前台不显示这一块</b>。</div>
+          <div id="m-faq"></div>
+          <button class="btn-add" id="btn-add-faq">＋ 添加问答</button>
+        </div>
+      </section>
+
+      <div class="save-bar">
+        <button class="btn-save" id="save-btn">💾 保存全部配置</button>
+        <span class="text-muted small" id="save-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+  const SEC_TITLES = { basic:'基础设置', play:'播放设置', app:'APP设置', wp:'网盘设置', rank:'搜索排行', plugin:'插件设置', other:'其他设置' };
+
+  const FIELD_KEYS = ['daily_api','wp_api_host','web3forms_access_key','site_name','site_desc','site_icon','link_reqs',
+    'crx_url','userscript_name',
+    'us_site','us_text','us_c1','us_c2','us_color','us_padding','us_fontsize','us_radius',
+    'us_name','us_version','us_author','us_namespace','us_desc',
+    'search_banned',
+    'search_daily_all','search_daily_ip','search_daily_ip_hard','search_rate_min','hot_max_per_day','purge_skip_min',
+    'quark_cookie','quark_dir','baidu_cookie','baidu_dir','uc_cookie','uc_dir',
+    'stats_code'];
+  const ENV_OF = { daily_api:'DAILY_API', wp_api_host:'WP_API_HOST', web3forms_access_key:'WEB3FORMS_ACCESS_KEY',
+    quark_cookie:'QUARK_COOKIE', quark_dir:'QUARK_DIR' };
+
+  const PS_FIELDS = [{ key:'name', ph:'播放源名称，如 暴风资源', cls:'re-w30' }, { key:'url', ph:'接口地址 https://...' }];
+  const CS_FIELDS = [{ key:'pic', ph:'图片链接 https://...', cls:'re-w38' }, { key:'link', ph:'搜索关键词 或 外链 URL' },
+    { key:'mode', type:'select', options:[{ value:'search', label:'搜索关键词' }, { value:'external', label:'打开外链' }] }];
+  const DL_CHANNELS = [
+    { key:'uc', label:'UC网盘' }, { key:'quark', label:'夸克网盘' }, { key:'baidu', label:'百度网盘' },
+    { key:'thunder', label:'迅雷网盘' }, { key:'other', label:'其他网盘' },
+  ];
+  const NAV_FIELDS = [{ key:'label', ph:'显示文字，如 APP下载', cls:'re-w20' }, { key:'href', ph:'链接 / 路径，如 /app', cls:'re-w35' }, { key:'icon', ph:'图标 class，如 fa-download' }];
+  const LI_FIELDS = [{ key:'name', ph:'站点名称', cls:'re-w25' }, { key:'url', ph:'友链地址 https://...' }];
+  const JX_FIELDS = [{ key:'name', ph:'解析名称，如 789解析', cls:'re-w25' }, { key:'url', ph:'解析地址（含 ?url=）https://...' }];
+  const STEP_FIELDS = [{ key:'title', ph:'步骤标题，如 下载扩展', cls:'re-w25' }, { key:'desc', ph:'步骤说明（纯文字）' }];
+  const FAQ_FIELDS = [{ key:'q', ph:'问题，如 点击下载后怎么用？', cls:'re-w30' }, { key:'a', ph:'回答' }];
+  const FEAT_FIELDS = [{ key:'icon', ph:'图标，如 fa-bolt', cls:'re-w15' }, { key:'title', ph:'标题，如 极速轻量', cls:'re-w20' }, { key:'desc', ph:'一句话说明' }];
+  const MODULE_FIELDS = { play_page:['image_url','ad_link'] };
+  const MODULE_LISTS = {};
+
+  let ENV_SET = {};
+
+  const toast = (m, ok=true) => { const t=$('#toast'); t.textContent=m; t.className='toast show '+(ok?'ok':'err'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
+  const getVal = (id) => { const e=$(id); return e ? (e.value||'').trim() : ''; };
+  const setVal = (id, v) => { const e=$(id); if (e) e.value = (v==null?'':v); };
+  const fillField = (k, v) => setVal('#f-'+k, v);
+
+  const buildRow = (fields, vals) => {
+    const row = document.createElement('div'); row.className='row-editor';
+    for (const f of fields) {
+      let el;
+      if (f.type === 'select') {
+        el = document.createElement('select');
+        f.options.forEach(o => { const op=document.createElement('option'); op.value=o.value; op.textContent=o.label; el.appendChild(op); });
+        if (vals[f.key] != null) el.value = vals[f.key];
+      } else if (f.type === 'textarea') {
+        el = document.createElement('textarea'); el.placeholder=f.ph||''; el.value = vals[f.key]!=null?vals[f.key]:'';
+      } else { el = document.createElement('input'); el.type='text'; el.placeholder=f.ph||''; el.value = vals[f.key]!=null?vals[f.key]:''; }
+      el.className = 'ri' + (f.cls ? ' '+f.cls : ''); el.dataset.k = f.key;
+      row.appendChild(el);
+    }
+    const del = document.createElement('button'); del.className='ri-del'; del.textContent='删除';
+    del.addEventListener('click', () => row.remove()); row.appendChild(del);
+    return row;
+  };
+  const renderList = (boxId, fields, arr) => { const box=$('#'+boxId); box.innerHTML=''; (Array.isArray(arr)?arr:[]).forEach(it=>box.appendChild(buildRow(fields, it))); };
+  const collectList = (boxId, fields) => Array.from($('#'+boxId).querySelectorAll('.row-editor')).map(row => {
+    const o={}; fields.forEach(f => { o[f.key] = (row.querySelector('[data-k="'+f.key+'"]')?.value||'').trim(); }); return o;
+  });
+
+  let androidApps = [], iosApps = [];
+  let androidEditIdx = -1, iosEditIdx = -1;
+  let androidKw = '', iosKw = '';
+  const fillAndroid = (it) => {
+    it = it || {};
+    const methods = Array.isArray(it.methods) ? it.methods : [];
+    setVal('#m-android-name', it.name); setVal('#m-android-image', it.image);
+    DL_CHANNELS.forEach(c => { const m = methods.find(x => x.type === c.key); setVal('#m-android-dl-'+c.key, m ? m.url : ''); });
+  };
+  const collectAndroidApp = () => ({
+    name: getVal('#m-android-name'),
+    image: getVal('#m-android-image'),
+    methods: DL_CHANNELS.map(c => ({ type:c.key, url:getVal('#m-android-dl-'+c.key) })).filter(m => m.url),
+  });
+  const fillIos = (it) => { it = it || {}; ['name','image','link','copy','text'].forEach(k => setVal('#m-ios-'+k, it[k])); };
+  const collectIosApp = () => { const o={}; ['name','image','link','copy','text'].forEach(k => o[k]=getVal('#m-ios-'+k)); return o; };
+  const setAndroidEditing = (on) => {
+    $('#android-save').textContent = on ? '💾 保存修改' : '💾 保存';
+    $('#android-cancel').style.display = on ? '' : 'none';
+  };
+  const setIosEditing = (on) => {
+    $('#ios-save').textContent = on ? '💾 保存修改' : '💾 保存';
+    $('#ios-cancel').style.display = on ? '' : 'none';
+  };
+
+  const filterApps = (apps, kw) => {
+    const list = apps.map((a, i) => ({ app: a, idx: i }));
+    if (!kw) return list;
+    const k = kw.toLowerCase();
+    return list.filter(o => (o.app.name || '').toLowerCase().includes(k));
+  };
+  const appRowHtml = (app, kind, idx, kw) => {
+    const methods = Array.isArray(app.methods) ? app.methods : [];
+    let sub = '';
+    if (kind === 'android') {
+      sub = methods.length ? methods.map(m => { const c = DL_CHANNELS.find(x => x.key === m.type); return c ? c.label : m.type; }).join(' / ') : '暂无下载链接';
+    } else {
+      sub = [app.link ? '商城ID ' + app.link : '', app.copy ? '口令 ' + app.copy : '', app.text || ''].filter(Boolean).join(' · ') || '暂无信息';
+    }
+    return '<div class="app-saved" data-kind="' + kind + '" data-idx="' + idx + '">'
+      + (app.image ? '<img src="' + esc(app.image) + '" alt="" onerror="this.style.display=\'none\'">' : '')
+      + '<div class="as-info"><div class="as-name">' + esc(app.name || '未命名 APP') + '</div><div class="as-sub">' + esc(sub) + '</div></div>'
+      + '<div class="as-acts"><button type="button" class="as-btn edit">修改</button><button type="button" class="as-btn del">删除</button></div>'
+      + '</div>';
+  };
+  const appListHtml = (apps, kind, kw) => {
+    const list = filterApps(apps, kw);
+    if (!apps.length) return '<div class="pv-empty">保存后在此显示 APP 列表<br>（悬停列表项可 修改 / 删除）</div>';
+    if (kw && !list.length) return '<div class="pv-empty">未找到匹配「' + esc(kw) + '」的 APP</div>';
+    return '<div class="pv-head"><span>已保存 APP</span><b>' + apps.length + ' 个' + (kw ? ' · 匹配 ' + list.length : '') + '</b></div>'
+      + list.map(o => appRowHtml(o.app, kind, o.idx, kw)).join('');
+  };
+  const renderAndroidList = () => {
+    const box = $('#android-preview'); if (!box) return;
+    box.innerHTML = appListHtml(androidApps, 'android', androidKw);
+  };
+  const renderIosList = () => {
+    const box = $('#ios-preview'); if (!box) return;
+    box.innerHTML = appListHtml(iosApps, 'ios', iosKw);
+  };
+  const bindAppSearch = (kind) => {
+    const input = $(kind === 'android' ? '#android-search' : '#ios-search');
+    if (!input) return;
+    input.addEventListener('input', () => {
+      if (kind === 'android') androidKw = input.value.trim(); else iosKw = input.value.trim();
+      kind === 'android' ? renderAndroidList() : renderIosList();
+    });
+  };
+
+  const bindAppListActions = (kind) => {
+    const box = $(kind === 'android' ? '#android-preview' : '#ios-preview');
+    if (!box) return;
+    box.addEventListener('click', (e) => {
+      const row = e.target.closest('.app-saved'); if (!row) return;
+      const idx = parseInt(row.dataset.idx, 10);
+      if (e.target.closest('.del')) {
+        const cur = kind === 'android' ? androidApps : iosApps;
+        const target = cur[idx];
+        if (!confirm('确定删除「' + ((target && target.name) || '') + '」吗？')) return;
+        const next = cur.slice(); next.splice(idx, 1);
+        saveSection(box, kind === 'android' ? { android_apps: next } : { ios_apps: next }, () => {
+          if (kind === 'android') {
+            androidApps = next; renderAndroidList();
+            if (androidEditIdx === idx) { androidEditIdx = -1; fillAndroid({}); setAndroidEditing(false); }
+            else if (androidEditIdx > idx) androidEditIdx--;
+          } else {
+            iosApps = next; renderIosList();
+            if (iosEditIdx === idx) { iosEditIdx = -1; fillIos({}); setIosEditing(false); }
+            else if (iosEditIdx > idx) iosEditIdx--;
+          }
+          toast('已删除');
+        });
+        return;
+      }
+      if (e.target.closest('.edit')) {
+        const app = (kind === 'android' ? androidApps : iosApps)[idx]; if (!app) return;
+        if (kind === 'android') { fillAndroid(app); androidEditIdx = idx; setAndroidEditing(true); }
+        else { fillIos(app); iosEditIdx = idx; setIosEditing(true); }
+        const form = box.closest('.app-wrap')?.querySelector('.app-form');
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  };
+
+  const collectObj = (mod) => {
+    const o = {};
+    (MODULE_FIELDS[mod]||[]).forEach(f => { const v=getVal('#m-'+mod+'-'+f); if (v) o[f]=v; });
+    const lists = MODULE_LISTS[mod]||{};
+    for (const lk in lists) { const arr = collectList('#m-'+mod+'-'+lk, lists[lk]); if (arr.length) o[lk]=arr; }
+    return o;
+  };
+  const fillObj = (mod, data) => {
+    const d = (data && typeof data==='object') ? data : {};
+    (MODULE_FIELDS[mod]||[]).forEach(f => setVal('#m-'+mod+'-'+f, d[f]));
+    const lists = MODULE_LISTS[mod]||{};
+    for (const lk in lists) renderList('#m-'+mod+'-'+lk, lists[lk], d[lk]);
+  };
+  const CK_TYPES = ['quark', 'baidu', 'uc'];
+  let bannedDefaultText = '';
+  const setCk = (type, text, ok) => {
+    const el = $('#ck-' + type);
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'ck-status' + (ok === true ? ' ok' : (ok === false ? ' bad' : ''));
+  };
+  const checkCookie = async (type, btn) => {
+    if (btn) btn.disabled = true;
+    setCk(type, '检测中…', null);
+    try {
+      const r = await fetch('/api/admin/check-cookie?type=' + encodeURIComponent(type), { cache: 'no-store' });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) { setCk(type, '登录已过期，请重新登录', false); return; }
+      setCk(type, d.msg || (d.ok ? '有效' : '检测失败'), d.ok === true);
+    } catch (e) { setCk(type, '检测请求失败：' + ((e && e.message) ? e.message : e), false); }
+    finally { if (btn) btn.disabled = false; }
+  };
+  const checkFilledCookies = () => CK_TYPES.forEach(t => { if (getVal('#f-' + t + '_cookie')) checkCookie(t); });
+  CK_TYPES.forEach(t => {
+    const b = document.querySelector('[data-check="' + t + '"]');
+    if (b) b.addEventListener('click', () => checkCookie(t, b));
+  });
+
+  const btnCleanup = $('#btn-cleanup');
+  const runCleanup = async () => {
+    const el = $('#ck-cleanup');
+    if (btnCleanup) btnCleanup.disabled = true;
+    el.className = 'ck-status';
+    el.textContent = '清理中…';
+    try {
+      const r = await fetch('/api/admin/cleanup?all=1', { method: 'POST' });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) { el.className = 'ck-status bad'; el.textContent = '登录已过期，请重新登录'; return; }
+      el.className = 'ck-status ' + ((d.code === 1 && !d.failed) ? 'ok' : 'bad');
+      el.textContent = d.msg || (d.code === 1 ? '已清理' : '清理失败');
+      const dt = $('#ck-cleanup-detail');
+      if (dt) {
+        const lines = [];
+        if (d.pending && d.pending.length) lines.push('队列待办：' + d.pending.map((p) => p.what + '（' + p.inMin + ' 分钟后到期）').join(' / '));
+        if (d.reasons && d.reasons.length) lines.push('结果：' + d.reasons.join('；'));
+        if (d.skipped && d.skipped.length) lines.push('跳过：' + d.skipped.join('；'));
+        dt.textContent = lines.join('\n');
+      }
+    } catch (e) {
+      el.className = 'ck-status bad';
+      el.textContent = '清理请求失败：' + ((e && e.message) ? e.message : e);
+    } finally {
+      if (btnCleanup) btnCleanup.disabled = false;
+    }
+  };
+  if (btnCleanup) btnCleanup.addEventListener('click', runCleanup);
+
+
+  // ===== 网盘文件管理：列目录 + 删除勾选项（直接用上面各网盘设置的目标目录）=====
+  const panType = $('#pan-type'), panListEl = $('#pan-list'),
+    panWrap = $('#pan-wrap'), panStatusEl = $('#pan-status'), panCount = $('#pan-count'), panAll = $('#pan-all');
+  const panFmtSize = (n) => {
+    n = Number(n) || 0;
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+    if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+    return (n / 1073741824).toFixed(2) + ' GB';
+  };
+  const panFmtTime = (ms) => {
+    const t = Number(ms) || 0;
+    if (!t) return '';
+    const d = new Date(t);
+    return isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  };
+  const panChecked = () => Array.from(panListEl.querySelectorAll('.pan-ck:checked')).map((c) => c.value);
+  const panRefreshCount = () => {
+    panCount.textContent = '共 ' + panListEl.children.length + ' 项，已选 ' + panChecked().length + ' 项';
+  };
+  const panStatus = (text, ok) => {
+    panStatusEl.className = 'ck-status ' + (ok ? 'ok' : 'bad');
+    panStatusEl.textContent = text;
+  };
+  const panQuery = (extra) => '/api/admin/pan?type=' + encodeURIComponent(panType.value) + (extra || '');
+
+  const loadPan = async () => {
+    panStatus('读取中…', true);
+    if (panWrap) panWrap.style.display = 'none';
+    panListEl.textContent = '';
+    try {
+      const r = await fetch(panQuery('&action=list'), { method: 'POST' });
+      if (r.status === 401) { panStatus('登录已过期，请重新登录', false); return; }
+      const d = await r.json().catch(() => ({}));
+      if (d.code !== 1) { panStatus(d.msg || '读取失败', false); return; }
+      const items = Array.isArray(d.items) ? d.items : [];
+      if (!items.length) { panStatus('这个目录里没有文件', true); return; }
+      const frag = document.createDocumentFragment();
+      items.forEach((it) => {
+        const row = document.createElement('label');
+        row.className = 'pan-row';
+        const ck = document.createElement('input');
+        ck.type = 'checkbox'; ck.className = 'pan-ck'; ck.value = it.id;
+        const ico = document.createElement('i');
+        ico.className = 'pan-ico fas ' + (it.dir ? 'fa-folder' : 'fa-file');
+        const name = document.createElement('span');
+        name.className = 'pan-name'; name.textContent = it.name; name.title = it.name;
+        const meta = document.createElement('span');
+        meta.className = 'pan-meta';
+        meta.textContent = (it.dir ? '文件夹' : panFmtSize(it.size)) + (panFmtTime(it.mtime) ? ' · ' + panFmtTime(it.mtime) : '');
+        row.append(ck, ico, name, meta);
+        ck.addEventListener('change', panRefreshCount);
+        frag.appendChild(row);
+      });
+      panListEl.appendChild(frag);
+      if (panWrap) panWrap.style.display = '';
+      if (panAll) panAll.checked = false;
+      panRefreshCount();
+      panStatus('已列出 ' + items.length + ' 项', true);
+    } catch (e) {
+      panStatus('读取失败：' + ((e && e.message) || e), false);
+    }
+  };
+
+  const delPan = async () => {
+    const ids = panChecked();
+    if (!ids.length) { panStatus('请先勾选要删除的项目', false); return; }
+    if (!confirm('确定删除选中的 ' + ids.length + ' 项？删除后无法恢复（文件夹会连里面一起删）。')) return;
+    const btn = $('#btn-pan-del');
+    if (btn) btn.disabled = true;
+    panStatus('删除中…', true);
+    try {
+      const r = await fetch(panQuery('&action=del&ids=' + encodeURIComponent(ids.join('|'))), { method: 'POST' });
+      const d = await r.json().catch(() => ({}));
+      panStatus(d.msg || (d.code === 1 ? '已删除' : '删除失败'), d.code === 1);
+      if (d.code === 1) loadPan();
+    } catch (e) {
+      panStatus('删除失败：' + ((e && e.message) || e), false);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  if (panAll) {
+    panAll.addEventListener('change', () => {
+      panListEl.querySelectorAll('.pan-ck').forEach((c) => { c.checked = panAll.checked; });
+      panRefreshCount();
+    });
+  }
+  const btnPanList = $('#btn-pan-list');
+  if (btnPanList) btnPanList.addEventListener('click', loadPan);
+  const btnPanDel = $('#btn-pan-del');
+  if (btnPanDel) btnPanDel.addEventListener('click', delPan);
+
+  const usPreview = () => {
+    const btn = $('#us-preview-btn');
+    if (!btn) return;
+    const val = (id, dflt) => {
+      const e = $(id);
+      const v = e ? String(e.value).trim() : '';
+      if (e && e.type === 'color' && !v) e.value = dflt;
+      return v || dflt;
+    };
+    const c1 = val('#f-us_c1', '#7c3aed');
+    const c2 = val('#f-us_c2', '#6d28d9');
+    const col = val('#f-us_color', '#ffffff');
+    btn.textContent = val('#f-us_text', '找资源');
+    btn.style.padding = val('#f-us_padding', '4px 14px');
+    btn.style.fontSize = val('#f-us_fontsize', '13px');
+    btn.style.borderRadius = val('#f-us_radius', '20px');
+    btn.style.color = col;
+    btn.style.background = 'linear-gradient(135deg,' + c1 + ',' + c2 + ')';
+  };
+  ['#f-us_text', '#f-us_c1', '#f-us_c2', '#f-us_color', '#f-us_padding', '#f-us_fontsize', '#f-us_radius'].forEach((sel) => {
+    const e = $(sel);
+    if (e) { e.addEventListener('input', usPreview); e.addEventListener('change', usPreview); }
+  });
+  usPreview();
+
+  const btnCopyCron = $('#btn-copy-cron');
+  if (btnCopyCron) btnCopyCron.addEventListener('click', async () => {
+    const el = $('#ck-cron-url');
+    const txt = (el && el.textContent || '').trim();
+    if (!txt || txt.indexOf('读取中') >= 0) { toast('定时器地址还没加载好，稍后再试', false); return; }
+    const done = () => {
+      btnCopyCron.innerHTML = '<i class="fas fa-check"></i> 已复制';
+      setTimeout(() => { btnCopyCron.innerHTML = '<i class="fas fa-copy"></i> 复制'; }, 1600);
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(txt);
+      else {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      done();
+    } catch (_) { toast('复制失败，请手动选中地址复制', false); }
+  });
+
+  const bannedEl = $('#f-search_banned');
+  const splitWords = (s) => String(s || '').split(/[\n\r,，;；|、\s]+/).map((x) => x.trim()).filter(Boolean);
+  const setBannedStatus = (t, ok) => {
+    const el = $('#ck-banned');
+    if (el) { el.textContent = t || ''; el.className = 'ck-status ' + (ok ? 'ok' : 'bad'); }
+  };
+  const btnBannedDefault = $('#btn-banned-default');
+  if (btnBannedDefault) btnBannedDefault.addEventListener('click', () => {
+    if (!bannedDefaultText) { setBannedStatus('推荐词库未加载，请刷新页面后重试', false); return; }
+    const merged = [...new Set([...splitWords(bannedEl.value), ...splitWords(bannedDefaultText)])];
+    bannedEl.value = merged.join('\n');
+    setBannedStatus('已载入，共 ' + merged.length + ' 个词（记得点右上角「保存」才生效）', true);
+  });
+  const btnBannedClear = $('#btn-banned-clear');
+  if (btnBannedClear) btnBannedClear.addEventListener('click', () => {
+    if (!confirm('清空违禁词列表？清空后搜索不再拦截（记得保存）。')) return;
+    bannedEl.value = '';
+    setBannedStatus('已清空（记得点「保存」）', true);
+  });
+
+  const fill = (cfg, envSet) => {
+    ENV_SET = envSet || {};
+    // 左上角品牌与浏览器标签跟着后台「网站名称」走（没填就还是「后台管理」）
+    const siteName = String(cfg.site_name || '').trim();
+    const brandEl = $('#brand-name');
+    if (brandEl) brandEl.textContent = siteName || '后台管理';
+    document.title = (siteName ? siteName + ' · ' : '') + '后台管理';
+    for (const k of FIELD_KEYS) fillField(k, cfg[k]);
+    const fp = (cfg.first_popup && typeof cfg.first_popup==='object') ? cfg.first_popup : {};
+    const fpChk = $('#m-first_popup-enabled'); if (fpChk) fpChk.checked = !!fp.enabled;
+    setVal('#m-first_popup-title', fp.title);
+    setVal('#m-first_popup-content', fp.content);
+    setVal('#m-first_popup-btn_text', fp.btn_text);
+    setVal('#m-first_popup-btn_link', fp.btn_link);
+    const pa = (cfg.promo_ad && typeof cfg.promo_ad === 'object') ? cfg.promo_ad : {};
+    const paChk = $('#m-promo_ad-enabled'); if (paChk) paChk.checked = !!pa.enabled;
+    setVal('#m-promo_ad-text', pa.text);
+    setVal('#m-promo_ad-link', pa.link);
+    setVal('#m-promo_ad-icon', pa.icon);
+    setVal('#m-promo_ad-bg_color', pa.bg_color);
+    renderList('m-sources', PS_FIELDS, cfg.play_sources);
+    renderList('m-carousel', CS_FIELDS, cfg.carousels);
+    renderList('m-nav', NAV_FIELDS, cfg.nav_links);
+    androidApps = Array.isArray(cfg.android_apps) ? cfg.android_apps : [];
+    iosApps = Array.isArray(cfg.ios_apps) ? cfg.ios_apps : [];
+    androidEditIdx = -1; iosEditIdx = -1;
+    fillAndroid({}); fillIos({});
+    setAndroidEditing(false); setIosEditing(false);
+    renderAndroidList(); renderIosList();
+    fillObj('play_page', cfg.play_page);
+    renderList('m-links', LI_FIELDS, cfg.links);
+    renderList('m-vip-jx', JX_FIELDS, cfg.vip_jx);
+    renderList('m-steps', STEP_FIELDS, cfg.plugin_steps);
+    renderList('m-feats', FEAT_FIELDS, cfg.plugin_feats);
+    renderList('m-faq', FAQ_FIELDS, cfg.plugin_faq);
+    const pluginChk = $('#m-plugin_enabled');
+    if (pluginChk) pluginChk.checked = String(cfg.plugin_enabled || '') === '1';   // 插件页总开关
+    refreshEnvBadges();
+    checkFilledCookies();
+  };
+  const collect = () => {
+    const body = {};
+    for (const k of FIELD_KEYS) body[k] = getVal('#f-'+k);
+    body.play_sources = collectList('m-sources', PS_FIELDS);
+    body.carousels = collectList('m-carousel', CS_FIELDS);
+    body.android_apps = androidApps;
+    body.ios_apps = iosApps;
+    body.nav_links = collectList('m-nav', NAV_FIELDS);
+    const fpChk = $('#m-first_popup-enabled');
+    const fp = {
+      enabled: !!(fpChk && fpChk.checked),
+      title: getVal('#m-first_popup-title'),
+      content: getVal('#m-first_popup-content'),
+      btn_text: getVal('#m-first_popup-btn_text'),
+      btn_link: getVal('#m-first_popup-btn_link'),
+    };
+    body.first_popup = (fp.title || fp.content || fp.btn_text || fp.btn_link) ? fp : {};
+    const paChk = $('#m-promo_ad-enabled');
+    const pa = {
+      enabled: !!(paChk && paChk.checked),
+      text: getVal('#m-promo_ad-text'),
+      link: getVal('#m-promo_ad-link'),
+      icon: getVal('#m-promo_ad-icon'),
+      bg_color: getVal('#m-promo_ad-bg_color'),
+    };
+    body.promo_ad = (pa.enabled && pa.text) ? pa : {};
+    body.play_page = collectObj('play_page');
+    body.links = collectList('m-links', LI_FIELDS);
+    body.vip_jx = collectList('m-vip-jx', JX_FIELDS);
+    body.plugin_steps = collectList('m-steps', STEP_FIELDS);
+    body.plugin_feats = collectList('m-feats', FEAT_FIELDS);
+    body.plugin_faq = collectList('m-faq', FAQ_FIELDS);
+    body.plugin_enabled = ($('#m-plugin_enabled') && $('#m-plugin_enabled').checked) ? '1' : '';
+    return body;
+  };
+  const refreshEnvBadges = () => {
+    $$('[data-env]').forEach(b => {
+      const ek = b.getAttribute('data-env');
+      const fk = Object.keys(ENV_OF).find(k => ENV_OF[k]===ek);
+      const el = $('#f-'+fk); const kvEmpty = !el || !el.value.trim();
+      b.style.display = (ENV_SET[ek] && kvEmpty) ? '' : 'none';
+    });
+  };
+
+  let capId = '';
+  const loadCaptcha = async () => {
+    const qEl = $('#login-cap-q');
+    try {
+      const r = await fetch('/api/admin/captcha', { cache: 'no-store' });
+      const d = await r.json();
+      if (d.code === 1) { capId = d.id; qEl.textContent = d.q; $('#login-cap').value = ''; }
+      else qEl.textContent = '加载失败';
+    } catch(_) { qEl.textContent = '加载失败'; }
+  };
+  $('#login-cap-refresh').addEventListener('click', loadCaptcha);
+
+  const doLogin = async () => {
+    if (!getVal('#login-cap')) { toast('请输入验证码', false); $('#login-cap').focus(); return; }
+    const btn=$('#login-btn'); btn.disabled=true;
+    try {
+      const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user:getVal('#login-user'), pass:getVal('#login-pass'), cap_id:capId, cap_ans:getVal('#login-cap') }) });
+      let d = {};
+      try { d = await r.json(); } catch(_) {}
+      if (d.code===1) {
+        fill(d.cfg||{}, d.env_set||{});
+        $('#db-status').innerHTML = d.db_ready ? '✅ 数据库已连接' : '⚠️ <span style="color:var(--warn)">数据库未连接</span>';
+        $('#login-view').style.display='none'; $('#main-view').style.display='';
+      } else {
+        loadCaptcha();
+        if (r.status === 404 || r.status >= 500) toast('登录接口无响应（HTTP ' + r.status + '）：请确认部署内容包含 functions 目录并已重新部署', false);
+        else toast(d.msg || ('登录失败（HTTP ' + r.status + '）'), false);
+      }
+    } catch(e) { loadCaptcha(); console.error(e); toast('登录请求失败：' + (e && e.message ? e.message : e) + '（按 F12→Network 看 /api/admin/login 的状态码）', false); } finally { btn.disabled=false; }
+  };
+  $('#login-btn').addEventListener('click', doLogin);
+  $('#login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  $('#login-cap').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  $('#logout-btn').addEventListener('click', async () => {
+    await fetch('/api/admin/logout', { method:'POST' }).catch(()=>{});
+    $('#main-view').style.display='none'; $('#login-view').style.display=''; $('#login-pass').value='';
+    loadCaptcha();
+  });
+
+  async function init() {
+    try {
+      const r = await fetch('/api/admin/config');
+      if (r.status===401) { $('#main-view').style.display='none'; $('#login-view').style.display=''; loadCaptcha(); return; }
+      const d = await r.json();
+      if (d.code===1) {
+        fill(d.cfg||{}, d.env_set||{});
+        usPreview();
+        // Chrome 扩展卡片：只在部署变量 CRXTURE=1 时出现（与前台按钮同源）
+        const crxRow = $('#row-crx_url');
+        if (crxRow) crxRow.style.display = d.crxture ? '' : 'none';
+        const cronEl = $('#ck-cron-url');
+        if (cronEl) cronEl.textContent = d.cron_url || (location.origin + '/api/cron-cleanup');
+        bannedDefaultText = d.banned_default || '';
+        fetch('/api/admin/cleanup?peek=1', { method: 'POST' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((p) => {
+            if (!p || p.code !== 1) return;
+            const el = $('#ck-cleanup');
+            if (el) { el.textContent = p.msg || ''; el.className = 'ck-status'; }
+            const dt = $('#ck-cleanup-detail');
+            if (dt) dt.textContent = (p.pending && p.pending.length)
+              ? '队列待办：' + p.pending.map((x) => x.what + '（' + x.inMin + ' 分钟后到期）').join(' / ')
+              : '';
+          })
+          .catch(() => {  });
+        $('#db-status').innerHTML = d.db_ready ? '✅ 数据库已连接' : '⚠️ <span style="color:var(--warn)">数据库未连接</span>';
+        $('#login-view').style.display='none'; $('#main-view').style.display='';
+        return;
+      }
+      toast(d.msg || '配置加载失败', false);
+    } catch(_) {  }
+    $('#login-view').style.display='';
+    loadCaptcha();
+  }
+
+  $$('#side-nav a').forEach(a => a.addEventListener('click', () => {
+    $$('#side-nav a').forEach(x=>x.classList.remove('active')); a.classList.add('active');
+    const sec = a.dataset.section;
+    $$('.section').forEach(s=>s.classList.remove('active'));
+    $('#sec-'+sec).classList.add('active');
+    $('#sec-title').textContent = SEC_TITLES[sec] || '设置';
+    if (sec==='rank') loadRank();
+  }));
+
+  $('#save-btn').addEventListener('click', async () => {
+    const btn=$('#save-btn'), st=$('#save-status'); btn.disabled=true; st.textContent='保存中…';
+    try {
+      const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) });
+      const d = await r.json().catch(()=>({}));
+      if (d.code===1) {
+        toast('已保存');
+        st.innerHTML = '已保存 ' + new Date().toLocaleTimeString() + ' · <b style="color:var(--warn)">前台/插件页没变化就重新部署一次</b>';
+        init();
+      }
+      else if (r.status===401) { toast('登录已过期，请重新登录', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; st.textContent=''; }
+      else { toast(d.msg||'保存失败', false); st.textContent=''; }
+    } catch(_) { toast('网络错误', false); st.textContent=''; } finally { btn.disabled=false; }
+  });
+
+  $('#btn-add-sources').addEventListener('click', () => $('#m-sources').appendChild(buildRow(PS_FIELDS, {})));
+  $('#btn-add-carousel').addEventListener('click', () => $('#m-carousel').appendChild(buildRow(CS_FIELDS, { mode:'search' })));
+  $('#btn-add-nav').addEventListener('click', () => $('#m-nav').appendChild(buildRow(NAV_FIELDS, {})));
+  $('#btn-add-links').addEventListener('click', () => $('#m-links').appendChild(buildRow(LI_FIELDS, {})));
+  $('#btn-add-vip-jx').addEventListener('click', () => $('#m-vip-jx').appendChild(buildRow(JX_FIELDS, {})));
+  // 搜索防刷与配额：一键填入建议值（只改输入框，仍需点底部「保存全部配置」）
+  const fillQuota = (name, v) => {
+    const set = (id, val) => { const el = $('#' + id); if (el) el.value = val; };
+    set('f-search_daily_all', v.all);
+    set('f-search_daily_ip', v.ip);
+    set('f-search_daily_ip_hard', v.hard);
+    set('f-search_rate_min', v.rate);
+    set('f-hot_max_per_day', v.hot);
+    toast('已填入' + name + '建议值，记得点底部「保存全部配置」');
+  };
+  const btnFree = $('#btn-qs-free');
+  if (btnFree) btnFree.addEventListener('click', () => fillQuota('免费套餐', { all: '20000', ip: '100', hard: '200', rate: '6', hot: '100' }));
+  const btnPaid = $('#btn-qs-paid');
+  if (btnPaid) btnPaid.addEventListener('click', () => fillQuota('付费套餐', { all: '100000', ip: '300', hard: '600', rate: '12', hot: '300' }));
+  $('#btn-add-steps').addEventListener('click', () => $('#m-steps').appendChild(buildRow(STEP_FIELDS, {})));
+  $('#btn-add-feats').addEventListener('click', () => $('#m-feats').appendChild(buildRow(FEAT_FIELDS, {})));
+  $('#btn-add-faq').addEventListener('click', () => $('#m-faq').appendChild(buildRow(FAQ_FIELDS, {})));
+
+  const saveSection = async (btn, partial, after) => {
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/admin/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(partial) });
+      const d = await r.json().catch(()=>({}));
+      if (d.code===1) { toast('已保存；前台/插件页没变化就重新部署一次'); after(); }
+      else if (r.status===401) { toast('登录已过期，请重新登录', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; }
+      else toast(d.msg||'保存失败', false);
+    } catch(_) { toast('网络错误', false); } finally { btn.disabled=false; }
+  };
+  $('#android-save').addEventListener('click', () => {
+    const app = collectAndroidApp();
+    if (!app.name) return toast('请先填写 APP名称', false);
+    if (!app.image) return toast('请先填写 图片地址', false);
+    const now = Date.now();
+    const editing = androidEditIdx >= 0 ? androidApps[androidEditIdx] : null;
+    const next = androidApps.slice();
+    if (editing) {
+      next.splice(androidEditIdx, 1);
+      next.unshift({ ...app, created_at: editing.created_at || now, updated_at: now });
+    } else {
+      next.unshift({ ...app, created_at: now, updated_at: now });
+    }
+    saveSection($('#android-save'), { android_apps: next }, () => {
+      androidApps = next; androidEditIdx = -1;
+      fillAndroid({}); setAndroidEditing(false); renderAndroidList();
+    });
+  });
+  $('#android-cancel').addEventListener('click', () => { androidEditIdx = -1; fillAndroid({}); setAndroidEditing(false); });
+  $('#ios-save').addEventListener('click', () => {
+    const app = collectIosApp();
+    if (!app.name) return toast('请先填写 APP名称', false);
+    if (!app.image) return toast('请先填写 图片地址', false);
+    const now = Date.now();
+    const editing = iosEditIdx >= 0 ? iosApps[iosEditIdx] : null;
+    const next = iosApps.slice();
+    if (editing) {
+      next.splice(iosEditIdx, 1);
+      next.unshift({ ...app, created_at: editing.created_at || now, updated_at: now });
+    } else {
+      next.unshift({ ...app, created_at: now, updated_at: now });
+    }
+    saveSection($('#ios-save'), { ios_apps: next }, () => {
+      iosApps = next; iosEditIdx = -1;
+      fillIos({}); setIosEditing(false); renderIosList();
+    });
+  });
+  $('#ios-cancel').addEventListener('click', () => { iosEditIdx = -1; fillIos({}); setIosEditing(false); });
+  bindAppListActions('android');
+  bindAppListActions('ios');
+  bindAppSearch('android');
+  bindAppSearch('ios');
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  let rankRange = 'all';
+  async function loadRank(range) {
+    if (range) rankRange = range;
+    const box=$('#rank-list'); box.innerHTML='<div class="empty">加载中…</div>';
+    try {
+      const r = await fetch('/api/admin/rank?range='+encodeURIComponent(rankRange));
+      if (r.status===401) {
+        toast('登录已过期', false); $('#main-view').style.display='none'; $('#login-view').style.display=''; return;
+      }
+      const d = await r.json();
+      if (d.code!==1) { box.innerHTML='<div class="empty">'+esc(d.msg||'加载失败')+'</div>'; return; }
+      $('#rank-total').textContent = '累计 '+(d.total||0)+' 个词';
+      if (!d.list || !d.list.length) { box.innerHTML='<div class="empty">暂无数据</div>'; return; }
+      box.innerHTML = d.list.map((it,i) =>
+        '<div class="rank-item"><span class="rank-no'+(i<3?' top':'')+'">'+(i+1)+'</span>'
+        +'<span class="rank-word">'+esc(it.word)+'</span><span class="rank-count">'+it.count+' 次</span>'
+        +'<button class="ri-del" data-w="'+esc(it.word)+'" style="border-radius:9px">删除</button></div>').join('');
+      box.querySelectorAll('.ri-del').forEach(b => b.addEventListener('click', () => rankAction('?word='+encodeURIComponent(b.dataset.w), '已删除')));
+    } catch(_) { box.innerHTML='<div class="empty">网络错误</div>'; }
+  }
+  async function rankAction(qs, okMsg) {
+    try { const r = await fetch('/api/admin/rank'+qs, { method:'DELETE' }); const d = await r.json(); toast(d.code===1?(d.msg||okMsg):(d.msg||'操作失败'), d.code===1); loadRank(); } catch(_) { toast('网络错误', false); }
+  }
+  $('#rank-refresh').addEventListener('click', () => loadRank());
+  $('#rank-clear').addEventListener('click', () => { if (confirm('确定清空全部搜索热词？')) rankAction('', '已清空'); });
+  document.querySelectorAll('#sec-rank .rank-tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#sec-rank .rank-tab').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    loadRank(btn.dataset.range);
+  }));
+  $('#rank-prune').addEventListener('click', async () => {
+    try { const r = await fetch('/api/admin/rank', { method:'POST' }); const d = await r.json(); toast(d.code===1?(d.msg||'已清理'):(d.msg||'操作失败'), d.code===1); loadRank(); } catch(_) { toast('网络错误', false); }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

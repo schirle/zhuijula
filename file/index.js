@@ -1,6 +1,5 @@
 (() => {
         'use strict';
-
         const CONTINUE_KEY = 'ftv_continue';
         const FRIEND_MAX = 12;
         const RAIL_LIMIT = 12;
@@ -13,49 +12,37 @@
             { key: '美剧', label: '美剧' },
             { key: '英剧', label: '英剧' },
         ];
-
         const { observe: observeImages } = initLazyImages('300px');
-
-        /* ══════════ 通用卡片（海报 + 角标 + 标题 + 副标题） ══════════ */
         function makeCard({ pic, title, sub = '', badge = '', badgeClass = 'card-badge', rate = '', href, newTab = false }) {
             const a = document.createElement('a');
             a.className = 'card'; a.title = title;
             if (href) { a.href = href; if (newTab) { a.target = '_blank'; a.rel = 'noopener'; } }
             else { a.href = 'javascript:void(0)'; a.addEventListener('click', e => e.preventDefault()); }
-
             const imgWrap = document.createElement('div');
             imgWrap.className = 'card-img-wrap';
-
             const img = document.createElement('img');
             img.alt = title; img.loading = 'lazy';
             if (pic) img.setAttribute('data-src', proxyImg(pic));
             imgWrap.appendChild(img);
-
             const loadingEl = document.createElement('div');
             loadingEl.className = 'img-loading';
             loadingEl.innerHTML = '<img src="file/loading.gif" alt="">';
             imgWrap.appendChild(loadingEl);
-
             if (rate) { const r = document.createElement('span'); r.className = 'card-rate'; r.textContent = '★' + Number(rate).toFixed(1); imgWrap.appendChild(r); }
             if (badge) { const b = document.createElement('span'); b.className = badgeClass; b.textContent = badge; imgWrap.appendChild(b); }
-
             const mask = document.createElement('div');
             mask.className = 'play-mask';
             mask.innerHTML = '<span class="play-ico"><i class="fas fa-play"></i></span>';
             imgWrap.appendChild(mask);
-
             const h2 = document.createElement('h2');
             h2.className = 'card-title'; h2.textContent = title;
             a.appendChild(imgWrap); a.appendChild(h2);
             if (sub) { const p = document.createElement('p'); p.className = 'card-sub'; p.textContent = sub; a.appendChild(p); }
             return a;
         }
-
-        /* ══════════ 频道筛选 + 推荐网格 ══════════ */
         const feedCache = {};
         const feedPage = {};
         let curType = '热门';
-
         function renderChips() {
             const box = document.getElementById('chips');
             if (!box) return;
@@ -77,7 +64,6 @@
             });
             box.appendChild(frag);
         }
-
         function wireHomeSearch() {
             const form = document.getElementById('home-search-form');
             if (!form) return;
@@ -89,7 +75,6 @@
                 location.href = '/search?key=' + encodeURIComponent(kw);
             });
         }
-
         function feedSub(m) {
             if (m.card_subtitle) return m.card_subtitle;
             const g = Array.isArray(m.genres) ? m.genres.join(' / ') : '';
@@ -98,7 +83,7 @@
         function feedCard(m) {
             return makeCard({
                 pic: m.pic, title: m.title || '未知', sub: feedSub(m),
-                badge: '免费', badgeClass: 'card-badge free', rate: m.rating,
+                rate: m.rating,
                 href: '/search?key=' + encodeURIComponent(m.title || ''),
             });
         }
@@ -111,7 +96,6 @@
             }
             return out;
         }
-
         async function loadFeed(page) {
             const grid = document.getElementById('feed-grid');
             if (!grid) return;
@@ -124,7 +108,7 @@
                     const data = await r.json();
                     feedCache[type] = (data && data.code === 1 && Array.isArray(data.list)) ? data.list : [];
                 }
-                if (type !== curType) return; // 已切到其它频道，丢弃过期结果
+                if (type !== curType) return;
                 const list = dedupe(feedCache[type]);
                 if (!list.length) { grid.innerHTML = '<div class="feed-error">暂无内容，稍后再来看看</div>'; renderFeedPager(0, 0); return; }
                 const totalPages = Math.max(1, Math.ceil(list.length / FEED_BATCH));
@@ -150,8 +134,6 @@
                 grid.appendChild(err);
             }
         }
-
-        /* 列表页码切换（每页 FEED_BATCH 条） */
         function renderFeedPager(cur, total) {
             const pager = document.getElementById('feed-pager');
             if (!pager) return;
@@ -170,23 +152,17 @@
                 if (chips) window.scrollTo({ top: chips.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
             };
         }
-
-        /* ══════════ 轮播 banner（图片来自后台「首页轮播」配置，未配置则隐藏） ══════════ */
         async function loadCarousel() {
             const track = document.getElementById('hc-track');
             const carouselEl = document.getElementById('hero-carousel');
             if (!track || !carouselEl) return;
             let items = [];
             try { const d = await window.getSiteConfig().catch(() => ({})); if (d && Array.isArray(d.carousels) && d.carousels.length) items = d.carousels; } catch (_) {}
-            // 轮播为空：只隐藏轮播图区域，悬浮搜索框必须保留显示
             if (!items.length) { carouselEl.style.display = 'none'; const thumbs = document.getElementById('hc-thumbs'); if (thumbs) thumbs.style.display = 'none'; return; }
             track.innerHTML = '';
-
             const thumbs = document.getElementById('hc-thumbs');
             if (thumbs) thumbs.innerHTML = '';
-
             const multi = items.length > 1;
-            // 左右箭头
             let prevBtn = null, nextBtn = null;
             if (multi) {
                 prevBtn = document.createElement('button');
@@ -197,14 +173,17 @@
                 nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
                 carouselEl.appendChild(prevBtn); carouselEl.appendChild(nextBtn);
             }
-
             items.forEach((it, i) => {
                 const slide = document.createElement('div');
                 slide.className = 'hc-slide';
                 const link = it.link || '#';
                 const mode = it.mode || (/^https?:\/\//.test(link) ? 'external' : 'search');
                 const a = document.createElement('a');
-                a.href = esc(link);
+                // 外链轮播只放行 http(s)（esc 只做 HTML 转义，挡不住 javascript: 这类协议）；
+                // 搜索型轮播给一个正常的站内搜索地址（点击仍由下面的处理器接管）
+                a.href = mode === 'external'
+                    ? ((typeof safeUrl === 'function' ? safeUrl(link) : '') || '#')
+                    : ('/search?key=' + encodeURIComponent(link));
                 const img = document.createElement('img');
                 img.src = esc(it.pic ? proxyImg(it.pic) : ''); img.alt = '';
                 img.loading = (i === 0) ? 'eager' : 'lazy';
@@ -226,8 +205,6 @@
                 }
                 slide.appendChild(a);
                 track.appendChild(slide);
-
-                // 缩略图条（每张一个，点击切换）
                 if (thumbs) {
                     const b = document.createElement('button');
                     b.type = 'button';
@@ -240,7 +217,6 @@
                 }
             });
             if (thumbs) thumbs.style.display = '';
-
             const total = items.length;
             let idx = 0, timer = null;
             const thumbEls = () => (thumbs ? thumbs.querySelectorAll('.hc-thumb') : []);
@@ -249,8 +225,6 @@
                 track.style.transform = 'translateX(-' + idx * 100 + '%)';
                 const thumbsEls = thumbEls();
                 thumbsEls.forEach((d, i) => d.classList.toggle('active', i === idx));
-                // 只横向滚动缩略图条容器自身（scrollLeft），绝不用 scrollIntoView——
-                // 后者会连带滚动页面纵向位置，造成用户浏览时页面被「带飞」
                 const active = thumbsEls[idx];
                 if (active && thumbs) {
                     const tr = thumbs.getBoundingClientRect();
@@ -276,31 +250,26 @@
             start();
             window.addEventListener('pagehide', stop, { once: true });
         }
-
-        /* ══════════ 首页文字广告（后台可配置） ══════════ */
         async function loadPromoAd() {
             const el = document.querySelector('.promo-ad');
             if (!el) return;
             try {
                 const d = await window.getSiteConfig().catch(() => ({}));
                 const pa = d && d.promo_ad;
-                if (!pa) { if (el) el.style.display = 'none'; return; } // 后台未配置 → 隐藏
+                if (!pa) { if (el) el.style.display = 'none'; return; }
                 if (!(pa.enabled && pa.text)) { el.style.display = 'none'; return; }
                 const textEl = el.querySelector('.promo-text');
                 if (textEl) textEl.textContent = pa.text;
                 const ic = el.querySelector('.promo-icon');
                 if (ic) ic.className = 'fas ' + String(pa.icon || 'fa-fire').replace(/^fa[sb]?\s+/, '');
-                // 背景颜色（后台可配置；留空用默认渐变）
                 if (pa.bg_color && /^#[0-9a-fA-F]{3,8}$/.test(String(pa.bg_color).trim())) el.style.background = String(pa.bg_color).trim();
                 else el.style.background = '';
-                el.setAttribute('href', pa.link ? String(pa.link).trim() : '#');
+                el.setAttribute('href', safeUrl(pa.link) || '#');
                 if (!pa.link) { el.removeAttribute('target'); el.removeAttribute('rel'); }
                 else { el.target = '_blank'; el.rel = 'nofollow noopener'; }
                 el.style.display = '';
-            } catch (_) { /* 接口异常时保留默认展示 */ }
+            } catch (_) {  }
         }
-
-        /* ══════════ 友情链接 ══════════ */
         const renderFriendLinks = (list, max) => {
             const section = document.getElementById('friend-links');
             const el = document.getElementById('friend-list');
@@ -314,7 +283,7 @@
             const shown = max ? arr.slice(0, max) : arr;
             for (const item of shown) {
                 const name = item.name || item.title || '';
-                const link = item.link || item.url || '';
+                const link = safeUrl(item.link || item.url || '');   // 只放行 http(s)，防止 javascript: 链接
                 if (!name || !link) continue;
                 const a = document.createElement('a');
                 a.className = 'friend-item';
@@ -340,8 +309,8 @@
             if (more) more.style.display = (max && arr.length > max) ? '' : 'none';
             section.style.display = '';
         };
-        const loadFriendLinks = () => {
-            const CACHE = 'ftv_cache_friends';
+        const loadFriendLinks = async () => {
+            const CACHE = 'ftv_cache_friends_v2';
             const cached = lsGetJson(CACHE);
             if (cached && cached.ts && Date.now() - cached.ts < 7200000) {
                 renderFriendLinks(cached.list, FRIEND_MAX);
@@ -349,21 +318,29 @@
             }
             const el = document.getElementById('friend-list');
             if (el) el.innerHTML = '<span class="fl-loading">友情链接加载中…</span>';
+            // ① 后台自己填的友链已随 /api/config 一起下发（页面本来就请求过、还带缓存）
+            //    → 直接用它，省掉一次接口请求（省的是 Cloudflare Functions 调用次数）
+            try {
+                const cfg = window.getSiteConfig ? await window.getSiteConfig() : null;
+                const own = (cfg && Array.isArray(cfg.friends)) ? cfg.friends : [];
+                if (own.length) {
+                    lsSetJson(CACHE, { ts: Date.now(), list: own });
+                    renderFriendLinks(own, FRIEND_MAX);
+                    return;
+                }
+            } catch (_) { /* 取不到配置就走下面的接口 */ }
+            // ② 没填后台友链（说明用的是远端数据）→ 走带失效检测的接口
             fetch('/api/friend-list').then(r => r.json()).then(data => {
                 const list = (data && data.code === 1 && Array.isArray(data.list)) ? data.list : [];
                 lsSetJson(CACHE, { ts: Date.now(), list });
                 renderFriendLinks(list, FRIEND_MAX);
             }).catch(() => renderFriendLinks([], FRIEND_MAX));
         };
-
-        /* ══════════ 初始化 ══════════ */
         const init = () => {
-            // 刷新一律回到顶部：禁用浏览器滚动恢复，避免恢复到旧位置后被
-            // 懒加载图片撑开布局，「停」在影视列表开头而不是页面顶部
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
             const htmlEl = document.documentElement;
             const prevSb = htmlEl.style.scrollBehavior;
-            htmlEl.style.scrollBehavior = 'auto'; // 绕过全局 smooth，瞬时归零
+            htmlEl.style.scrollBehavior = 'auto';
             window.scrollTo(0, 0);
             htmlEl.style.scrollBehavior = prevSb;
             renderChips();
@@ -372,8 +349,6 @@
             loadCarousel();
             loadPromoAd();
             loadFriendLinks();
-
         };
-
         document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

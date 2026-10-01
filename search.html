@@ -6,13 +6,11 @@
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex">
     <meta name="description" content="免费追剧搜索 - 全网影视一键搜索，免会员免费在线观看">
-    <title>搜索 - 免费追剧</title>
+    <title></title>
     <link rel="icon" href="/file/zhuiju.png">
     <meta name="theme-color" content="#0f0f17">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="stylesheet" href="/file/common.css">
-    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" href="file/fontawesome/css/all.min.css">
     <script>
       (function () { try { var t = localStorage.getItem('ftv_theme'); if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
     </script>
@@ -25,11 +23,10 @@
     <nav class="top-nav" id="top-nav"></nav>
 
     <main class="main-container">
-        <!-- 大搜索框 + Tab -->
         <section class="s-hero">
             <form class="s-box" id="s-form" autocomplete="off">
                 <i class="fas fa-search s-ico"></i>
-                <input type="text" id="s-input" placeholder="搜索影视剧名，如：庆余年" autocomplete="off">
+                <input type="text" id="s-input" placeholder="搜索..." autocomplete="off">
                 <button type="button" class="s-clear" id="s-clear" aria-label="清除">✕</button>
                 <button type="submit" class="s-btn">搜索</button>
             </form>
@@ -40,42 +37,36 @@
         </section>
 
         <div class="s-layout">
-            <!-- 结果区 -->
             <div class="s-main">
                 <div id="result-area">
                     <div class="s-guide">
                         <div class="s-guide-icon"><i class="fas fa-clapperboard"></i></div>
                         <div class="s-guide-title">输入片名，一键搜索全网免费片源</div>
-                        <div class="s-guide-sub">聚合 16+ 影视资源站，自动匹配最佳播放源</div>
+                        <div class="s-guide-sub">聚合全网影视资源，自动匹配最佳播放源</div>
                     </div>
                 </div>
                 <div id="wp-area" style="display:none"></div>
             </div>
 
-            <!-- 右侧榜单 -->
             <aside class="s-side">
-                <!-- 今日推荐（cikeee 每日单部影片） -->
                 <div class="side-box" id="side-today-box">
                     <div class="side-title"><i class="fas fa-calendar-day"></i> 今日推荐</div>
                     <div class="side-today" id="side-today"></div>
                 </div>
-                <!-- APP下载（打开应用中心） -->
                 <div class="side-box" id="side-app-box">
                     <div class="side-title"><i class="fas fa-download"></i> APP下载</div>
                     <div class="side-plugin" id="side-app">
-                        <p class="side-plugin-desc">安卓 / iOS 影视应用，扫码即装，免费追剧。</p>
+                        <p class="side-plugin-desc">安卓/苹果用户都在用的免费追剧APP</p>
                         <a class="sp-btn" href="/app"><i class="fas fa-download"></i> 获取应用</a>
                     </div>
                 </div>
-                <!-- 追剧插件（打开插件页） -->
                 <div class="side-box" id="side-plugin-box">
                     <div class="side-title"><i class="fas fa-puzzle-piece"></i> 追剧插件</div>
                     <div class="side-plugin" id="side-plugin">
-                        <p class="side-plugin-desc">在豆瓣电影页面一键「找资源」，直达全网播放源。桌面端即装即用。</p>
+                        <p class="side-plugin-desc">在豆瓣电影页面一键「找资源」，快速查找免费影视资源。</p>
                         <a class="sp-btn" href="/plugin"><i class="fas fa-download"></i> 获取插件</a>
                     </div>
                 </div>
-                <!-- 大家都搜了什么（全站搜索热榜，日/周/月切换） -->
                 <div class="side-box" id="side-hot-box">
                     <div class="side-title">
                         <span class="side-title-main"><i class="fas fa-fire"></i> 搜索排行</span>
@@ -91,11 +82,10 @@
             </aside>
         </div>
 
-        <div class="footer">免费追剧 · 全网影视免费在线观看</div>
+        <div class="footer" data-site-footer>免费追剧 · 全网影视免费在线观看</div>
     </main>
 
     <script defer src="/file/search.js"></script>
     <button class="back-to-top" id="back-to-top" type="button" aria-label="返回顶部" title="返回顶部"><i class="fas fa-arrow-up"></i></button>
-    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=LGn96sWove89ehIt&ck=LGn96sWove89ehIt" async></script>
 </body>
 </html>

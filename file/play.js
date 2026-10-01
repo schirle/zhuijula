@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
         const CDN = ['//unpkg.byted-static.com/xgplayer/2.31.6/browser/index.js', '//unpkg.byted-static.com/xgplayer-hls.js/2.2.2/browser/index.js'];
         const BACKUP = ['//cdn.jsdelivr.net/npm/xgplayer@2.31.6/browser/index.js', '//cdn.jsdelivr.net/npm/xgplayer-hls.js@2.2.2/browser/index.js'];
         let useCdn = 0;
@@ -12,12 +12,36 @@
         }
         loadSeq(0);
     })();
-
     (() => {
         'use strict';
-
         const { observe: observeRelatedImg } = initLazyImages('300px');
 
+        (() => {
+            const slots = document.querySelectorAll('.ad-slot');
+            if (!slots.length) return;
+            const fillSlots = (img, link) => {
+                if (!img) return false;
+                // 广告链接来自后台 / 数据源，只放行 http(s)（挡掉 javascript: 这类可执行协议）
+                const safe = (typeof safeUrl === 'function' ? safeUrl(link) : '');
+                const href = safe || 'javascript:void(0)';
+                const extra = safe ? ' target="_blank" rel="noopener nofollow"' : '';
+                const html = '<a class="ad-banner" href="' + esc(href) + '"' + extra + '>'
+                    + '<img src="' + esc(proxyImg(img)) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="imgFallback(this)">'
+                    + '</a>';
+                slots.forEach(s => { s.innerHTML = html; });
+                return true;
+            };
+            if (typeof window.getSiteConfig === 'function') {
+                window.getSiteConfig().then(cfg => {
+                    const pp = cfg && cfg.code === 1 ? cfg.play_page : null;
+                    const img = pp && String(pp.image_url || '').trim();
+                    if (fillSlots(img, String(pp && pp.ad_link || '').trim())) return;
+                    loadAds();
+                }).catch(() => loadAds());
+            } else {
+                loadAds();
+            }
+        })();
         const state = {
             allEpisodes: {}, currentSource: '', currentIndex: 0, retryCount: 0,
             epOrder: 'asc', epSheetOrder: 'asc',
@@ -26,15 +50,12 @@
             currentUrl: '', currentInfo: null,
             MAX_RETRIES: 2, PLAYER_WAIT_MAX: 20000,
         };
-
         const getEpisodeKey = () => {
             try {
                 const { id, form } = getPlayParams();
                 return id ? `play:ep:${id}:${form}` : '';
             } catch (_) { return ''; }
         };
-
-        // ── 续播 & 倍速 ──
         const SPEED_KEY = 'play:speed';
         const getTimeKey = index => {
             try {
@@ -70,7 +91,7 @@
             const v = getVideo();
             if (!v) return;
             const sp = getSavedSpeed();
-            if (sp === 1) return; // 1x 无需设置，避免偶发重新解码掉帧
+            if (sp === 1) return;
             try { v.playbackRate = sp; } catch (_) {}
         };
         const applyResume = () => {
@@ -79,17 +100,16 @@
             if (!rt) return;
             const v = getVideo();
             if (!v || !isFinite(v.duration) || v.duration <= 0) return;
-            if (rt >= v.duration - 3) return; // 接近结尾不续播
+            if (rt >= v.duration - 3) return;
             state.resumeApplied = true;
             try {
                 v.currentTime = rt;
                 Toast.show(`已续播至 ${fmtTime(rt)}`, 1600);
             } catch (_) {}
         };
-        // ── 键盘左右键快进/快退：短按短跳，长按连续走进度 ──
-        const SEEK_TAP_STEP = 5;     // 短按快进/快退秒数
-        const SEEK_HOLD_STEP = 5;    // 长按每跳秒数
-        const SEEK_HOLD_DELAY = 280; // 超过该时长视为长按，进入连续快进/快退
+        const SEEK_TAP_STEP = 5;
+        const SEEK_HOLD_STEP = 5;
+        const SEEK_HOLD_DELAY = 280;
         let _seekTimer = null, _seekInterval = null, _seekDir = 0, _seekTap = false;
         const seekBy = delta => {
             const v = getVideo();
@@ -101,7 +121,7 @@
             Toast.show((delta < 0 ? '↶ 后退 ' : '前进 ↷ ') + fmtTime(Math.abs(delta)), 600);
         };
         const startSeek = (dir, repeat) => {
-            if (repeat) return; // 长按产生的自动重复事件忽略，由定时器进入连续模式
+            if (repeat) return;
             _seekDir = dir; _seekTap = true;
             clearTimeout(_seekTimer);
             _seekTimer = setTimeout(() => {
@@ -113,17 +133,15 @@
         const endSeek = () => {
             clearTimeout(_seekTimer);
             if (_seekInterval) { clearInterval(_seekInterval); _seekInterval = null; }
-            if (_seekTap) seekBy(_seekDir * SEEK_TAP_STEP); // 短按：一次短跳
+            if (_seekTap) seekBy(_seekDir * SEEK_TAP_STEP);
             _seekTap = false; _seekDir = 0;
         };
         const isM3u8Url = url => /\.m3u8(\?|$)/i.test(url || '');
         const isTouchDevice = () => ('ontouchstart' in window || navigator.maxTouchPoints > 0 || matchMedia('(pointer:coarse)').matches);
-
         const setLoading = (text, isError) => {
             const el = $('#player-loading');
             if (!el) return;
             el.classList.remove('hidden');
-            // 错误提示不应拦截下方的播放控制（暂停/音量/倍速），故置为穿透
             el.style.pointerEvents = isError ? 'none' : '';
             $('.spinner', el).style.display = isError ? 'none' : '';
             const t = $('.player-loading-text', el);
@@ -138,7 +156,6 @@
             if (p.root) { const v = p.root.querySelector('video'); if (v) return v; }
             return $('#mse')?.querySelector('video') || null;
         };
-
         const destroyPlayer = () => {
             if (state.playerWaitTimer) { clearInterval(state.playerWaitTimer); state.playerWaitTimer = null; }
             if (state._clickHandler) {
@@ -158,7 +175,6 @@
             const mseEl = $('#mse');
             if (mseEl) while (mseEl.firstChild) mseEl.removeChild(mseEl.firstChild);
         };
-
         const createPlayer = url => {
             if (state.destroyed || !window.HlsJsPlayer) return null;
             try {
@@ -167,12 +183,10 @@
                 while (mseEl.firstChild) mseEl.removeChild(mseEl.firstChild);
                 return new window.HlsJsPlayer({
                     id: 'mse', url, autoplay: true, playsinline: true,
-                    // 关掉 xgplayer 自带的错误遮罩（中间会显示“刷新”提示且会打断播放），错误统一走我们的处理逻辑
                     ignores: ['error'],
                     whitelist: [''], crossOrigin: 'anonymous',
                     width: '100%', height: '100%', rotateFullscreen: false,
                     fullscreenTarget: $('#video-section') || mseEl,
-                    // 抗卡顿：解封装放到 Worker 线程 + 加大缓冲，缓解「声音在、画面卡」的解码/网络抖动
                     hls: {
                         enableWorker: true,
                         maxBufferLength: 40,
@@ -189,7 +203,6 @@
                 return null;
             }
         };
-
         const initPlayer = url => {
             if (!url || state.destroyed) return;
             state.playerId++;
@@ -213,7 +226,7 @@
                     player.on('canplay', () => {
                         if (state.playerId !== pid) return;
                         onReady();
-                        applyResume(); applySpeed(); // 切换集（switchURL）时 onReady 已触发过，这里兜底续播/倍速
+                        applyResume(); applySpeed();
                     });
                     player.on('playing', () => { if (state.playerId === pid) { onReady(); applyResume(); } });
                     player.on('timeupdate', () => {
@@ -232,8 +245,6 @@
                         if (video) saveCurrentTime(video.currentTime);
                     });
                     setTimeout(() => { if (state.playerId === pid && state.player && !state.readyFired) onReady(); }, 5000);
-                    // 错误自动恢复：HLS 偶发错误（网络抖动 / 切片加载失败）多半可重连恢复，
-                    // 不直接盖死遮罩。最多重试 4 次，全部失败才展示非阻塞的错误提示。
                     let recover = 0;
                     player.on('error', () => {
                         if (state.playerId !== pid) return;
@@ -287,7 +298,6 @@
                 });
             });
         };
-
         const playWhenReady = url => {
             if (!url) return;
             if (state.player && typeof state.player.switchURL === 'function') {
@@ -296,11 +306,9 @@
                 try {
                     state.player.switchURL(url);
                     if (state.player.play) state.player.play().catch(() => {});
-                    // 切换集后新视频就绪时续播/倍速（canplay 兜底）
                     setTimeout(() => { applyResume(); applySpeed(); }, 1500);
                     return;
                 } catch (e) {
-                    /* 回退 */
                 }
             }
             if (window.HlsJsPlayer) { initPlayer(url); return; }
@@ -316,8 +324,6 @@
                 }
             }, 150);
         };
-
-        // 共享：填充广告到所有 .ad-slot 容器
         const loadAds = () => {
             fetch('/api/zhuiju').then(r => r.ok ? r.json() : null).then(data => {
                 const ads = data?.['ad-list'] || [];
@@ -325,7 +331,9 @@
                 if (!slots.length || !ads.length) return;
                 const html = ads.map(ad => {
                     if (!ad.pic) return '';
-                    return `<a class="ad-banner" href="${esc(ad.link || '#')}" target="_blank" rel="nofollow noopener noreferrer">
+                    // 广告链接来自数据源/后台：只放行 http(s)，非法的一律给 #
+                    const href = (typeof safeUrl === 'function' ? safeUrl(ad.link) : '') || '#';
+                    return `<a class="ad-banner" href="${esc(href)}" target="_blank" rel="nofollow noopener noreferrer">
                         <span class="ad-badge">广告</span>
                         <img src="${esc(proxyImg(ad.pic))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="imgFallback(this)">
                     </a>`;
@@ -333,10 +341,7 @@
                 slots.forEach(s => { s.innerHTML = html; });
             }).catch(() => {});
         };
-
-        // 本地记录：继续观看 + 本机热播榜（localStorage，无后端存储）
         const CONTINUE_KEY = 'ftv_continue';
-        const PLAY_RANK_KEY = 'ftv_play_rank';
         const saveContinue = info => {
             try {
                 const id = String(info.vod_id || '');
@@ -356,20 +361,6 @@
                 if (e) { e.ep = ep; lsSetJson(CONTINUE_KEY, list); }
             } catch (_) {}
         };
-        const incPlayRank = (name, pic, id, form) => {
-            if (!name) return;
-            try {
-                const m = lsGetJson(PLAY_RANK_KEY) || {};
-                const cur = m[name] || { count: 0, pic: '', id: '', form: '' };
-                cur.count += 1;
-                if (pic) cur.pic = pic;
-                if (id) cur.id = id;
-                if (form) cur.form = form;
-                m[name] = cur;
-                lsSetJson(PLAY_RANK_KEY, m);
-            } catch (_) {}
-        };
-
         const showError = msg => {
             $('#page-loading')?.classList.add('hidden');
             const app = $('#app'); if (app) app.style.display = 'none';
@@ -377,7 +368,6 @@
             $('#error-view')?.classList.add('visible');
         };
         const retryLoad = () => { state.retryCount = 0; $('#error-view')?.classList.remove('visible'); loadDetail(); };
-
         const loadDetail = () => {
             const params = new URLSearchParams(location.search);
             const id = params.get('id');
@@ -407,36 +397,30 @@
                     }
                 });
         };
-
         const renderDetail = info => {
             if (state.destroyed) return;
             const vodName = info.vod_name || '未知影片';
             state.currentInfo = info;
             saveContinue(info);
-            incPlayRank(info.vod_name, info.vod_pic, String(info.vod_id || ''), new URLSearchParams(location.search).get('form') || 'xg');
-
-            // 海报（桌面侧栏）
             const npPoster = $('#np-poster');
             if (npPoster) {
                 if (info.vod_pic) { npPoster.src = proxyImg(info.vod_pic); npPoster.onerror = () => imgFallback(npPoster); }
                 else npPoster.removeAttribute('src');
             }
-            // 海报（手机 sheet）
             const sheetPoster = $('#sheet-poster');
             if (sheetPoster) {
                 if (info.vod_pic) { sheetPoster.src = proxyImg(info.vod_pic); sheetPoster.onerror = () => imgFallback(sheetPoster); }
                 else sheetPoster.removeAttribute('src');
             }
-
-            // 简介文本（截取纯文本）
             let desc = '';
             if (info.vod_content) {
-                desc = info.vod_content.replace(/<[^>]*>/g, '');
-                try { const tmp = document.createElement('div'); tmp.innerHTML = desc; desc = tmp.textContent || ''; } catch (_) {}
-                desc = desc.replace(/\s+/g, ' ').trim();
+                // 简介来自接口，可能是 HTML：先整体去掉标签（连带着干掉 onerror 之类属性），
+                // 再用 textarea 解析出纯文本（顺带还原 &amp; 这类实体）。
+                // textarea 只按文本解析，不会像 innerHTML 那样加载图片 / 触发事件。
+                const ta = document.createElement('textarea');
+                ta.innerHTML = String(info.vod_content).replace(/<[^>]*>/g, '');
+                desc = (ta.value || '').replace(/\s+/g, ' ').trim();
             }
-
-            // 桌面：np-title 与 np-meta
             const npTitle = $('#np-title');
             if (npTitle) npTitle.innerHTML = `${esc(vodName)} <span class="tag tag-green">${esc(info.vod_remarks || '高清')}</span>`;
             const npMeta = $('#np-meta');
@@ -447,14 +431,10 @@
                 if (info.vod_area) parts.push(`地区: <span>${esc(info.vod_area)}</span>`);
                 npMeta.innerHTML = parts.join(' · ');
             }
-
-            // 手机：vod-title + vod-desc
             const vodTitle = $('#vod-title');
             if (vodTitle) vodTitle.innerHTML = `${esc(vodName)} <span class="tag tag-green" style="font-size:11px;padding:2px 7px;border-radius:999px;background:var(--primary-dim);color:var(--primary-light);font-weight:600;vertical-align:middle">${esc(info.vod_remarks || '高清')}</span>`;
             const vodDesc = $('#vod-desc');
             if (vodDesc) vodDesc.textContent = desc || '暂无简介';
-
-            // 手机 sheet：完整详情
             const sheetTitle = $('#sheet-title');
             if (sheetTitle) sheetTitle.textContent = vodName;
             const sheetMeta = $('#sheet-meta');
@@ -474,8 +454,6 @@
             }
             const sheetDesc = $('#sheet-desc');
             if (sheetDesc) sheetDesc.textContent = desc || '暂无简介';
-
-            // 桌面：简介 tab 内的 desc-section 与 intro-meta
             const descEl = $('#vod-description');
             const descSection = $('#desc-section');
             if (descEl) {
@@ -495,25 +473,20 @@
                 if (info.vod_director) rows.push(`<dt>导演</dt><dd>${esc(info.vod_director)}</dd>`);
             introMeta.innerHTML = rows.join('');
         }
-
             document.title = getSiteName() + ' - ' + vodName;
             const navTitle = document.getElementById('nav-page-title-el');
             if (navTitle && vodName && vodName !== '未知影片') navTitle.textContent = vodName;
             const app = $('#app'); if (app) app.style.display = '';
             const pl = $('#page-loading');
             if (pl) { pl.classList.add('hidden'); setTimeout(() => pl.parentNode && pl.remove(), 400); }
-
-            loadAds();
             parseEpisodes(info);
             if (vodName && vodName !== '未知影片') { buildRelated(vodName); }
         };
-
         const parseEpisodes = info => {
             const fromArr = (info.vod_play_from || '').split('$$$');
             const urlArr = (info.vod_play_url || '').split('$$$');
             const serverArr = (info.vod_play_server || '').split('$$$');
             const noteArr = (info.vod_play_note || '').split('$$$');
-
             state.allEpisodes = {};
             for (let idx = 0; idx < fromArr.length; idx++) {
                 if (!urlArr[idx]) continue;
@@ -551,13 +524,12 @@
                 const total = getCurrentEpisodes().length;
                 if (!isNaN(sv) && sv >= 0 && sv < total) startIdx = sv;
             }
-            playIndex(startIdx); // 续播上次记忆的集数
+            playIndex(startIdx);
         };
-
         const renderSourceTabs = names => {
             const el = $('#source-tabs');
             if (!el) return;
-            const list = names.filter(n => n !== 'xiguam3u8'); // 不显示 xiguam3u8 来源按钮
+            const list = names.filter(n => n !== 'xiguam3u8');
             if (!list.length) { el.innerHTML = ''; return; }
             if (list.length <= 1) { el.innerHTML = ''; return; }
             el.innerHTML = list.map(name => {
@@ -568,14 +540,13 @@
         const renderSheetSources = names => {
             const el = $('#sheet-source-tabs');
             if (!el) return;
-            const list = names.filter(n => n !== 'xiguam3u8'); // 不显示 xiguam3u8 来源按钮
+            const list = names.filter(n => n !== 'xiguam3u8');
             if (!list.length) { el.innerHTML = ''; return; }
             el.innerHTML = list.map(name => {
                 const active = name === state.currentSource ? ' active' : '';
                 return `<button class="source-tab-btn${active}" data-source="${esc(name)}">${esc(name)}</button>`;
             }).join('');
         };
-
         const getCurrentEpisodes = () => state.allEpisodes[state.currentSource]?.list || [];
         const getDisplayEpsDesktop = () => {
             const eps = getCurrentEpisodes();
@@ -587,8 +558,6 @@
             const arr = eps.map((ep, i) => ({ ep, orig: i }));
             return state.epSheetOrder === 'desc' ? arr.reverse() : arr;
         };
-
-        // 桌面：渲染所有集数到 #episode-list
         const renderDesktopEpisodes = () => {
             const list = $('#episode-list');
             const cnt = $('#ep-count');
@@ -609,8 +578,6 @@
             list.innerHTML = '';
             list.appendChild(frag);
         };
-
-        // 手机：渲染当前上下若干集到 #ep-one-row
         const renderMobileOneRow = () => {
             const oRow = $('#ep-one-row');
             const cnt = $('#ep-count-text');
@@ -637,8 +604,6 @@
             oRow.innerHTML = '';
             oRow.appendChild(frag);
         };
-
-        // 手机 sheet：完整集数网格
         const renderSheetEpisodes = () => {
             const list = $('#sheet-ep-list');
             if (!list) return;
@@ -663,12 +628,10 @@
             list.innerHTML = '';
             list.appendChild(frag);
         };
-
         const renderAllEpisodes = () => {
             renderDesktopEpisodes();
             renderMobileOneRow();
         };
-
         const playIndex = index => {
             const eps = getCurrentEpisodes();
             const ep = eps[index];
@@ -682,22 +645,18 @@
                 const { id: cid, form: cform } = getPlayParams();
                 if (cid) updateContinueEp(cid, cform, index);
             } catch (_) {}
-
-            // 桌面：ep-btn 激活态
             const list = $('#episode-list');
             if (list) {
                 $$('.ep-btn', list).forEach(b => b.classList.toggle('active', +b.getAttribute('data-index') === index));
                 const active = list.querySelector('.ep-btn.active');
                 if (active) try { active.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
             }
-            // 手机：ep-mini 激活态并滚动到视野内
             const oRow = $('#ep-one-row');
             if (oRow) {
                 $$('.ep-mini', oRow).forEach(b => b.classList.toggle('active', +b.getAttribute('data-index') === index));
                 const active = oRow.querySelector('.ep-mini.active');
                 if (active) try { active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch (_) {}
             }
-            // 手机 sheet：sheet-ep 激活态 + 在播标记
             const sheetList = $('#sheet-ep-list');
             if (sheetList) {
                 $$('.sheet-ep', sheetList).forEach(b => {
@@ -714,7 +673,6 @@
                     }
                 });
             }
-
             const label = $('#now-ep-label');
             if (label) { label.textContent = ep.name; label.classList.add('show'); }
             const playingLabel = $('#ep-playing-label');
@@ -727,10 +685,8 @@
             if (prevBtn) prevBtn.disabled = index <= 0;
             const nextBtn = $('#act-next');
             if (nextBtn) nextBtn.disabled = index >= eps.length - 1;
-
             playWhenReady(ep.url);
         };
-
         const switchSource = name => {
             if (name === state.currentSource) return;
             state.currentSource = name;
@@ -739,7 +695,6 @@
             renderAllEpisodes();
             playIndex(0);
         };
-
         const makeRecCard = item => {
             const id = item.vod_id || 0;
             const name = item.vod_name || '未知';
@@ -767,8 +722,6 @@
             a.appendChild(poster); a.appendChild(nm);
             return a;
         };
-
-        // 共享：填充相关推荐到所有 .rec-grid 子容器
         const buildRelated = async name => {
             const lists = $$('#related-list, #rec-list');
             if (!lists.length) return;
@@ -797,8 +750,6 @@
                 lists.forEach(el => { el.innerHTML = '<div class="rec-empty">推荐加载失败</div>'; });
             }
         };
-
-        // ── 滑动底栏 ──
         let _lockCount = 0;
         const lockScroll = () => {
             _lockCount++;
@@ -830,13 +781,10 @@
             el.setAttribute('aria-hidden', 'true');
             unlockScroll();
         };
-
         const showTab = name => {
             $$('.side-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
             $$('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
         };
-
-        // ── 分享 ──
         const doShare = () => {
             const url = location.href;
             const rawTitle = $('#np-title')?.textContent?.trim() || $('#vod-title')?.textContent?.trim() || '免费追剧';
@@ -884,14 +832,10 @@
             overlay.classList.add('show');
         };
         const closeShareModal = () => $('#share-overlay')?.classList.remove('show');
-
-        // ── 下载 ──
         const downloadCurrent = () => {
-            // 下载按钮 → 打开应用中心（APP 下载页），不再跳转外部 panso.xyz
             window.open('app.html', '_blank', 'noopener');
         };
         const bindEvents = () => {
-            // 简介入口 → 详情底栏
             const descTrigger = $('#desc-trigger');
             if (descTrigger) descTrigger.addEventListener('click', () => openSheet('detail-sheet'));
             const contentEl = $('#content');
@@ -900,15 +844,11 @@
                     if (e.target.closest('#vod-title') || e.target.closest('#vod-desc')) openSheet('detail-sheet');
                 });
             }
-
-            // 5 个操作按钮（手机）
             $('#act-prev')?.addEventListener('click', () => { if (state.currentIndex > 0) playIndex(state.currentIndex - 1); });
             $('#act-share')?.addEventListener('click', doShare);
             $('#act-dl')?.addEventListener('click', downloadCurrent);
             $('#act-next')?.addEventListener('click', () => { const eps = getCurrentEpisodes(); if (state.currentIndex < eps.length - 1) playIndex(state.currentIndex + 1); });
             $('#act-refresh')?.addEventListener('click', () => location.reload());
-
-            // 倍速选择
             const speedBtn = $('#speed-btn');
             const speedMenu = $('#speed-menu');
             const speedVal = $('#speed-val');
@@ -934,22 +874,14 @@
                 });
                 document.addEventListener('click', () => { speedMenu.hidden = true; });
             }
-
-            // 离开页面 / 切到后台时保存观看进度
             const saveOnLeave = () => { const v = getVideo(); if (v) saveCurrentTime(v.currentTime); };
             window.addEventListener('beforeunload', saveOnLeave);
             document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
-
-            // 桌面侧栏内 np-share
             $('#np-share')?.addEventListener('click', doShare);
-
-            // 来源 tab 点击（桌面 + sheet 共用）
             document.addEventListener('click', e => {
                 const t = e.target.closest('.source-tab-btn');
                 if (t) switchSource(t.getAttribute('data-source'));
             });
-
-            // 桌面侧栏：集数 grid 点击
             const epList = $('#episode-list');
             if (epList) {
                 epList.addEventListener('click', e => {
@@ -959,8 +891,6 @@
                     if (!isNaN(idx)) playIndex(idx);
                 });
             }
-
-            // 手机横排集数点击
             const oneRow = $('#ep-one-row');
             if (oneRow) {
                 oneRow.addEventListener('click', e => {
@@ -970,8 +900,6 @@
                     if (!isNaN(idx)) playIndex(idx);
                 });
             }
-
-            // 手机：打开全集底栏
             $('#ep-open-all')?.addEventListener('click', () => openSheet('ep-sheet'));
             const epBlockHead = document.querySelector('.ep-block .ep-block-head');
             if (epBlockHead) {
@@ -980,8 +908,6 @@
                     if (e.target.closest('.block-label')) openSheet('ep-sheet');
                 });
             }
-
-            // 选集 sheet 内点击
             const sheetList = $('#sheet-ep-list');
             if (sheetList) {
                 sheetList.addEventListener('click', e => {
@@ -998,7 +924,6 @@
                 $$('#sheet-sort .sort-btn').forEach(s => s.classList.toggle('active', s === b));
                 renderSheetEpisodes();
             });
-            // 桌面：选集 tab 内 ep-sort
             const epSort = $('#ep-sort');
             if (epSort) {
                 epSort.addEventListener('click', e => {
@@ -1009,15 +934,11 @@
                     renderDesktopEpisodes();
                 });
             }
-
-            // 桌面侧栏：side-tabs 切换
             const sideTabs = $('#side-tabs');
             if (sideTabs) sideTabs.addEventListener('click', e => {
                 const b = e.target.closest('.side-tab');
                 if (b) showTab(b.dataset.tab);
             });
-
-            // 桌面侧栏：简介展开/收起
             const dtb = $('#desc-toggle-btn');
             if (dtb) dtb.onclick = () => {
                 const d = $('#vod-description');
@@ -1026,14 +947,11 @@
                 d.style.webkitLineClamp = collapsed ? '3' : 'unset';
                 dtb.textContent = collapsed ? '展开 ▾' : '收起 ▴';
             };
-
-            // 底栏关闭
             document.querySelectorAll('.sheet').forEach(sheet => {
                 sheet.querySelectorAll('[data-close]').forEach(el => {
                     el.addEventListener('click', () => closeSheet(sheet));
                 });
             });
-
             $('#share-close')?.addEventListener('click', closeShareModal);
             $('#share-overlay')?.addEventListener('click', e => { if (e.target === e.currentTarget) closeShareModal(); });
             document.addEventListener('keydown', e => {
@@ -1042,15 +960,11 @@
                     else document.querySelectorAll('.sheet.show').forEach(s => closeSheet(s));
                 }
             });
-
             $('#retry-btn')?.addEventListener('click', retryLoad);
-
-            // 键盘快捷键
             document.addEventListener('keydown', e => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
                 switch (e.key) {
                     case 'ArrowLeft':
-                        // 键盘左右键：短按快退/快进，长按连续走进度（集数切换仍用屏幕按钮）
                         e.preventDefault();
                         startSeek(-1, e.repeat);
                         break;
@@ -1076,24 +990,18 @@
                         break;
                 }
             });
-
-            // 松开方快退/快进键：结束长按连续模式（短按则在此触发一次短跳）
             document.addEventListener('keyup', e => {
                 if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') endSeek();
             });
-
             let resizeTimer;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(() => { try { state.player?.resize?.(); } catch (_) {} }, 250);
             });
-
             window.addEventListener('beforeunload', () => { state.destroyed = true; destroyPlayer(); });
         };
-
         bindEvents();
         loadDetail();
-
         setTimeout(() => {
             const pl2 = $('#player-loading');
             if (pl2 && $('#app')?.style.display === 'none' && !pl2.classList.contains('hidden')) {

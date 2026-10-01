@@ -1,15 +1,24 @@
-import { makeRoute, json, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig, buildEnvSet, slugify } from '../../_shared.js';
+import { makeRoute, json, isAdminRequest, adminDenied, loadSiteConfig, saveSiteConfig, buildEnvSet, slugify, getClientIP, checkRateLimit, purgeSiteCaches } from '../../_shared.js';
+import { effectiveCleanupKey } from '../cron-cleanup.js';
+import { BANNED_DEFAULT_TEXT } from '../../_banned-default.js';
 
 export const onRequest = makeRoute(handleAdminConfig);
 
-// 后台配置读写：GET 返回 KV 配置 + 环境变量兜底情况（布尔，不泄露值）；POST 白名单字段保存
 const STR_FIELDS = [
   'wp_api_host',
-  'quark_cookie', 'quark_dir', 'baidu_cookie', 'baidu_dir', 'jjsou_api_key',
+  'quark_cookie', 'quark_dir',
+  'baidu_cookie', 'baidu_dir', 'uc_cookie', 'uc_dir',
+  'search_banned',
   'web3forms_access_key', 'daily_api',
-  'site_name', 'site_desc', 'stats_code',
+  'site_name', 'site_desc', 'site_icon', 'stats_code', 'link_reqs',
+  'crx_url', 'userscript_name', 'plugin_enabled',
+  'us_site', 'us_text', 'us_c1', 'us_c2', 'us_color', 'us_padding', 'us_fontsize', 'us_radius',
+  'us_name', 'us_namespace', 'us_version', 'us_desc', 'us_author',
+  // 搜索防刷与配额（站长在后台「搜索排行」里自己填）
+  'search_daily_all', 'search_daily_ip', 'search_daily_ip_hard', 'search_rate_min', 'hot_max_per_day',
+  // 清理：转存后多少分钟内不清理（0 = 每次都清空）
+  'purge_skip_min',
 ];
-// 结构化列表（数组；空数组 = 清除）
 const LIST_FIELDS = {
   play_sources: {
     validate(it) {
@@ -77,10 +86,11 @@ const LIST_FIELDS = {
       it.icon = String(it.icon || '').trim();
       if (!it.label) return '导航显示文字不能为空';
       if (!it.href) return '导航链接不能为空';
+      // 只允许站内路径或 http(s) 链接：避免把 javascript: 这类可执行协议存进导航
+      if (!/^(https?:\/\/|\/)/i.test(it.href)) return '导航链接请填站内路径（如 /app）或 http(s):// 开头的完整网址';
       return null;
     },
   },
-  // 友情链接（name 站名 / url 链接）—— 后台设置后 /api/friend-list 优先返回
   links: {
     validate(it) {
       if (!it || typeof it !== 'object') return '友链项必须是对象';
@@ -91,7 +101,6 @@ const LIST_FIELDS = {
       return null;
     },
   },
-  // VIP 视频解析接口（name 解析名称 / url 解析地址，需包含 ?url= 拼接前缀）
   vip_jx: {
     validate(it) {
       if (!it || typeof it !== 'object') return '解析接口项必须是对象';
@@ -102,21 +111,55 @@ const LIST_FIELDS = {
       return null;
     },
   },
+  plugin_steps: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '步骤必须是对象';
+      it.title = String(it.title || '').trim();
+      it.desc = String(it.desc || '').trim();
+      if (!it.title) return '步骤标题不能为空';
+      return null;
+    },
+  },
+  plugin_faq: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '问答必须是对象';
+      it.q = String(it.q || '').trim();
+      it.a = String(it.a || '').trim();
+      if (!it.q) return '问题不能为空';
+      return null;
+    },
+  },
+  plugin_feats: {
+    validate(it) {
+      if (!it || typeof it !== 'object') return '亮点必须是对象';
+      it.icon = String(it.icon || '').trim().replace(/^fa[sb]?\s+/, '').slice(0, 40);
+      it.title = String(it.title || '').trim();
+      it.desc = String(it.desc || '').trim();
+      if (!it.title) return '亮点标题不能为空';
+      return null;
+    },
+  },
 };
-// 环境变量兜底提示现已统一到 _shared.js 的 buildEnvSet（单点定义，login/config 共用）
 
-async function handleAdminConfig(request, _url, context) {
+async function handleAdminConfig(request, url, context) {
   const env = context?.env || {};
+  if (!checkRateLimit(getClientIP(request), 30, 'admincfg')) return json({ code: 0, msg: '请求过于频繁，请稍后再试' }, 429);
   if (!await isAdminRequest(request, env)) return adminDenied();
 
   if (request.method === 'GET') {
     const cfg = await loadSiteConfig(env, true);
     const env_set = buildEnvSet(env);
+    const cronKey = await effectiveCleanupKey(env, true);
+    const cronUrl = (url && url.origin ? url.origin : '')
+      + '/api/cron-cleanup?key=' + encodeURIComponent(cronKey);
     return json({
       code: 1,
       cfg,
       env_set,
-      kv_ready: !!(env.KV || env.SEARCH_KV),
+      crxture: String(env.CRXTURE || '').trim() === '1',
+      db_ready: !!(env.DB || env.D1),
+      cron_url: cronUrl,
+      banned_default: BANNED_DEFAULT_TEXT,
     });
   }
 
@@ -125,16 +168,61 @@ async function handleAdminConfig(request, _url, context) {
     try { body = await request.json(); } catch (_) { return json({ code: 0, msg: '请求格式错误' }, 400); }
     const cfg = await loadSiteConfig(env, true);
 
-    // 字符串字段：string/number 直接收；空串 = 清除（回退环境变量）
     for (const k of STR_FIELDS) {
       if (!(k in body)) continue;
       const v = body[k];
       if (v == null) { delete cfg[k]; continue; }
       let s = String(v).trim();
+      if (k === 'site_icon' && s && !/^(https?:\/\/|\/\/|\/|data:image\/)/i.test(s)) {
+        return json({ code: 0, msg: '网站图标地址无效：请填 http(s):// 开头的图片链接（或站内路径，如 /file/logo.png）' }, 400);
+      }
+      if (k === 'crx_url' && s && !/^(https?:\/\/|\/)/i.test(s)) {
+        return json({ code: 0, msg: 'Chrome 扩展下载地址无效：请填 http(s):// 链接或站内路径（如 /file/extension.crx）' }, 400);
+      }
+      if (k === 'userscript_name' && s && /[\\/]/.test(s)) {
+        return json({ code: 0, msg: '文件名不能包含路径分隔符（/ 或 \\）' }, 400);
+      }
+      if (k === 'us_site' && s && !/^https?:\/\/[^\s"'<>]+$/i.test(s)) {
+        return json({ code: 0, msg: '站点地址无效：请填 http(s):// 开头的完整地址（留空则用部署域名）' }, 400);
+      }
+      if ((k === 'us_c1' || k === 'us_c2' || k === 'us_color') && s && !/^#[0-9a-fA-F]{3,8}$/.test(s)) {
+        return json({ code: 0, msg: '颜色格式无效：请用 #7c3aed 这样的色值' }, 400);
+      }
+      if ((k === 'us_fontsize' || k === 'us_radius') && s && !/^[\d.]+(px|rem|em)$/.test(s)) {
+        return json({ code: 0, msg: '尺寸格式无效：请填 13px / 1rem 这类值' }, 400);
+      }
+      if (k === 'us_padding' && s && !/^[\d.]+(px|rem|em)( +[\d.]+(px|rem|em)){0,3}$/.test(s)) {
+        return json({ code: 0, msg: '内边距格式无效：请填 4px 14px 这类值' }, 400);
+      }
+      if (k === 'us_version' && s && !/^[0-9A-Za-z][0-9A-Za-z._-]{0,19}$/.test(s)) {
+        return json({ code: 0, msg: '脚本版本号格式无效：只能用数字 / 字母 / 点 / 横线，如 1.0.0' }, 400);
+      }
+      if (k === 'us_namespace' && s && !/^[A-Za-z0-9._:/-]{1,80}$/.test(s)) {
+        return json({ code: 0, msg: '命名空间格式无效：只能填字母、数字与 . : / _ -（例如 your-site.com）' }, 400);
+      }
+      if ((k === 'us_name' || k === 'us_desc' || k === 'us_author') && /[\r\n]/.test(String(v))) {
+        return json({ code: 0, msg: '这一项不能换行，请填成一行' }, 400);
+      }
+      // 搜索防刷 / 配额：只接受整数，并给一个合理区间（避免填成 0 把正常访客也挡了）
+      if ((k === 'search_daily_all' || k === 'search_daily_ip' || k === 'search_daily_ip_hard'
+        || k === 'search_rate_min' || k === 'hot_max_per_day') && s) {
+        if (!/^\d{1,9}$/.test(s)) return json({ code: 0, msg: '「' + k + '」请只填数字' }, 400);
+        const n = Number(s);
+        const range = k === 'hot_max_per_day' ? [1, 100000]
+          : (k === 'search_daily_all' ? [100, 100000000] : [1, 10000000]);
+        if (n < range[0] || n > range[1]) {
+          return json({ code: 0, msg: '「' + k + '」数值应在 ' + range[0] + ' ~ ' + range[1] + ' 之间' }, 400);
+        }
+      }
+      // 清理豁免时长：允许 0（= 每次都清空），上限 12 小时
+      if (k === 'purge_skip_min' && s) {
+        if (!/^\d{1,4}$/.test(s)) return json({ code: 0, msg: '「转存后多少分钟内不清理」请只填数字' }, 400);
+        if (Number(s) > 720) return json({ code: 0, msg: '「转存后多少分钟内不清理」最多填 720（12 小时）' }, 400);
+      }
+
       if (s) cfg[k] = s; else delete cfg[k];
     }
 
-    // 结构化列表：播放源 / 首页轮播
     for (const key of Object.keys(LIST_FIELDS)) {
       if (!(key in body)) continue;
       let arr = body[key];
@@ -150,7 +238,6 @@ async function handleAdminConfig(request, _url, context) {
       if (arr.length) cfg[key] = arr; else delete cfg[key];
     }
 
-    // 对象型模块：网站主题 / APP页 / 播放页 / 福利页 / 其他（对象；空对象 = 清除）
     for (const key of ['theme', 'app_page', 'play_page', 'other', 'first_popup', 'promo_ad']) {
       if (!(key in body)) continue;
       let o = body[key];
@@ -168,7 +255,6 @@ async function handleAdminConfig(request, _url, context) {
       }
     }
 
-    // 追剧自定义数据：对象或 JSON 字符串；空 = 清除（恢复上游）
     if ('zhuiju_data' in body) {
       let data = body.zhuiju_data;
       if (typeof data === 'string') {
@@ -183,7 +269,7 @@ async function handleAdminConfig(request, _url, context) {
           return json({ code: 0, msg: '自定义数据缺少 jiekou-list 播放源（保存后搜索将不可用），请先「从上游导入」再改' }, 400);
         }
         cfg.zhuiju_data = data;
-        cfg.zhuiju_updated = Date.now(); // 版本号变更 → 各接口立即热加载
+        cfg.zhuiju_updated = Date.now();
       } else if (data == null || data === '') {
         delete cfg.zhuiju_data; delete cfg.zhuiju_updated;
       } else if ('zhuiju_data' in body) {
@@ -192,8 +278,9 @@ async function handleAdminConfig(request, _url, context) {
     }
 
     const ok = await saveSiteConfig(env, cfg);
-    if (!ok) return json({ code: 0, msg: 'KV 未绑定或写入失败（请绑定 KV 命名空间，变量名 KV 或 SEARCH_KV）' }, 500);
-    return json({ code: 1, msg: '已保存' });
+    if (!ok) return json({ code: 0, msg: 'D1 未绑定或写入失败（请在 Pages 项目设置里绑定 D1 数据库，变量名 DB）' }, 500);
+    await purgeSiteCaches(new URL(request.url).origin);
+    return json({ code: 1, msg: '已保存，前台缓存已刷新（最多 5 分钟内全网生效）' });
   }
 
   return json({ code: 0, msg: '不支持的方法' }, 405);

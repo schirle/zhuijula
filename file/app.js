@@ -1,16 +1,13 @@
-﻿(function (win, doc) {
+(function (win, doc) {
   'use strict';
-
   const ua = win.navigator.userAgent || '';
   const DEVICE = /iPad|iPhone|iPod/i.test(ua) ? 'ios' : 'android';
   const DATA_TIMEOUT = 10000;
   const SKELETON_COUNT = 6;
-
   const PLATFORMS = {
     android: { icon: 'fab fa-android', dataKey: 'android-list', label: '安卓APP', sub: '安卓应用 · 网盘下载', cta: '下载', ctaIcon: 'fas fa-download' },
     ios: { icon: 'fab fa-apple', dataKey: 'ios-list', label: '苹果APP', sub: 'iOS 应用 · App Store', cta: '下载', ctaIcon: 'fas fa-download' },
   };
-
   const PAN_DISK = {
     icons: {
       uc: 'https://pp.myapp.com/ma_icon/0/icon_10936_1787015999/96',
@@ -22,15 +19,12 @@
     labels: { uc: 'UC网盘', baidu: '百度网盘', quark: '夸克网盘', thunder: '迅雷网盘', other: '其他网盘' },
     order: ['uc', 'quark', 'baidu', 'thunder', 'other'],
   };
-
   let data = null;
   let dataPromise = null;
   let currentCategory = DEVICE;
   let filteredApps = [];
-
   const getData = (key) => (data ? data[key] : null) || [];
   const findByName = (list, name) => list.find((i) => i.name === name) || null;
-
   const loadData = () => {
     if (dataPromise) return dataPromise;
     const embedded = win.__ZUIJU_DATA__;
@@ -42,11 +36,16 @@
         ]).catch(() => ({}));
     return dataPromise.then((d) => { data = d || {}; return data; });
   };
-
-  const renderChips = () => {
+  // 后台有数据的分类（没添加安卓 / 苹果就不出现对应页签与列表）
+  const availableCategories = () => Object.keys(PLATFORMS).filter((k) => getData(PLATFORMS[k].dataKey).some((a) => a && a.name));
+  const renderChips = (keys) => {
     const el = $('#appChips');
     if (!el) return;
-    el.innerHTML = Object.keys(PLATFORMS)
+    const list = Array.isArray(keys) ? keys : availableCategories();
+    // 只有一个分类时不用切换页签，直接隐藏整条筛选
+    if (list.length < 2) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = '';
+    el.innerHTML = list
       .map((k) => {
         const p = PLATFORMS[k];
         const active = k === currentCategory ? ' active' : '';
@@ -54,7 +53,6 @@
       })
       .join('');
   };
-
   const renderSkeleton = (count) => {
     const list = $('#appList');
     if (!list) return;
@@ -64,14 +62,11 @@
     }
     list.innerHTML = html;
   };
-
-  // 近 2 天（48 小时）内新增/修改的 APP 显示「新」角标；ut 由后台保存时间生成，仅作判断不展示
   const isRecent = (ts) => {
     if (!ts) return false;
     const t = ts < 1e12 ? ts * 1000 : ts;
     return Date.now() - t <= 2 * 24 * 3600 * 1000;
   };
-
   const buildCard = (category, app) => {
     const p = PLATFORMS[category];
     const div = doc.createElement('div');
@@ -85,12 +80,11 @@
       (isRecent(app.ut) ? '<span class="app-card__badge">新</span>' : '');
     return div;
   };
-
   const paint = (apps) => {
     const list = $('#appList');
     if (!list) return;
     if (!apps.length) {
-      list.innerHTML = '<div class="no-result"><i class="fas fa-inbox"></i>该分类暂无数据，敬请期待</div>';
+      list.innerHTML = '<div class="no-result"><i class="fas fa-inbox"></i>该分类暂未开放，敬请期待</div>';
       return;
     }
     const frag = doc.createDocumentFragment();
@@ -98,7 +92,6 @@
     list.innerHTML = '';
     list.appendChild(frag);
   };
-
   const renderAppList = async (category, opts) => {
     opts = opts || {};
     currentCategory = category;
@@ -110,20 +103,30 @@
     filteredApps = apps;
     paint(apps);
   };
-
-  const initChips = () => {
+  const initChips = (keys) => {
+    const list = Array.isArray(keys) ? keys : availableCategories();
     const box = $('#appChips');
-    if (!box) return;
-    box.addEventListener('click', (e) => {
-      const chip = e.target.closest('.app-chip');
-      if (!chip || chip.classList.contains('active')) return;
-      $$('.app-chip').forEach((x) => x.classList.remove('active'));
-      chip.classList.add('active');
-      renderAppList(chip.dataset.category);
-    });
-    renderAppList(DEVICE);
+    if (box) {
+      box.addEventListener('click', (e) => {
+        const chip = e.target.closest('.app-chip');
+        if (!chip || chip.classList.contains('active')) return;
+        $$('.app-chip').forEach((x) => x.classList.remove('active'));
+        chip.classList.add('active');
+        renderAppList(chip.dataset.category);
+      });
+    }
+    // 后台什么都没添加：列表与页签都不显示，只留一句说明
+    if (!list.length) {
+      renderChips(list);
+      const el = $('#appList');
+      if (el) el.innerHTML = '<div class="no-result"><i class="fas fa-inbox"></i>APP 下载暂未开放，敬请期待</div>';
+      return;
+    }
+    // 默认停在访客当前设备对应的分类，没有就取第一个可用的
+    const start = list.includes(DEVICE) ? DEVICE : list[0];
+    renderChips(list);
+    renderAppList(start, { skipSkeleton: list.length < 2 });
   };
-
   const openModal = (title, bodyHtml) => {
     const overlay = $('#app-modal');
     if (!overlay) return;
@@ -132,14 +135,12 @@
     overlay.classList.add('show');
     doc.body.style.overflow = 'hidden';
   };
-
   const closeModal = () => {
     const overlay = $('#app-modal');
     if (!overlay) return;
     overlay.classList.remove('show');
     doc.body.style.overflow = '';
   };
-
   const buildDownloadContent = (category, info) => {
     let html = '';
     if (category === 'android') {
@@ -159,11 +160,11 @@
         : '<div class="no-download-link">暂无下载链接</div>';
     } else if (category === 'ios') {
       const code = String(info.copy || '').trim();
+      const tip = String(info.text || '').trim();
       if (code) {
-        html += `<div class="download-title">兑换口令（复制后在 App Store 粘贴）</div><div class="dl-code">${esc(code)}</div><button class="copy-btn" type="button"><i class="fas fa-copy"></i> 复制口令</button>`;
-      } else if (info.text) {
-        const t = String(info.text).replace(/\n/g, '<br>');
-        html += `<div class="download-title">${t}</div>`;
+        html += `<div class="download-title">${esc(tip || '复制口令（复制后在下载安装的APP进行粘贴）')}</div><div class="dl-code">${esc(code)}</div><button class="copy-btn" type="button"><i class="fas fa-copy"></i> 复制口令</button>`;
+      } else if (tip) {
+        html += `<div class="download-title">${esc(tip).replace(/\n/g, '<br>')}</div>`;
       }
       if (info.link) {
         html += `<a href="https://apps.apple.com/cn/app/id${esc(info.link)}" target="_blank" rel="noopener" class="app-store-download-btn"><i class="fab fa-apple"></i> App Store 下载</a>`;
@@ -171,14 +172,12 @@
     }
     return html;
   };
-
   const flashBtn = (btn, ok) => {
     if (!btn) return;
     const old = btn.innerHTML;
     btn.innerHTML = ok ? '<i class="fas fa-check"></i> 复制成功' : '<i class="fas fa-times"></i> 复制失败';
     setTimeout(() => { btn.innerHTML = old; }, 1500);
   };
-
   const openDownloadPopup = (category, info) => {
     if (!info) return;
     const cover = info.pic
@@ -195,7 +194,6 @@
         });
     }
   };
-
   const handleAppClick = (e) => {
     const item = e.target.closest('.app-card');
     if (!item) return;
@@ -204,13 +202,11 @@
     const info = findByName(getData(PLATFORMS[category].dataKey), name);
     openDownloadPopup(category, info);
   };
-
   const init = () => {
-    // APP 页「页面信息」：标题/描述由后台「APP设置 → 页面信息」驱动；未配置回退默认值
     getSiteConfig().then(d => {
       const ap = d && d.app_page;
       const siteName = (d && d.site_name) || '免费追剧';
-      const titleEl = document.querySelector('#app .section-title');
+      const titleEl = document.querySelector('.section-header .section-title');
       const pageTitle = (ap && ap.title) || '应用中心';
       if (titleEl) titleEl.textContent = pageTitle;
       document.title = (ap && ap.title ? ap.title + ' - ' : '应用中心 - ') + siteName;
@@ -220,7 +216,6 @@
         m.setAttribute('content', ap.desc);
       }
     }).catch(() => {});
-
     renderSkeleton(SKELETON_COUNT);
     doc.addEventListener('click', (e) => {
       if (e.target.closest('.app-card')) handleAppClick(e);
@@ -228,11 +223,9 @@
     const overlay = $('#app-modal');
     if (overlay) overlay.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
     loadData().then(() => {
-      renderChips();
-      initChips();
+      initChips(availableCategories());
     });
   };
-
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init);
   else init();
 })(window, document);
